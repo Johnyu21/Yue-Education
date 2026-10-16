@@ -89,7 +89,7 @@ def update_department(db: Session, dept_id: int, **changes) -> SysDepartment:
 # =============================================================
 # 班级
 # =============================================================
-def create_class(db: Session, *, name: str, dept_id: int,
+def create_class(db: Session, *, code: str, name: str, dept_id: int,
                  course_type: str | None = None,
                  head_teacher_id: int | None = None) -> SysClass:
     """建班级。
@@ -102,7 +102,10 @@ def create_class(db: Session, *, name: str, dept_id: int,
     if head_teacher_id is not None:
         _assert_valid_teacher(db, head_teacher_id)
 
-    cls = SysClass(name=name, dept_id=dept_id, course_type=course_type,
+    if db.scalar(select(SysClass.id).where(SysClass.code == code)):
+        raise StateConflictError(f"班级编码 {code} 已存在")
+
+    cls = SysClass(code=code, name=name, dept_id=dept_id, course_type=course_type,
                    head_teacher_id=head_teacher_id)
     db.add(cls)
     db.flush()

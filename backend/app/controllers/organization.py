@@ -141,7 +141,7 @@ def create_class(data: ClassCreate,
     _require_admin(user)
     with with_business_transaction(db):
         cls = org_svc.create_class(
-            db, name=data.name, dept_id=data.dept_id,
+            db, code=data.code, name=data.name, dept_id=data.dept_id,
             course_type=data.course_type, head_teacher_id=data.head_teacher_id)
     return ok({"id": str(cls.id), "name": cls.name})
 

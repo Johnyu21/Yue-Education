@@ -74,7 +74,8 @@ def test_禁止学生当班主任():
         student = _mk_user(db, "sm_stu", utype="STUDENT", role=None, dept=None)
         db.commit()
         with pytest.raises(InvalidRequestError, match="必须是员工"):
-            svc.create_class(db, name="测试班1", dept_id=dept, head_teacher_id=student)
+            svc.create_class(db, code="CLS_TEST", name="测试班1",
+                             dept_id=dept, head_teacher_id=student)
 
 
 def test_禁止部门树循环():

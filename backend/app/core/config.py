@@ -48,9 +48,22 @@ class Settings(BaseSettings):
     scheduler_enabled: bool = False
     scheduler_interval: int = 60
 
-    # ---- Dify（后续接）----
+    # ---- 业务时区（02 文档要求）----
+    # 报告统计窗口、日期边界都按这个时区算
+    business_timezone: str = "Asia/Shanghai"
+
+    # ---- Dify（四个工作流各一个 key）----
     dify_base_url: str = "http://localhost"
-    dify_api_key: str = ""
+    dify_visitor_key: str = ""       # WF_ENTRY  访客咨询
+    dify_assessment_key: str = ""    # WF_PROFILE 客户研判
+    dify_enterprise_key: str = ""    # WF_COMMAND 员工助手
+    dify_student_key: str = ""       # WF_COMMAND 学生助手
+    dify_report_key: str = ""        # WF_REPORT  报告
+
+    # ---- 业务参数（02 文档要求）----
+    sla_feedback_hours: int = 24     # 投诉响应时限（小时）
+    reminder_advance_hours: int = 24 # 日程提醒提前量（小时）
+    asr_enabled: bool = False        # 语音识别是否启用（没有供应商时禁用）
 
     @property
     def database_url(self) -> str:

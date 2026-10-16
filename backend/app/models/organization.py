@@ -26,6 +26,7 @@ class SysClass(Base):
     __tablename__ = "sys_class"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    code: Mapped[str] = mapped_column(String(40), unique=True)   # ⚠️ 班级编码（必填）
     name: Mapped[str] = mapped_column(String(80))
     course_type: Mapped[str | None] = mapped_column(String(80))
     head_teacher_id: Mapped[int | None] = mapped_column(BigInteger)  # 班主任

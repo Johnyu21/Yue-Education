@@ -22,6 +22,7 @@ class DepartmentUpdate(BaseModel):
 
 # ---- 班级 ----
 class ClassCreate(BaseModel):
+    code: str = Field(min_length=1, max_length=40)
     name: str = Field(min_length=1, max_length=80)
     dept_id: int
     course_type: str | None = Field(default=None, max_length=80)
