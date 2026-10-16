@@ -1,22 +1,18 @@
 """
 行政服务 —— 请假 / 考务申请与审批
-
-⚠️ 实现要求：
-  1. 统一响应：return ok(data)；报错抛 app.core.errors 里的异常类
-  2. 需登录：Depends(require_password_changed)
-  3. 查数据：用 build_scope(db, user, purpose) 限制范围（M1-05）
-  4. 多表写：用 with_business_transaction（M1-S1）
-  5. AI 调用**放事务外**（M1-S1）
-  6. 每个接口下有 API 编号注释
 """
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import require_password_changed
 from app.core.errors import NotImplementedYetError
 from app.core.responses import ok
+from app.core.transaction import with_business_transaction
 from app.db.session import get_db
 from app.models.user import SysUser
+from app.schemas.common import VersionReasonRequest
+from app.schemas.service import ServiceCreateRequest
+from app.services import student_service
 
 router = APIRouter(tags=["行政服务"])
 
@@ -27,56 +23,59 @@ def _todo(api: str, who: str = "M4"):
 
 @router.get("/api/v1/services")
 def list_services(user: SysUser = Depends(require_password_changed),
-                  db: Session = Depends(get_db)):
+                  db: Session = Depends(get_db),
+                  page: int = Query(1, ge=1),
+                  page_size: int = Query(20, ge=1, le=100),
+                  status_: str | None = Query(None, alias="status"),
+                  service_type: str | None = Query(None)):
     """API050 行政申请列表（学生看自己，员工看授权范围）"""
-    _todo("API050")
+    items, total = student_service.list_services(
+        db, user, status=status_, service_type=service_type, page=page, page_size=page_size)
+    return ok({"items": [i.model_dump(mode="json") for i in items],
+               "page": page, "pageSize": page_size, "total": total})
 
 
 @router.get("/api/v1/services/{service_id}")
 def get_service(service_id: int, user: SysUser = Depends(require_password_changed),
                 db: Session = Depends(get_db)):
-    """API051 申请详情（scope.get_or_404）"""
-    _todo("API051")
+    """API051 申请详情（scope 过滤，范围外 404）"""
+    dto = student_service.get_service(db, user, service_id)
+    return ok(dto.model_dump(mode="json"))
 
 
 @router.post("/api/v1/services", status_code=201)
-def create_service(user: SysUser = Depends(require_password_changed),
+def create_service(data: ServiceCreateRequest,
+                   user: SysUser = Depends(require_password_changed),
                    db: Session = Depends(get_db)):
-    """API052 提交请假/考务
-
-    ⚠️ LEAVE 必须 start_at < end_at（数据库会拒）
-    ⚠️ 若由助手提议 → 校验 confirmation_token（ⓒ）
-    """
-    _todo("API052")
+    """API052 提交请假/考务（学生确认提交）"""
+    with with_business_transaction(db):
+        result = student_service.submit_service(db, user, data)
+    return ok(result)
 
 
 @router.post("/api/v1/services/{service_id}/cancel")
-def cancel_service(service_id: int,
+def cancel_service(service_id: int, data: VersionReasonRequest,
                    user: SysUser = Depends(require_password_changed),
                    db: Session = Depends(get_db)):
-    """API053 撤销申请（仅待审批状态可撤销）"""
-    _todo("API053")
+    """API053 撤销申请（仅本人 PENDING 可撤销）"""
+    with with_business_transaction(db):
+        result = student_service.cancel_service(
+            db, user, service_id, expected_version=data.expected_version,
+            request_key=data.request_key, reason=data.reason)
+    return ok(result)
 
 
 @router.post("/api/v1/services/{service_id}/decision")
 def decide_service(service_id: int,
                    user: SysUser = Depends(require_password_changed),
                    db: Session = Depends(get_db)):
-    """API054 审批请假/考务（ⓥⓒ）
-
-    ⚠️ 状态更新 + 写通知 必须在同一事务
-    ⚠️ 重复审批要返回 409（乐观锁兜）
-    """
-    _todo("API054")
+    """API054 审批请假/考务（M3，业务函数 student_service.decide_service 已就绪）"""
+    _todo("API054", "M3")
 
 
 @router.post("/api/v1/services/{service_id}/assignment")
 def assign_service(service_id: int,
                    user: SysUser = Depends(require_password_changed),
                    db: Session = Depends(get_db)):
-    """API055 指派处理人"""
-    _todo("API055")
-
-
-# ---------------- 骨架补齐（z 审核时发现遗漏）----------------
-
+    """API055 指派处理人（M3，业务函数 student_service.assign_service 已就绪）"""
+    _todo("API055", "M3")

@@ -1,22 +1,18 @@
 """
-心理关怀 —— 授权 / 观测 / 预警处置
-
-⚠️ 实现要求：
-  1. 统一响应：return ok(data)；报错抛 app.core.errors 里的异常类
-  2. 需登录：Depends(require_password_changed)
-  3. 查数据：用 build_scope(db, user, purpose) 限制范围（M1-05）
-  4. 多表写：用 with_business_transaction（M1-S1）
-  5. AI 调用**放事务外**（M1-S1）
-  6. 每个接口下有 API 编号注释
+心理关怀 —— 授权 / 观测 / 预警处置（⚠️ 敏感）
 """
-from fastapi import APIRouter, Depends
+from datetime import date
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.deps import require_password_changed
 from app.core.errors import NotImplementedYetError
 from app.core.responses import ok
+from app.core.transaction import with_business_transaction
 from app.db.session import get_db
 from app.models.user import SysUser
+from app.schemas.psych import PsychActionRequest, PsychConsentRequest, PsychCorrectionRequest
+from app.services import psych_service
 
 router = APIRouter(tags=["心理关怀"])
 
@@ -26,43 +22,71 @@ def _todo(api: str, who: str = "M4"):
 
 
 @router.put("/api/v1/me/psych-consent")
-def set_psych_consent(user: SysUser = Depends(require_password_changed),
+def set_psych_consent(data: PsychConsentRequest,
+                      user: SysUser = Depends(require_password_changed),
                       db: Session = Depends(get_db)):
-    """API066 心理授权同意 / 撤回
-
-    ⚠️ 授权状态 GRANTED 时必须同时写 consent_at + consent_version
-    """
-    _todo("API066")
+    """API066 心理授权同意 / 撤回"""
+    with with_business_transaction(db):
+        result = psych_service.set_consent(db, user, data)
+    return ok(result)
 
 
 @router.get("/api/v1/employees/psych/students")
 def list_psych_students(user: SysUser = Depends(require_password_changed),
-                        db: Session = Depends(get_db)):
-    """API067 可查看心理的学生列表（⚠️ 需 can_see_psych；班主任看本班、顾问看本人学生）"""
-    _todo("API067", "M3/M4")
+                        db: Session = Depends(get_db),
+                        page: int = Query(1, ge=1),
+                        page_size: int = Query(20, ge=1, le=100),
+                        class_id: int | None = Query(None),
+                        keyword: str | None = Query(None),
+                        assessment_date: date | None = Query(None, alias="date")):
+    """API067 按班级/姓名查日状态（需 can_see_psych）"""
+    items, total = psych_service.list_psych_students(
+        db, user, date=assessment_date, class_id=class_id, keyword=keyword,
+        page=page, page_size=page_size)
+    return ok({"items": [i.model_dump(mode="json") for i in items],
+               "page": page, "pageSize": page_size, "total": total})
 
 
 @router.get("/api/v1/employees/students/{student_id}/psych-observations")
 def psych_observations(student_id: int,
                        user: SysUser = Depends(require_password_changed),
-                       db: Session = Depends(get_db)):
-    """API068 心理观测（⚠️ 必须 can_see_psych + 班主任/顾问/主管/管理员）"""
-    _todo("API068")
+                       db: Session = Depends(get_db),
+                       page: int = Query(1, ge=1),
+                       page_size: int = Query(20, ge=1, le=100),
+                       start_date: date | None = Query(None),
+                       end_date: date | None = Query(None)):
+    """API068 心理观测（需 can_see_psych + 范围）"""
+    items, total = psych_service.list_observations(
+        db, user, student_id, start_date=start_date, end_date=end_date,
+        page=page, page_size=page_size)
+    return ok({"items": [i.model_dump(mode="json") for i in items],
+               "page": page, "pageSize": page_size, "total": total})
 
 
 @router.post("/api/v1/employees/students/{student_id}/psych-corrections")
-def psych_correction(student_id: int,
+def psych_correction(student_id: int, data: PsychCorrectionRequest,
                      user: SysUser = Depends(require_password_changed),
                      db: Session = Depends(get_db)):
-    """API069 人工修正情绪标签（⚠️ 仅主管/管理员 + 心理授权）"""
-    _todo("API069")
+    """API069 人工修正情绪标签（仅主管/管理员 + 心理授权）"""
+    with with_business_transaction(db):
+        result = psych_service.correct_observation(db, user, student_id, data)
+    return ok(result)
 
 
 @router.get("/api/v1/employees/psych-alerts")
 def list_psych_alerts(user: SysUser = Depends(require_password_changed),
-                      db: Session = Depends(get_db)):
-    """API070 预警列表（⚠️ 需 can_see_psych）"""
-    _todo("API070")
+                      db: Session = Depends(get_db),
+                      page: int = Query(1, ge=1),
+                      page_size: int = Query(20, ge=1, le=100),
+                      status_: str | None = Query(None, alias="status"),
+                      severity: str | None = Query(None),
+                      class_id: int | None = Query(None)):
+    """API070 预警列表（需 can_see_psych）"""
+    items, total = psych_service.list_alerts(
+        db, user, status=status_, severity=severity, class_id=class_id,
+        page=page, page_size=page_size)
+    return ok({"items": [i.model_dump(mode="json") for i in items],
+               "page": page, "pageSize": page_size, "total": total})
 
 
 @router.get("/api/v1/employees/psych-alerts/{alert_id}")
@@ -70,20 +94,13 @@ def get_psych_alert(alert_id: int,
                     user: SysUser = Depends(require_password_changed),
                     db: Session = Depends(get_db)):
     """API071 预警详情"""
-    _todo("API071")
+    dto = psych_service.get_alert(db, user, alert_id)
+    return ok(dto.model_dump(mode="json"))
 
 
 @router.post("/api/v1/employees/psych-alerts/{alert_id}/actions")
 def psych_alert_action(alert_id: int,
                        user: SysUser = Depends(require_password_changed),
                        db: Session = Depends(get_db)):
-    """API072 预警处置（ⓥⓒ）
-
-    ⚠️ 必须人工确认；DISMISSED/CLOSED 要填 closed_at + action_note
-    ⚠️ 同一学生同时只能有一个未关闭预警（部分唯一索引）
-    """
-    _todo("API072")
-
-
-# ---------------- 审批 ----------------
-
+    """API072 预警处置（M3，业务函数 psych_service.review_alert 已就绪）"""
+    _todo("API072", "M3")

@@ -12,13 +12,20 @@
 ⚠️ 这些是**开发测试账号**，上线前必须删掉或改密码。
 """
 import sys
+import uuid
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 
 from app.core.security import hash_password
 from app.db.session import SessionLocal
+from app.models.academic_schedule import StudentAcademicSchedule
+from app.models.application_progress import StudentApplicationProgress
+from app.models.enrollment import StudentCourseEnrollment
 from app.models.organization import SysClass, SysDepartment
+from app.models.score import StudentScore
+from app.models.student import StudentProfile
 from app.models.user import SysUser
 
 # ---------------- 测试账号 ----------------
@@ -157,6 +164,96 @@ def seed() -> None:
                        "e": now + timedelta(days=days, hours=2),
                        "sd": now + timedelta(days=days - 1), "c": cap})
                 print(f"  + {title}")
+        db.commit()
+
+        # ---------- 学生课程 / 成绩 / 日程 / 申请进度（M4 测试数据）----------
+        print("\n[6/6] 学生课程 / 成绩 / 日程 / 申请进度")
+        prof = db.scalar(select(StudentProfile.id).where(StudentProfile.user_id == stu))
+        if prof:
+            now = datetime.now(timezone.utc)
+            proj_sg = db.scalar(text("SELECT id FROM course_project WHERE code='SG_222'"))
+            proj_de = db.scalar(text("SELECT id FROM course_project WHERE code='DE_DUAL'"))
+
+            # 课程关联（一名学生多项目）
+            for pid in (proj_sg, proj_de):
+                if pid and not db.scalar(
+                    select(StudentCourseEnrollment.id).where(
+                        StudentCourseEnrollment.student_profile_id == prof,
+                        StudentCourseEnrollment.course_project_id == pid,
+                    )
+                ):
+                    db.add(StudentCourseEnrollment(
+                        student_profile_id=prof, course_project_id=pid, status="ENROLLED"))
+                    print(f"  + 课程关联 course_project_id={pid}")
+
+            # 成绩（TEST，只读，不提供业务写接口）
+            if not db.scalar(select(func.count()).select_from(StudentScore)
+                             .where(StudentScore.student_profile_id == prof)):
+                today = now.date()
+                db.add_all([
+                    StudentScore(student_profile_id=prof, subject="数学", score_type="NUMERIC",
+                                 score_text="85", score_numeric=Decimal("85"),
+                                 max_score=Decimal("100"), graded_at=today,
+                                 recorded_by_user_id=advisor, remark="合成测试数据"),
+                    StudentScore(student_profile_id=prof, subject="英语", score_type="NUMERIC",
+                                 score_text="92", score_numeric=Decimal("92"),
+                                 max_score=Decimal("100"), graded_at=today,
+                                 recorded_by_user_id=advisor, remark="合成测试数据"),
+                    StudentScore(student_profile_id=prof, subject="德语", score_type="GRADE",
+                                 score_text="B+", graded_at=today,
+                                 recorded_by_user_id=advisor, remark="合成测试数据"),
+                    StudentScore(student_profile_id=prof, subject="体育", score_type="PASS_FAIL",
+                                 score_text="PASS", graded_at=today,
+                                 recorded_by_user_id=advisor, remark="合成测试数据"),
+                ])
+                print("  + 4 条合成成绩（TEST）")
+
+            # 教务日程（TEST）
+            if not db.scalar(select(func.count()).select_from(StudentAcademicSchedule)
+                             .where(StudentAcademicSchedule.student_profile_id == prof)):
+                db.add_all([
+                    StudentAcademicSchedule(
+                        student_profile_id=prof, schedule_type="EXAM", title="德语期中考试",
+                        description="合成测试数据", start_at=now + timedelta(days=7),
+                        end_at=now + timedelta(days=7, hours=2), location="A栋301",
+                        data_source="TEST", created_by_user_id=advisor),
+                    StudentAcademicSchedule(
+                        student_profile_id=prof, schedule_type="DEADLINE",
+                        title="新加坡项目申请材料截止", description="合成测试数据",
+                        start_at=now + timedelta(days=20), data_source="TEST",
+                        created_by_user_id=advisor),
+                    StudentAcademicSchedule(
+                        student_profile_id=prof, schedule_type="CLASS", title="德语专业课",
+                        description="合成测试数据", start_at=now + timedelta(days=1),
+                        end_at=now + timedelta(days=1, hours=2), location="B栋205",
+                        data_source="TEST", created_by_user_id=advisor),
+                ])
+                print("  + 3 条合成日程（TEST）")
+
+            # 申请进度（TEST，同 case_no 多事件时间线）
+            if not db.scalar(select(func.count()).select_from(StudentApplicationProgress)
+                             .where(StudentApplicationProgress.student_profile_id == prof)):
+                case = uuid.UUID("11111111-1111-1111-1111-111111111111")
+                ev1 = StudentApplicationProgress(
+                    case_no=case, student_profile_id=prof, sequence_no=1, previous_id=None,
+                    item_type="SCHOOL", title="新加坡 2+2 定向培养本科班申请",
+                    target_country="新加坡", target_school="新加坡示范学院",
+                    target_program="本科", stage="SUBMITTED", event_kind="STAGE",
+                    assignee_user_id=advisor, recorded_by_user_id=advisor,
+                    data_source="TEST", occurred_at=now - timedelta(days=30),
+                    request_key=uuid.uuid4())
+                db.add(ev1)
+                db.flush()
+                db.add(StudentApplicationProgress(
+                    case_no=case, student_profile_id=prof, sequence_no=2, previous_id=ev1.id,
+                    item_type="SCHOOL", title="新加坡 2+2 定向培养本科班申请",
+                    target_country="新加坡", target_school="新加坡示范学院",
+                    target_program="本科", stage="PROCESSING", event_kind="STAGE",
+                    assignee_user_id=advisor, recorded_by_user_id=advisor,
+                    data_source="TEST", occurred_at=now - timedelta(days=10),
+                    request_key=uuid.uuid4()))
+                print("  + 申请进度 2 条事件（TEST）")
+
         db.commit()
 
         # ---------- 汇总 ----------
