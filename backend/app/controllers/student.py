@@ -284,3 +284,38 @@ def assign_service(service_id: int,
                    db: Session = Depends(get_db)):
     """API055 指派处理人"""
     _todo("API055")
+
+
+# ---------------- 骨架补齐（z 审核时发现遗漏）----------------
+
+@router.post("/api/v1/assistants/student/messages")
+def student_assistant(user: SysUser = Depends(require_password_changed),
+                      db: Session = Depends(get_db)):
+    """API030 学生助手（受控意图，写操作要返回提议 + confirmation_token）"""
+    _todo("API030", "M3/M4")
+
+
+@router.get("/api/v1/employees/psych/students")
+def list_psych_students(user: SysUser = Depends(require_password_changed),
+                        db: Session = Depends(get_db)):
+    """API067 可查看心理的学生列表（⚠️ 需 can_see_psych；班主任看本班、顾问看本人学生）"""
+    _todo("API067", "M3/M4")
+
+
+@router.get("/api/v1/employees/students/{student_id}/scores")
+def student_scores(student_id: int,
+                   user: SysUser = Depends(require_password_changed),
+                   db: Session = Depends(get_db)):
+    """API074 员工查看某学生成绩（⚠️ 按 scope 限制范围）"""
+    _todo("API074", "M4")
+
+
+@router.get("/api/v1/employees/students/{student_id}/schedules")
+def student_schedules(student_id: int,
+                      user: SysUser = Depends(require_password_changed),
+                      db: Session = Depends(get_db)):
+    """API094 员工查看某学生日程（⚠️ 按 scope 限制范围）
+
+    ⚠️ 本条在任务卡里没有负责人，需团队确认归属
+    """
+    _todo("API094", "未认领")

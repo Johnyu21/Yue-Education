@@ -316,3 +316,26 @@ def workbench_todos(user: SysUser = Depends(require_password_changed),
     ⚠️ 实时查询（不建待办表）：待审批请假、待跟进线索、待处理工单
     """
     _todo("API088")
+
+
+# ---------------- 骨架补齐（z 审核时发现遗漏）----------------
+
+@router.get("/api/v1/employees/students")
+def list_students(user: SysUser = Depends(require_password_changed),
+                  db: Session = Depends(get_db)):
+    """API047 学生列表（员工用）
+
+    ⚠️ 本条在任务卡里没有负责人，需团队确认归属
+    """
+    _todo("API047", "未认领")
+
+
+@router.get("/api/v1/employees/students/{student_id}")
+def get_student(student_id: int,
+                user: SysUser = Depends(require_password_changed),
+                db: Session = Depends(get_db)):
+    """API048 学生详情（员工用）
+
+    ⚠️ 本条在任务卡里没有负责人，需团队确认归属
+    """
+    _todo("API048", "未认领")
