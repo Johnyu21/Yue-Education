@@ -51,7 +51,7 @@ def test_成功响应结构():
     assert body["code"] == "OK"
     assert body["message"] == "成功"
     assert body["data"] == {"x": 1}
-    assert body["request_id"].startswith("req-")
+    assert len(body["request_id"]) >= 32   # UUID 格式（规范要求）
 
 
 def test_401_未登录():

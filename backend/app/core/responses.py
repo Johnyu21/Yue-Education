@@ -4,8 +4,8 @@
 作用：让**所有接口**返回同一种结构，出错也不泄露敏感信息。
 
 统一格式：
-    成功：{"code":"OK",   "message":"成功", "data":{...}, "request_id":"req-xxx"}
-    失败：{"code":"XXX",  "message":"...",  "data":null,  "errors":[...], "request_id":"req-xxx"}
+    成功：{"code":"OK",   "message":"成功", "data":{...}, "request_id":"<UUID>"}
+    失败：{"code":"XXX",  "message":"...",  "data":null,  "errors":[...], "request_id":"<UUID>"}
 
 request_id 自动注入：
     中间件把 request_id 存进 contextvar，ok()/fail() 自动取。
@@ -42,7 +42,8 @@ def setup_request_id(app: FastAPI) -> None:
     @app.middleware("http")
     async def add_request_id(request: Request, call_next):
         # 客户端带了就用它的（限长防注入），否则自己生成
-        rid = request.headers.get("X-Request-ID") or f"req-{uuid.uuid4().hex[:12]}"
+        # ⚠️ 规范要求 request_id 是合法 UUID（便于日志系统索引）
+        rid = request.headers.get("X-Request-ID") or str(uuid.uuid4())
         rid = rid[:64]
         request.state.request_id = rid
         token = _request_id.set(rid)          # 存进 contextvar，ok()/fail() 自动读
@@ -63,9 +64,9 @@ def ok(data=None, message: str = "成功") -> dict:
             "request_id": current_request_id()}
 
 
-def fail(code: str, message: str, errors=None) -> dict:
-    """失败响应。"""
-    return {"code": code, "message": message, "data": None,
+def fail(code: str, message: str, errors=None, data=None) -> dict:
+    """失败响应。data 可为错误附带的上下文（如 current_version）。"""
+    return {"code": code, "message": message, "data": data,
             "errors": errors or [], "request_id": current_request_id()}
 
 
@@ -80,7 +81,7 @@ def setup_exception_handlers(app: FastAPI) -> None:
     async def handle_app_error(request: Request, exc: AppError):
         return JSONResponse(
             status_code=exc.http_status,
-            content=fail(exc.code, exc.message, exc.errors),
+            content=fail(exc.code, exc.message, exc.errors, exc.data),
         )
 
     # ---- ② 字段校验失败（FastAPI/Pydantic 自动抛的，如手机号格式错）----

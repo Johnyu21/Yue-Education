@@ -95,10 +95,10 @@ raise RuntimeError("数据库密码是 secret123，SQL=SELECT * FROM sys_user")
 
 ```json
 // 成功
-{"code":"OK","message":"成功","data":{"status":"up","database":true},"request_id":"req-dbe36cd2ac01"}
+{"code":"OK","message":"成功","data":{"status":"up","database":true},"request_id":"3ab75064-0587-4150-970a-ff11d1c22588"}
 
 // 404
-{"code":"NOT_FOUND","message":"Not Found","data":null,"errors":[],"request_id":"req-6d78318097b1"}
+{"code":"NOT_FOUND","message":"Not Found","data":null,"errors":[],"request_id":"3ab75064-0587-4150-970a-ff11d1c22588"}
 ```
 
 ---

@@ -113,7 +113,7 @@ def test_改密后旧令牌失效(client):
     assert client.get("/api/v1/auth/me",
                       headers={"Authorization": f"Bearer {old}"}).status_code == 200
     # ② 改密
-    r = client.post("/api/v1/auth/change-password",
+    r = client.post("/api/v1/auth/password-change",
                     headers={"Authorization": f"Bearer {old}"},
                     json={"old_password": "old12345678", "new_password": "new12345678"})
     assert r.json()["code"] == "OK"
@@ -132,7 +132,7 @@ def test_原密码错不能改(client):
     tok = client.post("/api/v1/auth/login",
                       json={"username": "t_pwd2", "password": "right12345678"}
                       ).json()["data"]["accessToken"]
-    r = client.post("/api/v1/auth/change-password",
+    r = client.post("/api/v1/auth/password-change",
                     headers={"Authorization": f"Bearer {tok}"},
                     json={"old_password": "WRONG", "new_password": "new12345678"})
     assert r.status_code == 400
@@ -143,7 +143,7 @@ def test_新密码太短被拦(client):
     tok = client.post("/api/v1/auth/login",
                       json={"username": "t_pwd3", "password": "good12345678"}
                       ).json()["data"]["accessToken"]
-    r = client.post("/api/v1/auth/change-password",
+    r = client.post("/api/v1/auth/password-change",
                     headers={"Authorization": f"Bearer {tok}"},
                     json={"old_password": "good12345678", "new_password": "短"})
     assert r.status_code == 422

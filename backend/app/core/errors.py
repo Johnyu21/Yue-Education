@@ -21,11 +21,13 @@ class AppError(Exception):
         message: str,
         http_status: int = status.HTTP_400_BAD_REQUEST,
         errors: list[dict] | None = None,
+        data: dict | None = None,
     ):
         self.code = code              # 业务错误码，如 STATE_CONFLICT
         self.message = message        # 给用户看的提示
         self.http_status = http_status
         self.errors = errors or []    # 字段级错误，如 [{field, reason}]
+        self.data = data              # ⚠️ 错误也可带数据（如 current_version）
         super().__init__(message)
 
 
@@ -64,9 +66,15 @@ class NotFoundError(AppError):
 
 
 class VersionConflictError(AppError):
-    """乐观锁冲突（并发覆盖）"""
-    def __init__(self, message="数据已被他人修改，请刷新后重试"):
-        super().__init__("VERSION_CONFLICT", message, status.HTTP_409_CONFLICT)
+    """乐观锁冲突（并发覆盖）
+
+    ⚠️ 规范要求带 current_version —— 前端拿到它才能显示"最新是第 N 版"。
+    """
+    def __init__(self, current_version: int | None = None,
+                 message="数据已被他人修改，请刷新后重试"):
+        data = {"current_version": current_version} if current_version is not None else None
+        super().__init__("VERSION_CONFLICT", message,
+                         status.HTTP_409_CONFLICT, data=data)
 
 
 class StateConflictError(AppError):
