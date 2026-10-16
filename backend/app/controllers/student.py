@@ -49,7 +49,7 @@ M4 · 学生助手 —— 接口骨架（待实现）
   4. 请假审批：状态更新与通知**同事务**
   5. 成绩表本轮只读（data_source='TEST'），不提供增删改
 
-📖 参考：docs/ 下 M1-03 / M1-04 / M1-05 / M1-事务管理 / M1-确认令牌
+📖 参考：docs/ 下 M1-03 / M1-04 / M1-05 / M1-S1-事务管理 / M1-确认令牌
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session

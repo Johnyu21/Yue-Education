@@ -20,7 +20,7 @@ M5 · 智能报告与前端整合 —— 接口骨架（待实现）
   3. AI 失败时**仍返回真实指标**，只是没有分析文字（ai_status=UNAVAILABLE）
   4. 前端字典映射（英文枚举 → 中文）参考 M1-01 对照表
 
-📖 参考：docs/ 下 M1-01（枚举对照）/ M1-05（范围） / AI编码提示词模板
+📖 参考：docs/ 下 M1-01（枚举对照）/ M1-05（范围） / 00-AI编码提示词模板
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session

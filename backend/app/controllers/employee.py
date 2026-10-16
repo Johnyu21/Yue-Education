@@ -60,7 +60,7 @@ M3 · 企业助手 —— 接口骨架（待实现）
   4. **AI 调用放事务外**（Dify 慢，别占锁）
   5. 转学生的临时密码**只在响应里出现一次**，不写日志
 
-📖 参考：docs/ 下 M1-03 / M1-04 / M1-05 / M1-事务管理 / M1-确认令牌
+📖 参考：docs/ 下 M1-03 / M1-04 / M1-05 / M1-S1-事务管理 / M1-确认令牌
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session

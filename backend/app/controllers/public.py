@@ -42,7 +42,7 @@ M2 · 访客客服与客户研判 —— 接口骨架（待实现）
   5. 报名要"锁行 + 查容量 + 写记录"在同一事务（M1 事务管理）
   6. AI 调用**不要放在事务里**（会长时间占锁）
 
-📖 参考文档：docs/ 下 M1-03 / M1-04 / M1-05 / M1-事务管理 / AI编码提示词模板
+📖 参考文档：docs/ 下 M1-03 / M1-04 / M1-05 / M1-S1-事务管理 / 00-AI编码提示词模板
 """
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
