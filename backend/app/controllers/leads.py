@@ -17,6 +17,8 @@ from app.core.errors import NotImplementedYetError
 from app.core.responses import ok
 from app.db.session import get_db
 from app.models.user import SysUser
+from app.schemas.lead import AssessmentIn, ResumeExtractionIn
+from app.services import assessment_service
 
 router = APIRouter(tags=["线索 CRM 与研判"])
 
@@ -100,24 +102,26 @@ def update_lead_status(lead_id: int, user: SysUser = Depends(require_password_ch
 
 @router.post("/api/v1/employees/leads/{lead_id}/assessments", status_code=201)
 def assess_lead(lead_id: int,
+                data: AssessmentIn,
                 user: SysUser = Depends(require_password_changed),
                 db: Session = Depends(get_db)):
-    """API041 执行研判
+    """API041 执行研判（M2）
 
-    ⚠️ 流程：
-      1. build_scope 检查能否操作这条线索
-      2. ⚠️ 事务外调 Dify 提取画像（别占着数据库锁）
-      3. 事务内保存报告 + 更新 crm_lead.assessment_*
+    流程：
+      1. build_scope 检查能否操作这条客户（越权 → 404）
+      2. 事务内写 RUNNING + assessment_request_id + started_at（版本 +1）
+      3. ⚠️ **事务外**调 Dify 提取画像（不占数据库锁）
+      4. 事务内按请求号**条件回写**报告（旧任务不会覆盖新结果）
     """
-    _todo("API041")
+    return ok(assessment_service.assess_lead(db, user, lead_id, data))
 
 
 @router.get("/api/v1/employees/leads/{lead_id}/assessment")
 def get_lead_assessment(lead_id: int,
                         user: SysUser = Depends(require_password_changed),
                         db: Session = Depends(get_db)):
-    """API042 取最近一份研判报告"""
-    _todo("API042")
+    """API042 取最近一份研判报告（失败但保留上一份成功报告时标 isPreviousReport）"""
+    return ok(assessment_service.get_assessment(db, user, lead_id))
 
 
 @router.post("/api/v1/employees/leads/{lead_id}/conversion")
@@ -138,8 +142,14 @@ def convert_lead(lead_id: int, user: SysUser = Depends(require_password_changed)
 
 @router.post("/api/v1/employees/leads/{lead_id}/resume-extraction")
 def extract_resume(lead_id: int,
+                   data: ResumeExtractionIn,
                    user: SysUser = Depends(require_password_changed),
                    db: Session = Depends(get_db)):
-    """API096 简历文本/文件解析"""
-    _todo("API096")
+    """API096 简历文本/文件解析（M2）
+
+    返回**可编辑的提取草稿**（含来源片段与缺失项），
+    ⚠️ 不写正式客户事实、不改销售状态、不改研判状态；
+    顾问核对后用 API035 PATCH 资料，再调 API041 开始正式研判。
+    """
+    return ok(assessment_service.extract_resume_draft(db, user, lead_id, data))
 

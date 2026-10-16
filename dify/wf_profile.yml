@@ -1,0 +1,185 @@
+# =====================================================================
+# WF_ASSESSMENT —— 客户研判字段提取工作流（Dify 1.12.1）
+#
+# 导入说明：
+#   1. LLM 节点（id: llm）的 model.provider / model.name 已留空，导入后自行选择大模型。
+#   2. 本工作流**不需要知识库**：只做"从给定材料里提取字段 + 定位证据 + 指出缺项"。
+#      录取判定与打分由后端 Python 按 course_project.admission_rules（已审核）执行。
+#   3. 契约：Start 输入 payload_json（字符串 JSON），End 输出 output_json（字符串 JSON）。
+#   4. 导入时提示"DSL 版本差异"为正常警告，不影响使用。
+# =====================================================================
+app:
+  description: 客户研判 WF_ASSESSMENT —— 简历/事实字段提取、证据定位与缺项（不做录取判定）
+  icon: 📋
+  icon_background: '#E4FBCC'
+  mode: workflow
+  name: WF_ASSESSMENT
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.1.3
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+          - remote_url
+          - local_file
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: start
+          targetType: llm
+        id: edge-start-llm
+        source: start
+        sourceHandle: source
+        target: llm
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: llm
+          targetType: end
+        id: edge-llm-end
+        source: llm
+        sourceHandle: source
+        target: end
+        targetHandle: target
+        type: custom
+        zIndex: 0
+    nodes:
+      - data:
+          desc: ''
+          selected: false
+          title: 开始
+          type: start
+          variables:
+            - label: payload_json
+              max_length: 50000
+              options: []
+              required: true
+              type: paragraph
+              variable: payload_json
+        height: 116
+        id: start
+        position:
+          x: 80
+          y: 282
+        positionAbsolute:
+          x: 80
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: ''
+          model:
+            completion_params:
+              temperature: 0
+            mode: chat
+            name: ''
+            provider: ''
+          prompt_template:
+            - id: sys-prompt-assessment
+              role: system
+              text: |
+                你是留学客户资料的**字段提取助手**。你不做任何录取判断，也不给分数。
+                输入 payload_json 是 JSON 字符串，包含：
+                { "lead_id": 客户ID, "request_id": 本次请求ID,
+                  "confirmed_facts": {顾问已核对的事实},
+                  "resume_text": "简历纯文本（可能为空或截断）",
+                  "project_rules": [{project_id, rules}] }
+
+                请只输出**一个合法 JSON 对象**（不要解释、不要 markdown 代码块）：
+                {
+                  "schema_version": "1.0",
+                  "mode": "ASSESSMENT_EXTRACT",
+                  "facts": {只包含有据可依的字段},
+                  "evidence": [{ "field": 字段名, "source_ref": "resume:p<行号>", "snippet": "最小必要原文片段" }],
+                  "missing_fields": [必填但缺失的字段名],
+                  "warnings": [提示]
+                }
+
+                规则（必须遵守）：
+                1. confirmed_facts 是顾问已核对的事实，**原样保留**，不得改写或推翻。
+                2. 只能从 resume_text 中提取：education（学历）、language_level（语言水平）、
+                   date_of_birth（出生日期）、city（城市）、gender（性别）等个人事实；
+                   每个提取出的字段必须在 evidence 中给出 source_ref 与最小必要 snippet。
+                3. **严禁编造**：材料里没有的信息一律不写进 facts，而是放进 missing_fields。
+                   不得推断或添加年龄门槛、语言分数线、资金证明要求、录取结论。
+                4. 不得输出 score / 匹配结论（MATCH/NO_MATCH）——那是后端按已审核规则计算的职责。
+                5. resume_text 为空或无法识别时 → facts 只含 confirmed_facts，
+                   missing_fields 列出必填缺项，warnings 含 "NO_RESUME_TEXT"。
+                6. snippet 只保留最小必要片段，不要整段复制简历，不要包含身份证号、银行卡号等敏感号码。
+            - id: user-prompt-assessment
+              role: user
+              text: '{{#start.payload_json#}}'
+          selected: false
+          title: 字段提取
+          type: llm
+          variables: []
+          vision:
+            enabled: false
+        height: 98
+        id: llm
+        position:
+          x: 480
+          y: 282
+        positionAbsolute:
+          x: 480
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: ''
+          outputs:
+            - value_selector:
+                - llm
+                - text
+              variable: output_json
+          selected: false
+          title: 结束
+          type: end
+        height: 90
+        id: end
+        position:
+          x: 780
+          y: 282
+        positionAbsolute:
+          x: 780
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
