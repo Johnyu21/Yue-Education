@@ -60,3 +60,28 @@ def run_workflow(audience: str, payload: dict, user: str, timeout: float = 45.0)
 def call_student_workflow(payload: dict, user_id: int, timeout: float = 45.0) -> dict:
     """学生助手工作流（WF_STUDENT）。"""
     return run_workflow("student", payload, str(user_id), timeout=timeout)
+
+
+# =============================================================
+# M2 追加：访客客服（WF_VISITOR）与客户研判（WF_ASSESSMENT）入口
+#
+# ⚠️ 函数体内延迟 import，避免与 visitor.py / assessment.py
+#    对本包的 run_workflow 引用形成循环导入。
+# ⚠️ 这两个函数只是便捷入口；mock 判定在 visitor/assessment 内完成。
+# =============================================================
+
+
+def run_visitor_workflow(payload: dict, *, user: str = "visitor",
+                         timeout_s: int | None = None) -> dict:
+    """访客客服工作流（WF_VISITOR）。"""
+    from app.integrations.dify.visitor import run_visitor
+
+    return run_visitor(payload, user=user, timeout_s=timeout_s)
+
+
+def run_assessment_workflow(payload: dict, *, user: str = "assessment",
+                            timeout_s: int | None = None) -> dict:
+    """客户研判字段提取工作流（WF_ASSESSMENT）。"""
+    from app.integrations.dify.assessment import run_assessment
+
+    return run_assessment(payload, user=user, timeout_s=timeout_s)
