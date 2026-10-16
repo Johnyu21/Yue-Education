@@ -9,7 +9,7 @@
   5. AI 调用**放事务外**（M1-S1）
   6. 每个接口下有 API 编号注释
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import require_password_changed
@@ -37,7 +37,7 @@ def get_public_project(project_id: int, db: Session = Depends(get_db)):
     _todo("API016")
 
 
-@router.post("/api/v1/management/projects")
+@router.post("/api/v1/management/projects", status_code=201)
 def create_project(user: SysUser = Depends(require_password_changed),
                    db: Session = Depends(get_db)):
     """API017 新增项目"""
@@ -64,7 +64,7 @@ def get_public_event(event_id: int, db: Session = Depends(get_db)):
     _todo("API020")
 
 
-@router.post("/api/v1/management/events")
+@router.post("/api/v1/management/events", status_code=201)
 def create_event(user: SysUser = Depends(require_password_changed),
                  db: Session = Depends(get_db)):
     """API021 新增活动"""
@@ -82,7 +82,7 @@ def update_event(event_id: int,
 # ---------------- 研判 ----------------
 
 
-@router.post("/api/v1/public/leads")
+@router.post("/api/v1/public/leads", status_code=201)
 def capture_lead(db: Session = Depends(get_db)):
     """API023 访客留资
 
@@ -95,7 +95,7 @@ def capture_lead(db: Session = Depends(get_db)):
 # ---------------- 活动报名 ----------------
 
 
-@router.post("/api/v1/events/{event_id}/registrations")
+@router.post("/api/v1/events/{event_id}/registrations", status_code=201)
 def register_event(event_id: int, db: Session = Depends(get_db)):
     """API024 活动报名（锁行 + 查容量 + 写记录，同一事务）"""
     _todo("API024")

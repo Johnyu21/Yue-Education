@@ -9,7 +9,7 @@
   5. AI 调用**放事务外**（M1-S1）
   6. 每个接口下有 API 编号注释
 """
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, status, File, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -100,7 +100,7 @@ def list_departments(user: SysUser = Depends(require_password_changed),
     ]})
 
 
-@router.post("/api/v1/management/departments")
+@router.post("/api/v1/management/departments", status_code=201)
 def create_department(data: DepartmentCreate,
                       user: SysUser = Depends(require_password_changed),
                       db: Session = Depends(get_db)):
@@ -143,7 +143,7 @@ def list_classes(user: SysUser = Depends(require_password_changed),
 # ---------------- 组织：管理 ----------------
 
 
-@router.post("/api/v1/management/classes")
+@router.post("/api/v1/management/classes", status_code=201)
 def create_class(data: ClassCreate,
                  user: SysUser = Depends(require_password_changed),
                  db: Session = Depends(get_db)):
@@ -219,7 +219,7 @@ def mark_notification_read(notification_id: int,
 # ---------------- 文件 ----------------
 
 
-@router.post("/api/v1/management/users")
+@router.post("/api/v1/management/users", status_code=201)
 def create_user(data: EmployeeCreate,
                 user: SysUser = Depends(require_password_changed),
                 db: Session = Depends(get_db)):

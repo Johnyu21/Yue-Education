@@ -54,7 +54,7 @@ def me(user: SysUser = Depends(get_actor)):
     return ok(to_user_out(user))
 
 
-@router.post("/change-password")
+@router.post("/password-change")
 def change_password(
     data: ChangePasswordIn,
     user: SysUser = Depends(get_actor),

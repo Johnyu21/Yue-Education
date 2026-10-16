@@ -9,7 +9,7 @@
   5. AI 调用**放事务外**（M1-S1）
   6. 每个接口下有 API 编号注释
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import require_password_changed
@@ -39,7 +39,7 @@ def get_lead(lead_id: int, user: SysUser = Depends(require_password_changed),
     _todo("API033")
 
 
-@router.post("/api/v1/employees/leads")
+@router.post("/api/v1/employees/leads", status_code=201)
 def create_lead(user: SysUser = Depends(require_password_changed),
                 db: Session = Depends(get_db)):
     """API034 员工录入线索"""
@@ -78,7 +78,7 @@ def list_follow_ups(lead_id: int, user: SysUser = Depends(require_password_chang
     _todo("API038")
 
 
-@router.post("/api/v1/employees/leads/{lead_id}/follow-ups")
+@router.post("/api/v1/employees/leads/{lead_id}/follow-ups", status_code=201)
 def add_follow_up(lead_id: int, user: SysUser = Depends(require_password_changed),
                   db: Session = Depends(get_db)):
     """API039 新增跟进"""
@@ -98,7 +98,7 @@ def update_lead_status(lead_id: int, user: SysUser = Depends(require_password_ch
 # ---------------- 转学生（⚠️ 多表事务，最关键）----------------
 
 
-@router.post("/api/v1/employees/leads/{lead_id}/assessments")
+@router.post("/api/v1/employees/leads/{lead_id}/assessments", status_code=201)
 def assess_lead(lead_id: int,
                 user: SysUser = Depends(require_password_changed),
                 db: Session = Depends(get_db)):

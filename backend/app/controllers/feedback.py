@@ -9,7 +9,7 @@
   5. AI 调用**放事务外**（M1-S1）
   6. 每个接口下有 API 编号注释
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import require_password_changed
@@ -32,7 +32,7 @@ def my_feedback_tickets(user: SysUser = Depends(require_password_changed),
     _todo("API056")
 
 
-@router.post("/api/v1/me/feedback-tickets")
+@router.post("/api/v1/me/feedback-tickets", status_code=201)
 def create_feedback_ticket(user: SysUser = Depends(require_password_changed),
                            db: Session = Depends(get_db)):
     """API057 提交投诉/建议

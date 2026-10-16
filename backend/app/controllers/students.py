@@ -9,7 +9,7 @@
   5. AI 调用**放事务外**（M1-S1）
   6. 每个接口下有 API 编号注释
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import require_password_changed
@@ -25,7 +25,7 @@ def _todo(api: str, who: str = "M3/M4"):
     raise NotImplementedYetError(f"{api} 尚未实现（负责人：{who}）")
 
 
-@router.post("/api/v1/employees/students/{student_id}/enrollments")
+@router.post("/api/v1/employees/students/{student_id}/enrollments", status_code=201)
 def add_enrollment(student_id: int, user: SysUser = Depends(require_password_changed),
                    db: Session = Depends(get_db)):
     """API044 添加课程关联"""
@@ -124,7 +124,7 @@ def application_timeline(case_no: str,
     _todo("API079")
 
 
-@router.post("/api/v1/employees/application-cases")
+@router.post("/api/v1/employees/application-cases", status_code=201)
 def create_application_case(user: SysUser = Depends(require_password_changed),
                             db: Session = Depends(get_db)):
     """API080 创建申请单"""
@@ -160,7 +160,7 @@ def student_schedules(student_id: int,
     _todo("API094", "未认领")
 
 
-@router.post("/api/v1/me/upgrade-interests")
+@router.post("/api/v1/me/upgrade-interests", status_code=201)
 def create_upgrade_interest(user: SysUser = Depends(require_password_changed),
                             db: Session = Depends(get_db)):
     """API095 升学意向（增值转化线索）"""

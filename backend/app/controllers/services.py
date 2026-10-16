@@ -9,7 +9,7 @@
   5. AI 调用**放事务外**（M1-S1）
   6. 每个接口下有 API 编号注释
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import require_password_changed
@@ -39,7 +39,7 @@ def get_service(service_id: int, user: SysUser = Depends(require_password_change
     _todo("API051")
 
 
-@router.post("/api/v1/services")
+@router.post("/api/v1/services", status_code=201)
 def create_service(user: SysUser = Depends(require_password_changed),
                    db: Session = Depends(get_db)):
     """API052 提交请假/考务
