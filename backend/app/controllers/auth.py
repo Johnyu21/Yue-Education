@@ -1,9 +1,13 @@
 """
-认证接口（M1-04）
+认证 —— 登录 / 当前身份 / 改密
 
-API003 登录        POST /api/v1/auth/login
-API004 当前身份    GET  /api/v1/auth/me
-API005 自主改密    POST /api/v1/auth/change-password
+⚠️ 实现要求：
+  1. 统一响应：return ok(data)；报错抛 app.core.errors 里的异常类
+  2. 需登录：Depends(require_password_changed)
+  3. 查数据：用 build_scope(db, user, purpose) 限制范围（M1-05）
+  4. 多表写：用 with_business_transaction（M1-S1）
+  5. AI 调用**放事务外**（M1-S1）
+  6. 每个接口下有 API 编号注释
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -62,3 +66,4 @@ def change_password(
     """
     auth_service.change_password(db, user, data.old_password, data.new_password)
     return ok({"changed": True, "message": "密码已修改，请用新密码重新登录"})
+

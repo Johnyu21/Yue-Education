@@ -1,26 +1,13 @@
 """
-M5 · 智能报告与前端整合 —— 接口骨架（待实现）
-
-负责人：M5
-内容：五类报告（客户经营 / 日报汇总 / 心理周报 / 投诉周报）、前端集成
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-本文件负责的接口（共 2 个）
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   API075 POST /api/v1/me/academic-assessment      学业评估
-   API091 POST /api/v1/reports/preview             报告预览
-
-   ⚠️ 报告**实时生成，不落表**（本轮无报告表）
-      指标由 Python 算好，AI 只负责组织文字
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+智能报告 —— 报告预览 / 学业评估
 
 ⚠️ 实现要求：
-  1. 报告用 `scope` 限制数据范围（⚠️ 不能导出全公司数据）
-  2. 指标（数字）由后端算，**AI 只写分析文字**，不让 AI 算数
-  3. AI 失败时**仍返回真实指标**，只是没有分析文字（ai_status=UNAVAILABLE）
-  4. 前端字典映射（英文枚举 → 中文）参考 M1-01 对照表
-
-📖 参考：docs/ 下 M1-01（枚举对照）/ M1-05（范围） / 00-AI编码提示词模板
+  1. 统一响应：return ok(data)；报错抛 app.core.errors 里的异常类
+  2. 需登录：Depends(require_password_changed)
+  3. 查数据：用 build_scope(db, user, purpose) 限制范围（M1-05）
+  4. 多表写：用 with_business_transaction（M1-S1）
+  5. AI 调用**放事务外**（M1-S1）
+  6. 每个接口下有 API 编号注释
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -31,7 +18,7 @@ from app.core.responses import ok
 from app.db.session import get_db
 from app.models.user import SysUser
 
-router = APIRouter(tags=["M5 · 智能报告"])
+router = APIRouter(tags=["智能报告"])
 
 
 def _todo(api: str, who: str = "M5"):
@@ -63,3 +50,4 @@ def preview_report(user: SysUser = Depends(require_password_changed),
       - complaint  投诉处理周报
     """
     _todo("API091")
+

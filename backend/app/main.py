@@ -32,21 +32,23 @@ setup_exception_handlers(app)
 
 # =============================================================
 # 注册路由（⚠️ 由 M1 一次性注册好，各模块不用动本文件）
-# —— 这样避免五个人同时改 main.py 产生冲突
-# =============================================================
-from app.controllers import auth as auth_router            # M1 认证
-from app.controllers import organization as org_router      # M1 组织管理
-from app.controllers import public as public_router          # M2 访客客服与研判
-from app.controllers import employee as employee_router      # M3 企业助手
-from app.controllers import student as student_router        # M4 学生助手
-from app.controllers import reports as reports_router        # M5 智能报告
+# 按「资源」分文件：一个业务概念一个文件，跨角色共用
+from app.controllers import auth as c_auth                 # 认证
+from app.controllers import organization as c_org           # 组织/账号/通知/文件
+from app.controllers import public as c_public              # 公开门户
+from app.controllers import assistants as c_assist          # 智能助手
+from app.controllers import leads as c_leads                # 线索与研判
+from app.controllers import students as c_students          # 学生管理
+from app.controllers import services as c_services          # 行政服务
+from app.controllers import feedback as c_feedback          # 售后工单
+from app.controllers import psych as c_psych                # 心理关怀
+from app.controllers import daily_reports as c_daily        # 员工日报
+from app.controllers import workbench as c_workbench        # 工作台
+from app.controllers import reports as c_reports            # 智能报告
 
-app.include_router(auth_router.router)
-app.include_router(org_router.router)
-app.include_router(public_router.router)
-app.include_router(employee_router.router)
-app.include_router(student_router.router)
-app.include_router(reports_router.router)
+for _r in (c_auth, c_org, c_public, c_assist, c_leads, c_students,
+           c_services, c_feedback, c_psych, c_daily, c_workbench, c_reports):
+    app.include_router(_r.router)
 
 
 # =============================================================

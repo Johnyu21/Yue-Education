@@ -1,33 +1,13 @@
 """
-M1 · 组织与账号管理、通知、文件
+组织与账号管理 —— 部门 / 班级 / 账号 / 通知 / 文件
 
-负责人：M1
-内容：部门 / 班级 / 账号管理、员工重置密码、通知中心、文件上传
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-本文件负责的接口（共 13 个）
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  【组织：查询】
-   API007 GET /api/v1/organization/users           用户列表（通讯录）
-   API009 GET /api/v1/organization/departments     部门树
-   API012 GET /api/v1/organization/classes         班级列表
-
-  【组织：管理】
-   API010 POST  /api/v1/management/departments              建部门
-   API011 PATCH /api/v1/management/departments/{id}         改部门/指定主管
-   API013 POST  /api/v1/management/classes                  建班级
-   API014 PATCH /api/v1/management/classes/{id}             改班级/班主任
-   API092 POST  /api/v1/management/users                    创建员工账号
-   API008 PATCH /api/v1/management/users/{user_id}          改账号/岗位/能力
-   API006 POST  /api/v1/management/users/{user_id}/password-reset  重置学生密码
-
-  【通知】
-   API089 GET  /api/v1/me/notifications             我的消息
-   API090 POST /api/v1/me/notifications/{id}/read   标记已读
-
-  【文件】
-   API028 POST /api/v1/files                        上传（私有附件）
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ 实现要求：
+  1. 统一响应：return ok(data)；报错抛 app.core.errors 里的异常类
+  2. 需登录：Depends(require_password_changed)
+  3. 查数据：用 build_scope(db, user, purpose) 限制范围（M1-05）
+  4. 多表写：用 with_business_transaction（M1-S1）
+  5. AI 调用**放事务外**（M1-S1）
+  6. 每个接口下有 API 编号注释
 """
 from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy import select
@@ -48,7 +28,7 @@ from app.schemas.organization import (
 )
 from app.services import organization_service as org_svc
 
-router = APIRouter(tags=["M1 · 组织管理"])
+router = APIRouter(tags=["组织与账号管理"])
 
 
 def _require_admin(user: SysUser) -> None:
@@ -57,7 +37,19 @@ def _require_admin(user: SysUser) -> None:
         raise ForbiddenError("需要管理员权限")
 
 
-# ---------------- 组织：查询 ----------------
+@router.post("/api/v1/management/users/{user_id}/password-reset")
+def reset_user_password(user_id: int,
+                        user: SysUser = Depends(require_password_changed),
+                        db: Session = Depends(get_db)):
+    """API006 重置学生临时密码（⚠️ 明文只在响应出现一次）"""
+    _require_admin(user)
+    with with_business_transaction(db):
+        plain = org_svc.reset_student_password(db, user_id)
+    return ok({"temporaryPassword": plain, "mustChangePassword": True})
+
+
+# ---------------- 通知 ----------------
+
 
 @router.get("/api/v1/organization/users")
 def list_organization_users(user: SysUser = Depends(require_password_changed),
@@ -72,6 +64,23 @@ def list_organization_users(user: SysUser = Depends(require_password_changed),
             "contactInfo": u.contact_info,
         } for u in rows
     ]})
+
+
+@router.patch("/api/v1/management/users/{user_id}")
+def update_user(user_id: int, data: UserUpdate,
+                user: SysUser = Depends(require_password_changed),
+                db: Session = Depends(get_db)):
+    """API008 改账号 / 岗位 / 敏感能力
+
+    ⚠️ 改敏感字段后 token_version+1（旧令牌失效）
+    ⚠️ 主管只能改本部门普通员工，不能给自己或管理员变权
+    """
+    changes = {k: v for k, v in data.model_dump(exclude_unset=True).items()}
+    with with_business_transaction(db):
+        target = org_svc.update_user(db, user_id, actor=user, **changes)
+    return ok({"id": str(target.id), "status": target.status,
+               "canHandleFeedback": target.can_handle_feedback,
+               "psychAccessEnabled": target.psych_access_enabled})
 
 
 @router.get("/api/v1/organization/departments")
@@ -90,22 +99,6 @@ def list_departments(user: SysUser = Depends(require_password_changed),
         } for d in rows
     ]})
 
-
-@router.get("/api/v1/organization/classes")
-def list_classes(user: SysUser = Depends(require_password_changed),
-                 db: Session = Depends(get_db)):
-    """API012 班级列表"""
-    rows = db.scalars(select(SysClass).order_by(SysClass.id)).all()
-    return ok({"items": [
-        {
-            "id": str(c.id), "name": c.name, "courseType": c.course_type,
-            "deptId": str(c.dept_id),
-            "headTeacherId": str(c.head_teacher_id) if c.head_teacher_id else None,
-        } for c in rows
-    ]})
-
-
-# ---------------- 组织：管理 ----------------
 
 @router.post("/api/v1/management/departments")
 def create_department(data: DepartmentCreate,
@@ -131,6 +124,23 @@ def update_department(dept_id: int, data: DepartmentUpdate,
         dept = org_svc.update_department(db, dept_id, **changes)
     return ok({"id": str(dept.id), "name": dept.name,
                "headUserId": str(dept.head_user_id) if dept.head_user_id else None})
+
+
+@router.get("/api/v1/organization/classes")
+def list_classes(user: SysUser = Depends(require_password_changed),
+                 db: Session = Depends(get_db)):
+    """API012 班级列表"""
+    rows = db.scalars(select(SysClass).order_by(SysClass.id)).all()
+    return ok({"items": [
+        {
+            "id": str(c.id), "name": c.name, "courseType": c.course_type,
+            "deptId": str(c.dept_id),
+            "headTeacherId": str(c.head_teacher_id) if c.head_teacher_id else None,
+        } for c in rows
+    ]})
+
+
+# ---------------- 组织：管理 ----------------
 
 
 @router.post("/api/v1/management/classes")
@@ -160,56 +170,21 @@ def update_class(class_id: int, data: ClassUpdate,
                "headTeacherId": str(cls.head_teacher_id) if cls.head_teacher_id else None})
 
 
-@router.post("/api/v1/management/users")
-def create_user(data: EmployeeCreate,
+@router.post("/api/v1/files")
+def upload_file(file: UploadFile = File(...),
                 user: SysUser = Depends(require_password_changed),
                 db: Session = Depends(get_db)):
-    """API092 创建员工账号（仅管理员）
+    """API028 上传私有附件
 
-    ⚠️ 返回的临时密码**只在这一次出现**，数据库只存哈希。
+    ⚠️ 安全（M1-08 验收点）：
+      - 扩展名白名单 + MIME 校验 + 大小限制
+      - 文件名**重新生成**（防路径穿越）
+      - 按 owner 分目录（防伪造归属）
+      - 返回 object_key（**不返回真实路径**）
     """
-    _require_admin(user)
-    with with_business_transaction(db):
-        new_user, plain_pwd = org_svc.create_employee(
-            db, username=data.username, real_name=data.real_name,
-            employee_role=data.employee_role, dept_id=data.dept_id)
-    return ok({
-        "id": str(new_user.id),
-        "username": new_user.username,
-        "temporaryPassword": plain_pwd,     # ⚠️ 只此一次
-        "mustChangePassword": True,
-    })
+    object_key = storage.save_upload(file, owner_user_id=user.id)
+    return ok({"objectKey": object_key, "filename": file.filename})
 
-
-@router.patch("/api/v1/management/users/{user_id}")
-def update_user(user_id: int, data: UserUpdate,
-                user: SysUser = Depends(require_password_changed),
-                db: Session = Depends(get_db)):
-    """API008 改账号 / 岗位 / 敏感能力
-
-    ⚠️ 改敏感字段后 token_version+1（旧令牌失效）
-    ⚠️ 主管只能改本部门普通员工，不能给自己或管理员变权
-    """
-    changes = {k: v for k, v in data.model_dump(exclude_unset=True).items()}
-    with with_business_transaction(db):
-        target = org_svc.update_user(db, user_id, actor=user, **changes)
-    return ok({"id": str(target.id), "status": target.status,
-               "canHandleFeedback": target.can_handle_feedback,
-               "psychAccessEnabled": target.psych_access_enabled})
-
-
-@router.post("/api/v1/management/users/{user_id}/password-reset")
-def reset_user_password(user_id: int,
-                        user: SysUser = Depends(require_password_changed),
-                        db: Session = Depends(get_db)):
-    """API006 重置学生临时密码（⚠️ 明文只在响应出现一次）"""
-    _require_admin(user)
-    with with_business_transaction(db):
-        plain = org_svc.reset_student_password(db, user_id)
-    return ok({"temporaryPassword": plain, "mustChangePassword": True})
-
-
-# ---------------- 通知 ----------------
 
 @router.get("/api/v1/me/notifications")
 def my_notifications(user: SysUser = Depends(require_password_changed),
@@ -243,17 +218,24 @@ def mark_notification_read(notification_id: int,
 
 # ---------------- 文件 ----------------
 
-@router.post("/api/v1/files")
-def upload_file(file: UploadFile = File(...),
+
+@router.post("/api/v1/management/users")
+def create_user(data: EmployeeCreate,
                 user: SysUser = Depends(require_password_changed),
                 db: Session = Depends(get_db)):
-    """API028 上传私有附件
+    """API092 创建员工账号（仅管理员）
 
-    ⚠️ 安全（M1-08 验收点）：
-      - 扩展名白名单 + MIME 校验 + 大小限制
-      - 文件名**重新生成**（防路径穿越）
-      - 按 owner 分目录（防伪造归属）
-      - 返回 object_key（**不返回真实路径**）
+    ⚠️ 返回的临时密码**只在这一次出现**，数据库只存哈希。
     """
-    object_key = storage.save_upload(file, owner_user_id=user.id)
-    return ok({"objectKey": object_key, "filename": file.filename})
+    _require_admin(user)
+    with with_business_transaction(db):
+        new_user, plain_pwd = org_svc.create_employee(
+            db, username=data.username, real_name=data.real_name,
+            employee_role=data.employee_role, dept_id=data.dept_id)
+    return ok({
+        "id": str(new_user.id),
+        "username": new_user.username,
+        "temporaryPassword": plain_pwd,     # ⚠️ 只此一次
+        "mustChangePassword": True,
+    })
+
