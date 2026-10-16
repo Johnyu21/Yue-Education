@@ -40,6 +40,14 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 120     # 令牌有效期 2 小时
 
+    # ---- 文件存储 ----
+    file_storage_root: str = "./storage"
+
+    # ---- 定时任务 ----
+    # ⚠️ 生产环境只在一个实例上开，否则多实例重复跑（有 advisory lock 兜底但不建议）
+    scheduler_enabled: bool = False
+    scheduler_interval: int = 60
+
     # ---- Dify（后续接）----
     dify_base_url: str = "http://localhost"
     dify_api_key: str = ""

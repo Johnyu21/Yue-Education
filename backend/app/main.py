@@ -49,6 +49,20 @@ app.include_router(student_router.router)
 app.include_router(reports_router.router)
 
 
+# =============================================================
+# 定时任务（M1-09）—— 默认关闭，用 SCHEDULER_ENABLED=true 开
+# ⚠️ 多实例部署时只在其中一个开（内部有 advisory lock 兜底）
+# =============================================================
+@app.on_event("startup")
+def _start_scheduler():
+    if settings.scheduler_enabled:
+        from app.core.scheduler import start_all
+        start_all(settings.scheduler_interval)
+        logging.info("定时任务已启动（间隔 %s 秒）", settings.scheduler_interval)
+    else:
+        logging.info("定时任务未启用（SCHEDULER_ENABLED=false）")
+
+
 @app.get("/api/v1/health/live")
 def health_live():
     """进程存活（API001）：能返回就说明服务活着。"""
