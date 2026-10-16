@@ -52,9 +52,10 @@ def list_students(user: SysUser = Depends(require_password_changed),
                   db: Session = Depends(get_db)):
     """API047 学生列表（员工用）
 
-    ⚠️ 本条在任务卡里没有负责人，需团队确认归属
+    ⚠️ 规范《实施任务卡》未登记本条；M1 按路径（/employees/students）
+       归到 M3/M4。若团队另有安排，以团队为准。
     """
-    _todo("API047", "未认领")
+    _todo("API047", "M3/M4")
 
 
 @router.get("/api/v1/employees/students/{student_id}")
@@ -63,9 +64,9 @@ def get_student(student_id: int,
                 db: Session = Depends(get_db)):
     """API048 学生详情（员工用）
 
-    ⚠️ 本条在任务卡里没有负责人，需团队确认归属
+    ⚠️ 规范《实施任务卡》未登记本条；M1 按路径归到 M3/M4。
     """
-    _todo("API048", "未认领")
+    _todo("API048", "M3/M4")
 
 
 @router.patch("/api/v1/employees/students/{student_id}/relationships")
@@ -155,9 +156,9 @@ def student_schedules(student_id: int,
                       db: Session = Depends(get_db)):
     """API094 员工查看某学生日程（⚠️ 按 scope 限制范围）
 
-    ⚠️ 本条在任务卡里没有负责人，需团队确认归属
+    ⚠️ 规范《实施任务卡》未登记本条；M1 按路径归到 M3/M4。
     """
-    _todo("API094", "未认领")
+    _todo("API094", "M3/M4")
 
 
 @router.post("/api/v1/me/upgrade-interests", status_code=201)
