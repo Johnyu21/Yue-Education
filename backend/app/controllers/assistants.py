@@ -1,7 +1,7 @@
 """
 智能助手 —— 员工助手 / 学生助手 / 语音转写
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.orm import Session
 
 from app.core.deps import require_password_changed
@@ -30,10 +30,12 @@ def employee_assistant(data: AssistantRequest,
 
 @router.post("/api/v1/assistants/student/messages")
 def student_assistant(data: AssistantRequest,
+                      authorization: str | None = Header(default=None),
                       user: SysUser = Depends(require_password_changed),
                       db: Session = Depends(get_db)):
-    """API030 学生助手（受控意图，写操作返回提议 + confirmation_token）"""
-    result = student_assistant_service.handle_student_message(db, user, data)
+    """API030 学生助手（Dify 工作流内 HTTP 节点直接调用后端业务接口）"""
+    token = authorization[7:].strip() if authorization and authorization.startswith("Bearer ") else ""
+    result = student_assistant_service.handle_student_message(db, user, data, auth_token=token)
     return ok(result.model_dump(mode="json"))
 
 
