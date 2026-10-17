@@ -5,20 +5,16 @@ from datetime import date
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from app.core.confirmation import verify_confirmation
 from app.core.deps import require_password_changed
-from app.core.errors import NotImplementedYetError
 from app.core.responses import ok
 from app.core.transaction import with_business_transaction
 from app.db.session import get_db
 from app.models.user import SysUser
 from app.schemas.psych import PsychActionRequest, PsychConsentRequest, PsychCorrectionRequest
-from app.services import psych_service
+from app.services import m3_canonical, psych_guard, psych_service
 
 router = APIRouter(tags=["心理关怀"])
-
-
-def _todo(api: str, who: str = "M4"):
-    raise NotImplementedYetError(f"{api} 尚未实现（负责人：{who}）")
 
 
 @router.put("/api/v1/me/psych-consent")
@@ -99,8 +95,17 @@ def get_psych_alert(alert_id: int,
 
 
 @router.post("/api/v1/employees/psych-alerts/{alert_id}/actions")
-def psych_alert_action(alert_id: int,
+def psych_alert_action(alert_id: int, data: PsychActionRequest,
                        user: SysUser = Depends(require_password_changed),
                        db: Session = Depends(get_db)):
-    """API072 预警处置（M3，业务函数 psych_service.review_alert 已就绪）"""
-    _todo("API072", "M3")
+    """API072 预警处置（NOTE 由 M4 校验；复核/终结要求主管+心理授权）"""
+    if data.confirmation_token:
+        verify_confirmation(user, data.confirmation_token, operation="PSYCH_ALERT_NOTE",
+                            entity_id=alert_id,
+                            payload=m3_canonical.psych_note_payload(data),
+                            expected_version=data.expected_version)
+    # M3 兜底：堵 M4 用 employee_role 判断主管的越权缺口
+    psych_guard.guard_alert_action(db, user, alert_id, data.action)
+    with with_business_transaction(db):
+        dto = psych_service.review_alert(db, user, alert_id, data)
+    return ok(dto.model_dump(mode="json"))

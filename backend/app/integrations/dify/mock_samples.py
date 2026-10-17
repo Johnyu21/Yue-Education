@@ -133,6 +133,122 @@ def visitor_answer(payload: dict) -> dict:
     }
 
 
+# ---------------- 企业助手（WF_ENTERPRISE）----------------
+
+_E_NAME = re.compile(r"(?:客户|姓名|名字|叫)\s*([\u4e00-\u9fa5A-Za-z]{2,8})")
+_E_ID = re.compile(r"(?:#|编号|id)\s*(\d+)", re.IGNORECASE)
+_E_NUM = re.compile(r"(\d+)")
+
+
+def _ent_text(payload: dict) -> str:
+    return str(payload.get("message") or "")
+
+
+def enterprise_output(payload: dict) -> dict:
+    """确定性企业助手输出：意图 + 参数 + 草稿；不执行写操作。"""
+    text = _ent_text(payload)
+    mobile = _MOBILE_RE.search(text)
+    name_match = _E_NAME.search(text)
+    name = name_match.group(1) if name_match else None
+    id_match = _E_ID.search(text)
+    rid = int(id_match.group(1)) if id_match else None
+
+    def out(intent: str, *, params=None, draft=None, missing=None, answer=""):
+        return {
+            "schema_version": "1.0",
+            "intent": intent,
+            "action": None,
+            "params": params or {},
+            "draft": draft,
+            "missing_fields": missing or [],
+            "answer": answer,
+            "sources": [],
+            "warnings": [],
+        }
+
+    # 写意图优先
+    if _match_any(text, ("建客户", "新增客户", "录入客户", "新建客户")):
+        draft = {"name": name, "mobile": mobile.group(0) if mobile else None}
+        missing = [k for k, v in (("name", name), ("mobile", mobile)) if not v]
+        return out("LEAD_CREATE", draft=draft, missing=missing,
+                   answer="已准备客户草稿，请核对后确认。")
+
+    if _match_any(text, ("流失", "恢复跟进")):
+        target = "LOST" if "流失" in text else "FOLLOWING"
+        return out("LEAD_CHANGE_STATUS",
+                   params={"lead_id": rid, "keyword": name,
+                           "target_status": target, "reason": text},
+                   answer="请确认客户状态变更。")
+
+    if _match_any(text, ("记个跟进", "写跟进", "记录跟进", "跟进一下", "加一条跟进")):
+        return out("FOLLOWUP_ADD",
+                   params={"lead_id": rid, "keyword": name},
+                   draft={"content": text}, answer="请确认跟进内容。")
+
+    if "请假" in text and _match_any(text, ("批准", "同意", "驳回", "审批")):
+        decision = "APPROVE" if _match_any(text, ("批准", "同意")) else "REJECT"
+        return out("LEAVE_DECIDE",
+                   params={"service_id": rid, "decision": decision, "note": text},
+                   answer="请确认审批结果。")
+
+    if _match_any(text, ("解决", "处理")) and _match_any(text, ("工单", "投诉", "售后")):
+        return out("FEEDBACK_HANDLE",
+                   params={"ticket_id": rid, "action": "RESOLVE",
+                           "note": text, "resolution": text},
+                   answer="请确认售后处理结果。")
+
+    if _match_any(text, ("关怀", "心理")) and _match_any(text, ("记录", "跟进", "说明")):
+        return out("PSYCH_NOTE",
+                   params={"alert_id": rid, "note": text},
+                   answer="请确认关怀跟进说明。")
+
+    if _match_any(text, ("推进", "更新")) and _match_any(text, ("进度", "申请", "文书", "签证")):
+        return out("APPLICATION_UPDATE",
+                   params={"case_no": None, "event_kind": "DETAIL", "detail": text},
+                   answer="请确认进度更新。")
+
+    # 读意图
+    if _match_any(text, ("跟进记录", "跟进历史")):
+        return out("FOLLOWUP_LIST", params={"lead_id": rid, "keyword": name})
+
+    if _match_any(text, ("查客户", "找客户", "客户详情", "客户列表", "查一下客户")):
+        return out("LEAD_SEARCH", params={"keyword": name})
+
+    if _match_any(text, ("待办", "今天要做什么", "有什么要处理")):
+        return out("TODO_LIST")
+
+    if _match_any(text, ("申请列表", "待审", "待审批")):
+        return out("SERVICE_LIST", params={"status": "PENDING"})
+
+    if _match_any(text, ("售后", "投诉", "工单")) and not _match_any(text, ("解决", "处理")):
+        return out("FEEDBACK_LIST", params={"assignee": "pool"})
+
+    if _match_any(text, ("心理", "关怀", "预警")):
+        return out("PSYCH_LIST")
+
+    if _match_any(text, ("申请进度", "进度", "文书", "签证", "院校")):
+        return out("APPLICATION_SEARCH", params={"student_name": name})
+
+    if _match_any(text, ("签约", "统计", "多少个", "几个", "多少", "趋势")):
+        metric = "SIGNED_COUNT" if "签约" in text else "LEAD_COUNT"
+        time_range = "THIS_MONTH" if "本月" in text else (
+            "THIS_WEEK" if "本周" in text else "THIS_MONTH")
+        return out("METRIC_QUERY", params={"metric": metric, "time_range": time_range})
+
+    if _match_any(text, ("组织", "通讯录", "同事", "部门")):
+        return out("ORG_SEARCH")
+
+    if "日报" in text:
+        return out("DAILY_SEARCH")
+
+    if _match_any(text, ("入职", "制度", "流程", "新人", "规章")):
+        return out("KNOWLEDGE",
+                   answer="目前员工知识库暂无相关制度文档，资料不足，请联系行政确认。",
+                   )
+
+    return out("OTHER", answer="我可以帮你查客户、跟进、待办、审批、售后和申请进度。")
+
+
 # ---------------- 客户研判（WF_ASSESSMENT）----------------
 
 _EDUCATION_ORDER = ("硕士", "本科", "大专", "专科", "中专", "职高", "高中", "初中")

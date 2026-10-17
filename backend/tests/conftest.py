@@ -246,3 +246,157 @@ def m2_student(m2_db, m2_env):
 def m2_mobile(n: int) -> str:
     """生成 M2 测试手机号（13700 + 6 位），保证可被清理。"""
     return f"{_M2_MOBILE_PREFIX}{n:06d}"
+
+
+# =============================================================
+# M3（员工功能模块）测试基座
+#
+# 前缀约定（与 seed_m3 区分，测试后按前缀清理）：
+#   账号 m3t_%  手机号 199%  部门码 M3T%  班级码 M3T%  项目码 M3P%
+# =============================================================
+
+_M3_MOBILE_LIKE = "199%"
+
+
+def m3_mobile(n: int) -> str:
+    """生成 M3 测试手机号（199 + 8 位），保证可被清理且符合大陆号段。"""
+    return f"199{n:08d}"
+
+
+def _ids(db, sql: str) -> list[int]:
+    return [int(row[0]) for row in db.execute(text(sql)).all()]
+
+
+def _in(ids: list[int]) -> str:
+    """生成安全的 IN 列表（int 来自数据库，非外部输入）。"""
+    return ", ".join(str(i) for i in ids) if ids else "NULL"
+
+
+def _m3_cleanup(db):
+    """按前缀清理 M3 测试数据（先取 ID 列表，避免子查询在删除后被重新求值）。"""
+    user_ids = _ids(db, "SELECT id FROM sys_user WHERE username LIKE 'm3t\\_%' ESCAPE '\\'")
+    lead_ids = _ids(db, f"SELECT id FROM crm_lead WHERE mobile LIKE '{_M3_MOBILE_LIKE}'")
+
+    # 转化会创建 username=手机号 的学生账号，必须按"来源线索"一并识别
+    profile_ids = _ids(db, (
+        f"SELECT id FROM student_profile WHERE user_id IN ({_in(user_ids)}) "
+        f"OR converted_lead_id IN ({_in(lead_ids)})"))
+    converted_user_ids = _ids(db, (
+        f"SELECT user_id FROM student_profile WHERE id IN ({_in(profile_ids)})"))
+    # 199 段为 M3 测试保留：撞号用例会直接建"只有账号没有档案"的学生，必须一并回收
+    reserved_user_ids = _ids(db, "SELECT id FROM sys_user WHERE username LIKE '199%'")
+    all_user_ids = list(dict.fromkeys(user_ids + converted_user_ids + reserved_user_ids))
+
+    # ① 通知
+    db.execute(text(
+        f"DELETE FROM notification WHERE recipient_user_id IN ({_in(all_user_ids)}) "
+        f"OR (related_type='lead' AND related_id IN ({_in(lead_ids)}))"))
+
+    # ② 学生业务表 → 档案（档案 converted_lead_id 引用 crm_lead，必须先删档案）
+    for table in ("student_psych_alert", "student_psych_profile",
+                  "student_feedback_ticket", "student_admin_service",
+                  "student_application_progress", "student_score",
+                  "student_academic_schedule", "student_course_enrollment"):
+        db.execute(text(
+            f"DELETE FROM {table} WHERE student_profile_id IN ({_in(profile_ids)})"))
+    db.execute(text(f"DELETE FROM student_profile WHERE id IN ({_in(profile_ids)})"))
+
+    # ③ 跟进 → 客户
+    db.execute(text(f"DELETE FROM crm_follow_up WHERE lead_id IN ({_in(lead_ids)})"))
+    db.execute(text(f"DELETE FROM crm_lead WHERE id IN ({_in(lead_ids)})"))
+
+    # ④ 引用 sys_user 的业务配置
+    db.execute(text("UPDATE sys_department SET head_user_id=NULL WHERE code LIKE 'M3T%'"))
+    db.execute(text("DELETE FROM sys_class WHERE code LIKE 'M3T%'"))
+    db.execute(text("DELETE FROM course_project WHERE code LIKE 'M3P%'"))
+
+    # ⑤ 账号与部门（含转化产生的学生账号）
+    db.execute(text(f"DELETE FROM sys_user WHERE id IN ({_in(all_user_ids)})"))
+    db.execute(text("DELETE FROM sys_department WHERE code LIKE 'M3T%'"))
+
+
+def _m3_make_user(db, username, role, dept, *, can_feedback=False, psych=False):
+    db.execute(text(
+        "INSERT INTO sys_user(username,password_hash,real_name,user_type,employee_role,"
+        "dept_id,can_handle_feedback,psych_access_enabled) "
+        "VALUES (:u,:p,:u,'EMPLOYEE',:r,:d,:f,:s)"),
+        {"u": username, "p": _P, "r": role, "d": dept,
+         "f": can_feedback, "s": psych})
+    return db.scalar(text("SELECT id FROM sys_user WHERE username=:u"), {"u": username})
+
+
+@pytest.fixture
+def m3_db():
+    s = Session()
+    yield s
+    s.close()
+
+
+@pytest.fixture
+def m3_env(m3_db):
+    """M3 环境：两部门、主管/顾问/新人/售后/心理授权账号、班级、项目、学生档案。"""
+    db = m3_db
+    _m3_cleanup(db)
+    db.commit()
+
+    db.execute(text("INSERT INTO sys_department(code,name) VALUES ('M3TA','M3测试部A')"))
+    db.execute(text("INSERT INTO sys_department(code,name) VALUES ('M3TB','M3测试部B')"))
+    dept_a = db.scalar(text("SELECT id FROM sys_department WHERE code='M3TA'"))
+    dept_b = db.scalar(text("SELECT id FROM sys_department WHERE code='M3TB'"))
+
+    admin = _m3_make_user(db, "m3t_admin", "ADMIN", dept_a)
+    head = _m3_make_user(db, "m3t_head", "SENIOR_ADVISOR", dept_a, psych=True,
+                         can_feedback=True)
+    advisor = _m3_make_user(db, "m3t_advisor", "ADVISOR", dept_a)
+    advisor2 = _m3_make_user(db, "m3t_advisor2", "ADVISOR", dept_a)
+    newcomer = _m3_make_user(db, "m3t_newcomer", "NEWCOMER", dept_a)
+    after_sales = _m3_make_user(db, "m3t_after", "ADVISOR", dept_a, can_feedback=True)
+    psych_advisor = _m3_make_user(db, "m3t_psych", "ADVISOR", dept_a, psych=True)
+    head_b = _m3_make_user(db, "m3t_head_b", "SENIOR_ADVISOR", dept_b)
+    db.execute(text("UPDATE sys_department SET head_user_id=:h WHERE id=:d"),
+               {"h": head, "d": dept_a})
+    db.execute(text("UPDATE sys_department SET head_user_id=:h WHERE id=:d"),
+               {"h": head_b, "d": dept_b})
+
+    db.execute(text(
+        "INSERT INTO sys_class(code,name,dept_id,head_teacher_id) VALUES ('M3TC','M3测试班',:d,:t)"),
+        {"d": dept_a, "t": advisor})
+    cls = db.scalar(text("SELECT id FROM sys_class WHERE code='M3TC'"))
+
+    db.execute(text("""
+        INSERT INTO course_project(code,name,description,is_published,default_dept_id,version)
+        VALUES ('M3P_A','M3测试项目','冒烟',true,:d,1)
+    """), {"d": dept_a})
+    project = db.scalar(text("SELECT id FROM course_project WHERE code='M3P_A'"))
+
+    db.execute(text(
+        "INSERT INTO sys_user(username,password_hash,real_name,user_type) "
+        "VALUES ('m3t_stu',:p,'M3学生','STUDENT')"), {"p": _P})
+    student_user = db.scalar(text("SELECT id FROM sys_user WHERE username='m3t_stu'"))
+    db.execute(text(
+        "INSERT INTO student_profile(user_id,advisor_user_id,dept_id,class_id,status,version) "
+        "VALUES (:u,:a,:d,:c,'ENROLLED',1)"),
+        {"u": student_user, "a": advisor, "d": dept_a, "c": cls})
+    profile = db.scalar(text("SELECT id FROM student_profile WHERE user_id=:u"),
+                        {"u": student_user})
+    db.commit()
+
+    ids = {
+        "dept_a": dept_a, "dept_b": dept_b,
+        "admin": admin, "head": head, "advisor": advisor, "advisor2": advisor2,
+        "newcomer": newcomer, "after_sales": after_sales,
+        "psych_advisor": psych_advisor, "head_b": head_b,
+        "cls": cls, "project": project,
+        "student_user": student_user, "profile": profile,
+    }
+    yield ids
+    _m3_cleanup(db)
+    db.commit()
+
+
+@pytest.fixture
+def m3_users(m3_db, m3_env):
+    """把 id 映射成 SysUser 对象，方便直接传给 service。"""
+    return {k: m3_db.get(SysUser, v) if isinstance(v, int) and k not in (
+        "dept_a", "dept_b", "cls", "project", "profile") else v
+        for k, v in m3_env.items()}

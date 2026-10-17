@@ -2,6 +2,7 @@
 学生档案 / 成绩 / 日程 / 申请进度 请求与响应 DTO
 """
 from datetime import date, datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -129,3 +130,68 @@ class ApplicationCaseDTO(BaseModel):
     assigneeDisplayName: str | None = None
     occurredAt: datetime
     dataSource: str
+
+
+# =============================================================
+# M3：员工学生管理（列表/详情/调班换顾问/升学项目关联）
+# =============================================================
+
+
+class StudentStaffSummaryOut(BaseModel):
+    id: str
+    realName: str
+    classId: str | None = None
+    className: str | None = None
+    advisorUserId: str | None = None
+    status: str
+    version: int
+
+
+class StudentStaffOut(BaseModel):
+    id: str
+    userId: str
+    realName: str
+    mobile: str
+    gender: str | None = None
+    city: str | None = None
+    education: str | None = None
+    dateOfBirth: date | None = None
+    enrollmentDate: date | None = None
+    status: str
+    classInfo: StudentClassBrief | None = None
+    advisor: StudentAdvisorBrief | None = None
+    enrollments: list[StudentEnrollmentItem] = []
+    version: int
+
+
+class RelationshipUpdateIn(BaseModel):
+    """调班/换顾问/学籍状态（API049）。"""
+    model_config = {"extra": "forbid"}
+
+    class_id: int | None = None
+    advisor_user_id: int | None = None
+    status: Literal["ENROLLED", "COMPLETED", "PAUSED"] | None = None
+    expected_version: int = Field(gt=0)
+    reason: str = Field(min_length=1, max_length=2000)
+    request_key: UUID
+
+
+class EnrollmentCreateIn(BaseModel):
+    """新增升学项目关联（API044）。"""
+    model_config = {"extra": "forbid"}
+
+    course_project_id: int
+    enrolled_at: datetime | None = None
+    request_key: UUID
+    expected_student_version: int = Field(gt=0)
+
+
+class EnrollmentUpdateIn(BaseModel):
+    """结束/恢复项目关联（API045）。"""
+    model_config = {"extra": "forbid"}
+
+    status: Literal["ENROLLED", "COMPLETED", "WITHDRAWN"]
+    ended_at: datetime | None = None
+    expected_version: int = Field(gt=0)
+    reason: str = Field(min_length=1, max_length=2000)
+    request_key: UUID
