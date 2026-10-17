@@ -29,6 +29,14 @@ from tests.conftest import m2_mobile
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
+@pytest.fixture(scope="module", autouse=True)
+def generated_resume_fixtures(tmp_path_factory):
+    global FIXTURES
+    from tests.fixture_factory import create_resumes
+    FIXTURES = tmp_path_factory.mktemp("synthetic_resumes")
+    create_resumes(FIXTURES)
+
+
 
 def _make_lead(db, mobile: str, dept: int | None, **facts) -> int:
     columns = ", ".join(facts)
@@ -335,7 +343,7 @@ def test_简历提取只出草稿不改事实与状态(m2_db, m2_env, tmp_path, 
     out = assessment_service.extract_resume_draft(db, head, lead_id, ResumeExtractionIn(
         object_key=object_key, request_key=uuid4(), expected_version=1))
 
-    assert out["aiStatus"] == "LIVE"
+    assert out["aiStatus"] == "MOCK"
     assert out["facts"]["education"] == "本科"
     assert out["facts"]["language_level"].startswith("6.5")
     assert out["draftId"]

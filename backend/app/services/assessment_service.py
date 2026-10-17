@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import logging
 import uuid
+from copy import deepcopy
+from types import SimpleNamespace
 from datetime import date, datetime, timezone
 
 from sqlalchemy import select, update
@@ -131,6 +133,7 @@ def _build_payload(lead: CrmLead, request_id, judgement_facts: dict,
 def assess_lead(db: Session, user: SysUser, lead_id: int, data: AssessmentIn) -> dict:
     from app.core.permissions import build_scope       # 局部导入，避免模块级循环
 
+    actor_id=user.id
     scope = build_scope(db, user, "lead")
     lead = scope.get_or_404(db, CrmLead, lead_id)      # 越权一律 404
 
@@ -141,7 +144,8 @@ def assess_lead(db: Session, user: SysUser, lead_id: int, data: AssessmentIn) ->
 
     # ---- ① 事务内：请求号落库（RUNNING），版本 +1 ----
     with with_business_transaction(db):
-        lead = scope.get_or_404(db, CrmLead, lead_id)  # 重新读，避免长事务外读到旧版本
+        lead = db.get(CrmLead, lead_id, with_for_update=True, populate_existing=True)
+        if lead is None or not scope.can_see(lead):raise NotFoundError()
         if lead.version != data.expected_version:
             raise VersionConflictError(lead.version)
 
@@ -160,6 +164,9 @@ def assess_lead(db: Session, user: SysUser, lead_id: int, data: AssessmentIn) ->
         lead.version += 1
         db.flush()
         started_version = lead.version
+        judgement_facts = {**_lead_facts(lead), **{k:v for k,v in (data.confirmed_facts or {}).items() if v not in (None, "")}}
+        projects = [SimpleNamespace(id=p.id,name=p.name,admission_rules=deepcopy(p.admission_rules),rule_version=p.rule_version,rule_approved_at=p.rule_approved_at,version=p.version) for p in projects]
+        lead_snapshot = SimpleNamespace(id=lead.id)
 
     request_id = data.request_key
 
@@ -170,12 +177,10 @@ def assess_lead(db: Session, user: SysUser, lead_id: int, data: AssessmentIn) ->
             from app.services.resume_extract import extract_text
             resume_text = extract_text(resume_path)
 
-        judgement_facts = {**_lead_facts(lead), **{k: v for k, v in (data.confirmed_facts or {}).items()
-                                                   if v not in (None, "")}}
 
         extraction = run_assessment(
-            _build_payload(lead, request_id, judgement_facts, resume_text, projects),
-            user=str(user.id),
+            _build_payload(lead_snapshot, request_id, judgement_facts, resume_text, projects),
+            user=str(actor_id),
             timeout_s=m2_config.ai_timeout_assessment_seconds(),
         )
     except Exception as exc:                          # noqa: BLE001 —— 需分类落库后再抛
@@ -200,9 +205,18 @@ def assess_lead(db: Session, user: SysUser, lead_id: int, data: AssessmentIn) ->
     }
 
     with with_business_transaction(db):
+        current_user=db.get(SysUser,actor_id,populate_existing=True)
+        current_scope=build_scope(db,current_user,"lead")
+        current_lead=db.get(CrmLead,lead_id,with_for_update=True,populate_existing=True)
+        if current_user.status!="NORMAL" or not current_scope.can_see(current_lead):raise NotFoundError()
+        rules_unchanged=all(db.scalar(select(CourseProject.version).where(CourseProject.id==p.id))==p.version for p in projects)
+        if not rules_unchanged:
+            if current_lead.assessment_request_id==request_id:
+                current_lead.assessment_status="FAILED";current_lead.assessment_error_code="RULES_CHANGED";current_lead.version+=1;db.flush()
+            return {"assessmentRequestId":str(request_id),"status":"FAILED","leadVersion":current_lead.version,"superseded":True}
         changed = db.execute(
             update(CrmLead)
-            .where(CrmLead.id == lead_id, CrmLead.assessment_request_id == request_id)
+            .where(CrmLead.id == lead_id, CrmLead.assessment_request_id == request_id, CrmLead.version == started_version)
             .values(
                 assessment_status="SUCCEEDED",
                 assessment_report=report,
@@ -217,6 +231,8 @@ def assess_lead(db: Session, user: SysUser, lead_id: int, data: AssessmentIn) ->
             # 请求号已被更新（有更新的研判接管）→ 本次结果作废，返回当前状态
             logger.info("研判结果作废（请求号已变更）lead=%s", lead_id)
             current = db.get(CrmLead, lead_id)
+            if current.assessment_request_id==request_id and current.assessment_status=="RUNNING":
+                current.assessment_status="FAILED";current.assessment_error_code="FACTS_CHANGED";current.version+=1;db.flush()
             return {
                 "assessmentRequestId": str(current.assessment_request_id)
                 if current.assessment_request_id else None,
@@ -295,19 +311,25 @@ def extract_resume_draft(db: Session, user: SysUser, lead_id: int,
 
     resume_text = extract_text(resume_path)          # 抽不到 → 422 NO_READABLE_TEXT
 
+    actor_id=user.id
+    captured_lead_id=lead.id
+    captured_facts=_lead_facts(lead)
+    db.rollback()
     extraction = run_assessment(
         {
             "schema_version": "1.0",
-            "lead_id": str(lead.id),
+            "lead_id": str(captured_lead_id),
             "request_id": str(data.request_key),
-            "confirmed_facts": _lead_facts(lead),
+            "confirmed_facts": captured_facts,
             "resume_text": resume_text,
             "project_rules": [],
         },
-        user=str(user.id),
+        user=str(actor_id),
         timeout_s=m2_config.ai_timeout_assessment_seconds(),
     )
 
+    user=db.get(SysUser,actor_id,populate_existing=True)
+    build_scope(db,user,"lead").get_or_404(db,CrmLead,lead_id)
     draft_id = str(uuid.uuid4())
     expires_at = datetime.now(timezone.utc).timestamp() + _DRAFT_TTL_MINUTES * 60
     _drafts[draft_id] = ({
@@ -325,7 +347,7 @@ def extract_resume_draft(db: Session, user: SysUser, lead_id: int,
         "evidence": extraction.get("evidence", []),
         "missingFields": extraction.get("missing_fields", []),
         "expiresAt": datetime.fromtimestamp(expires_at, tz=timezone.utc),
-        "aiStatus": "LIVE",
+        "aiStatus": "MOCK" if m2_config.dify_mode()=="mock" else "LIVE",
         "warnings": extraction.get("warnings", []),
     }
 

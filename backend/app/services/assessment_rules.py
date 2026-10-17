@@ -27,12 +27,13 @@ from __future__ import annotations
 
 import logging
 import re
+import math
 
 from app.models.course_project import CourseProject
 
 logger = logging.getLogger(__name__)
 
-NUMBER_RE = re.compile(r"\d+(?:\.\d+)?")
+NUMBER_RE = re.compile(r"-?\d+(?:\.\d+)?")
 
 # 判定结果
 DECISION_MATCH = "MATCH"
@@ -47,9 +48,11 @@ def _as_number(value) -> float | None:
     if isinstance(value, bool):
         return None
     if isinstance(value, (int, float)):
-        return float(value)
+        return float(value) if math.isfinite(float(value)) else None
     m = NUMBER_RE.search(str(value))
-    return float(m.group(0)) if m else None
+    if not m:return None
+    parsed=float(m.group(0))
+    return parsed if math.isfinite(parsed) else None
 
 
 def _check_one(criterion: dict, facts: dict) -> str:
@@ -60,6 +63,12 @@ def _check_one(criterion: dict, facts: dict) -> str:
         return "MISSING"
 
     value = facts.get(field)
+    if field == "education":
+        aliases={"专科":"大专","中职":"中专","中技":"中专"}
+        value=aliases.get(value,value)
+        criterion={**criterion}
+        if "values" in criterion:criterion["values"]=[aliases.get(v,v) for v in criterion["values"]]
+        if "value" in criterion:criterion["value"]=aliases.get(criterion["value"],criterion["value"])
 
     if op == "EXISTS":
         return "PASS" if value not in (None, "", []) else "MISSING"
@@ -108,33 +117,11 @@ def evaluate_project(project: CourseProject, facts: dict) -> dict:
         # 未配置或未审核 → 不作自动判定（缺信息可补）
         return needs_rules
 
-    criteria = rules.get("criteria") or []
-    if not isinstance(criteria, list) or not criteria:
-        return needs_rules
-
-    passed: list[str] = []
-    failed: list[str] = []
-    missing: list[str] = []
-
-    for criterion in criteria:
-        if not isinstance(criterion, dict):
-            continue
-        label = str(criterion.get("label") or criterion.get("field") or "规则")
-        result = _check_one(criterion, facts)
-        if result == "PASS":
-            passed.append(label)
-        elif result == "FAIL":
-            failed.append(label)
-        else:
-            missing.append(str(criterion.get("field")))
-
-    if failed:
-        # 已明确不满足硬性条件 → 结论确定
-        decision = DECISION_NO_MATCH
-    elif missing:
-        decision = DECISION_NEEDS_INFO
-    else:
-        decision = DECISION_MATCH
+    criteria = rules.get("criteria")
+    if not valid_rules(rules):return needs_rules
+    facts = normalized_facts(facts)
+    status,passed,failed,missing = _evaluate_node({"all_of":criteria},facts)
+    decision={"PASS":DECISION_MATCH,"FAIL":DECISION_NO_MATCH,"MISSING":DECISION_NEEDS_INFO}[status]
 
     return {
         "projectId": str(project.id),
@@ -160,9 +147,10 @@ def compute_score(project: CourseProject, facts: dict) -> int | None:
     total = 0.0
     for item in scoring:
         if not isinstance(item, dict):
-            continue
+            return None
         field = item.get("field")
         weights = item.get("weights") or {}
+        if not isinstance(weights,dict) or not weights or not isinstance(field,str):return None
         value = facts.get(field)
         if value in (None, "") or str(value) not in {str(k) for k in weights}:
             # 缺输入或未覆盖的取值 → 不能给出貌似精确的分数
@@ -175,7 +163,7 @@ def compute_score(project: CourseProject, facts: dict) -> int | None:
         except (TypeError, ValueError):
             return None
 
-    return max(0, min(100, int(round(total))))
+    return max(0, min(100, int(round(total)))) if math.isfinite(total) else None
 
 
 def build_report(projects: list[CourseProject], facts: dict, *,
@@ -217,3 +205,49 @@ def build_report(projects: list[CourseProject], facts: dict, *,
         "assessedForRequestId": request_id,
     }
     return report, score
+
+
+def normalized_facts(facts):
+    from datetime import date,datetime
+    from zoneinfo import ZoneInfo
+    from app.core.config import settings
+    result=dict(facts)
+    if result.get('date_of_birth'):
+        try:
+            born=date.fromisoformat(str(result['date_of_birth'])[:10])
+            today=datetime.now(ZoneInfo(settings.business_timezone)).date()
+            result['age']=today.year-born.year-((today.month,today.day)<(born.month,born.day))
+        except ValueError:pass
+    return result
+
+
+def valid_rules(rules):
+    if not isinstance(rules,dict):return False
+    criteria=rules.get('criteria')
+    def valid(node,depth=0):
+        if not isinstance(node,dict) or depth>5:return False
+        group=[k for k in ('all_of','any_of') if k in node]
+        if group:
+            return len(group)==1 and isinstance(node[group[0]],list) and 0<len(node[group[0]])<=50 and all(valid(n,depth+1) for n in node[group[0]])
+        if not isinstance(node.get('field'),str) or not node['field']:return False
+        op=str(node.get('op','EXISTS')).upper()
+        if op not in {'EQ','IN','GTE','LTE','GTE_NUM','EXISTS'}:return False
+        if op=='IN':return isinstance(node.get('values'),list) and bool(node['values'])
+        if op in {'GTE','LTE','GTE_NUM'}:return _as_number(node.get('value')) is not None
+        return op=='EXISTS' or 'value' in node
+    return isinstance(criteria,list) and 0<len(criteria)<=50 and all(valid(n) for n in criteria)
+
+
+def _evaluate_node(node,facts):
+    group=next((k for k in ('all_of','any_of') if k in node),None)
+    if group:
+        children=[_evaluate_node(c,facts) for c in node[group]]
+        if group=='any_of':
+            passing=next((c for c in children if c[0]=='PASS'),None)
+            if passing:return passing
+            state='MISSING' if any(c[0]=='MISSING' for c in children) else 'FAIL'
+        else:state='FAIL' if any(c[0]=='FAIL' for c in children) else 'MISSING' if any(c[0]=='MISSING' for c in children) else 'PASS'
+        return state,*[list(dict.fromkeys(x for c in children for x in c[i])) for i in (1,2,3)]
+    label=str(node.get('label') or node['field'])
+    state=_check_one(node,facts)
+    return state,[label] if state=='PASS' else [],[label] if state=='FAIL' else [],[node['field']] if state=='MISSING' else []

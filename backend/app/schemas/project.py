@@ -6,11 +6,12 @@
 - ID 一律十进制字符串；金额一律字符串 + 币种
 - 写入 DTO 禁止未知字段（extra=forbid），权限字段永不接受客户端传入
 """
-from datetime import datetime
+from pydantic import AwareDatetime as datetime
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from app.core.dto import BaseModel
+from pydantic import Field
 
 
 # ---------------- 响应 ----------------

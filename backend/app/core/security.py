@@ -18,6 +18,9 @@ from app.core.config import settings
 # =============================================================
 def hash_password(plain: str) -> str:
     """明文 → 哈希。存进数据库的都是这个。"""
+    if len(plain.encode("utf-8"))>72:
+        from app.core.errors import InvalidRequestError
+        raise InvalidRequestError("密码 UTF-8 编码长度不得超过72字节")
     return bcrypt.hashpw(plain.encode(), bcrypt.gensalt()).decode()
 
 
@@ -61,6 +64,7 @@ def decode_token(token: str) -> dict | None:
             settings.jwt_secret,
             algorithms=[settings.jwt_algorithm],   # ⚠️ 算法固定，不接受客户端指定
             issuer=settings.app_name,
+            options={"require":["sub","tv","iat","exp","iss"]},
         )
     except jwt.PyJWTError:
         return None

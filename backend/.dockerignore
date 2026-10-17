@@ -1,0 +1,8 @@
+.venv
+.env
+.env.*
+logs
+storage
+__pycache__
+.pytest_cache
+*.credentials.txt

@@ -70,6 +70,8 @@ def extract_text(path: Path) -> str:
 
     if suffix == ".pdf":
         text = _pdf_text(path)
+    elif suffix == ".xlsx":
+        text = _xlsx_text(path)
     elif suffix == ".docx":
         text = _docx_text(path)
     elif suffix in _PLAIN_TEXT_SUFFIXES:
@@ -88,3 +90,21 @@ def extract_text(path: Path) -> str:
         text = text[:MAX_TEXT_CHARS]
 
     return text
+
+
+def _xlsx_text(path):
+    try:
+        from openpyxl import load_workbook
+        with path.open('rb') as source:
+            workbook=load_workbook(source,read_only=True,data_only=True)
+            parts=[];size=0
+            for sheet in workbook:
+                for index,row in enumerate(sheet.iter_rows(max_row=1000,max_col=30,values_only=True),start=1):
+                    line=sheet.title+'!R'+str(index)+': '+' | '.join(str(v) for v in row if v is not None)
+                    parts.append(line);size+=len(line)
+                    if size>=MAX_TEXT_CHARS:break
+                if size>=MAX_TEXT_CHARS:break
+            workbook.close()
+            return '\n'.join(parts)
+    except Exception as exc:
+        raise NoReadableTextError('Excel无法解析，请检查格式或提供文字版') from exc

@@ -30,6 +30,7 @@ class EventLecture(Base):
     location: Mapped[str | None] = mapped_column(String(200))
     status: Mapped[str] = mapped_column(String(20), default="DRAFT")
     version: Mapped[int] = mapped_column(Integer, default=1)
+    __mapper_args__ = {"version_id_col": version}
     create_time: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     update_time: Mapped[datetime] = mapped_column(
@@ -53,3 +54,4 @@ class EventRegistration(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     canceled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     version: Mapped[int] = mapped_column(Integer, default=1)
+    __mapper_args__ = {"version_id_col": version}

@@ -55,7 +55,9 @@ def reset_user_password(user_id: int,
 def list_organization_users(user: SysUser = Depends(require_password_changed),
                             db: Session = Depends(get_db)):
     """API007 通讯录（员工可见，不含敏感字段）"""
-    rows = db.scalars(select(SysUser).where(SysUser.status == "NORMAL")).all()
+    if not user.is_employee:
+        raise ForbiddenError("仅员工可访问通讯录")
+    rows = db.scalars(select(SysUser).where(SysUser.status == "NORMAL", SysUser.user_type == "EMPLOYEE")).all()
     return ok({"items": [
         {
             "id": str(u.id), "username": u.username, "realName": u.real_name,
@@ -119,7 +121,7 @@ def update_department(dept_id: int, data: DepartmentUpdate,
     """API011 改部门 / 指定主管（⚠️ 不能形成树环）"""
     _require_admin(user)
     changes = {k: v for k, v in data.model_dump(exclude_unset=True).items()
-               if v is not None}
+               }
     with with_business_transaction(db):
         dept = org_svc.update_department(db, dept_id, **changes)
     return ok({"id": str(dept.id), "name": dept.name,
@@ -239,3 +241,18 @@ def create_user(data: EmployeeCreate,
         "mustChangePassword": True,
     })
 
+
+
+@router.get("/api/v1/files/{object_key:path}")
+def download_file(object_key:str,user:SysUser=Depends(require_password_changed),db:Session=Depends(get_db)):
+    from fastapi.responses import FileResponse
+    from app.models.lead import CrmLead
+    from app.core.permissions import build_scope
+    allowed=object_key.startswith(f"u/{user.id}/")
+    if not allowed and user.is_employee:
+        scope=build_scope(db,user,'lead')
+        allowed=db.scalar(scope.apply(select(CrmLead.id).where(CrmLead.resume_object_key==object_key),CrmLead)) is not None
+    if not allowed:raise NotFoundError("文件不存在")
+    file=storage.resolve_path(object_key)
+    if file is None:raise NotFoundError("文件不存在")
+    return FileResponse(file,filename=file.name,headers={"Cache-Control":"no-store","X-Content-Type-Options":"nosniff"})

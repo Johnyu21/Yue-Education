@@ -5,6 +5,7 @@
 情绪观测规则：授权有效才观测；先 Python 直接风险词命中落 RULE 观测 + HIGH 告警，
 再在事务外调 Dify 分析；source_event_key 去重；同日多版本取最后有效；风险只升不降。
 """
+from app.core.idempotency import idempotent
 import logging
 import uuid
 from datetime import datetime, timezone
@@ -92,6 +93,7 @@ def evaluate_risk(finals: list[dict], direct_signal: bool = False) -> tuple[str,
 # =============================================================
 # 授权
 # =============================================================
+@idempotent("psych_service.set_consent")
 def set_consent(db: Session, user: SysUser, req: PsychConsentRequest) -> dict:
     profile = student_repo.get_profile_by_user(db, user.id)
     if profile is None:
@@ -122,13 +124,9 @@ def _record_observation(db: Session, profile: StudentProfile, *, source_event_ke
                         assessment_data: dict, summary: str | None, is_valid: bool,
                         created_by_user_id: int | None = None) -> StudentPsychProfile | None:
     """追加一条观测版本（调用方需在事务内）。返回 None 表示已去重或授权失效。"""
-    if db.scalar(select(StudentPsychProfile.id).where(
-            StudentPsychProfile.source_event_key == source_event_key)):
-        return None
-
-    profile = db.get(StudentProfile, profile.id, with_for_update=True)
-    if profile.psych_consent_status != "GRANTED":
-        return None
+    profile = db.get(StudentProfile, profile.id, with_for_update=True,populate_existing=True)
+    if profile.psych_consent_status != "GRANTED":return None
+    if db.scalar(select(StudentPsychProfile.id).where(StudentPsychProfile.source_event_key==source_event_key)):return None
 
     tz = ZoneInfo(settings.business_timezone)
     obs = StudentPsychProfile(
@@ -271,7 +269,7 @@ def get_daily_final_states(db: Session, profile_id: int, days: int) -> list[dict
 # 查询（需 psych_access_enabled）
 # =============================================================
 def _require_psych_access(user: SysUser) -> None:
-    if not user.psych_access_enabled:
+    if not user.is_employee or not user.psych_access_enabled:
         raise ForbiddenError("需要心理数据授权")
 
 
@@ -306,7 +304,7 @@ def list_psych_students(db: Session, user: SysUser, *, date=None, class_id: int 
     d = date or datetime.now(ZoneInfo(settings.business_timezone)).date()
 
     ids = visible_student_ids(db, user)
-    stmt = select(StudentProfile).join(SysUser, StudentProfile.user_id == SysUser.id)
+    stmt = select(StudentProfile).join(SysUser, StudentProfile.user_id == SysUser.id).where(StudentProfile.psych_consent_status=="GRANTED")
     if ids is not None:
         stmt = stmt.where(StudentProfile.id.in_(ids))
     if class_id:
@@ -319,7 +317,7 @@ def list_psych_students(db: Session, user: SysUser, *, date=None, class_id: int 
     result = []
     for p in items:
         u = db.get(SysUser, p.user_id)
-        emotion = psych_repo.get_daily_final_states(db, p.id, 1)
+        emotion = psych_repo.get_daily_final_states(db, p.id, 1, end_date=d)
         state = emotion[-1]["emotion_state"] if emotion else None
         open_alert = psych_repo.get_open_alert(db, p.id)
         result.append(PsychStudentSummary(
@@ -337,30 +335,36 @@ def list_observations(db: Session, user: SysUser, student_id: int, *, start_date
                       end_date=None, page: int = 1, page_size: int = 20):
     """API068 受限观测历史。"""
     _require_psych_access(user)
-    require_student_visible(db, user, student_id)
+    profile=require_student_visible(db, user, student_id)
+    if profile.psych_consent_status!="GRANTED":raise NotFoundError()
     items, total = psych_repo.list_observations(
         db, student_id, start_date=start_date, end_date=end_date, page=page, page_size=page_size)
     return [_obs_to_dto(o) for o in items], total
 
 
+@idempotent("psych_service.correct_observation")
 def correct_observation(db: Session, actor: SysUser, student_id: int,
                         req: PsychCorrectionRequest) -> dict:
     """API069 主管人工修正观测（追加版本，不删旧行）。"""
     _require_psych_access(actor)
-    if actor.employee_role not in ("ADVISOR", "SENIOR_ADVISOR", "ADMIN"):
+    profile = require_student_visible(db, actor, student_id)
+    if actor.employee_role != "ADMIN" and db.scalar(select(SysDepartment.id).where(SysDepartment.id == profile.dept_id, SysDepartment.head_user_id == actor.id)) is None:
         raise ForbiddenError("仅主管或管理员可人工修正")
+    profile = db.get(StudentProfile, student_id, with_for_update=True, populate_existing=True)
+    if profile.psych_consent_status != "GRANTED":
+        raise StateConflictError("心理授权已撤回")
     require_student_visible(db, actor, student_id)
 
     original = psych_repo.get_observation(db, req.replaces_profile_id)
     if original is None or original.student_profile_id != student_id:
         raise NotFoundError("资源不存在")
-    if original.version_no != req.expected_latest_version:
+    if psych_repo.get_latest_version_no(db, student_id) != req.expected_latest_version:
         raise StateConflictError("观测已变更，请刷新后处理")
 
     now = datetime.now(timezone.utc)
     new_obs = StudentPsychProfile(
         student_profile_id=student_id,
-        version_no=original.version_no + 1,
+        version_no=req.expected_latest_version + 1,
         assessment_date=original.assessment_date,
         business_timezone=original.business_timezone,
         observed_at=now,
@@ -391,9 +395,10 @@ def list_alerts(db: Session, user: SysUser, *, status: str | None = None,
     """API070 受限预警列表。"""
     _require_psych_access(user)
     ids = visible_student_ids(db, user)
-    if ids is not None and class_id:
-        ids = list(db.scalars(select(StudentProfile.id).where(
-            StudentProfile.id.in_(ids), StudentProfile.class_id == class_id)).all())
+    q=select(StudentProfile.id).where(StudentProfile.psych_consent_status=="GRANTED")
+    if ids is not None:q=q.where(StudentProfile.id.in_(ids))
+    if class_id:q=q.where(StudentProfile.class_id==class_id)
+    ids=list(db.scalars(q))
     items, total = psych_repo.list_alerts(
         db, profile_ids=ids, status=status, severity=severity, page=page, page_size=page_size)
     return [_alert_to_dto(db, a) for a in items], total
@@ -405,7 +410,8 @@ def get_alert(db: Session, user: SysUser, alert_id: int) -> PsychAlertDTO:
     a = psych_repo.get_alert(db, alert_id)
     if a is None:
         raise NotFoundError("资源不存在")
-    require_student_visible(db, user, a.student_profile_id)
+    profile=require_student_visible(db, user, a.student_profile_id)
+    if profile.psych_consent_status!="GRANTED":raise NotFoundError()
     return _alert_to_dto(db, a)
 
 
@@ -427,6 +433,7 @@ def _can_note_alert(db: Session, actor: SysUser, a: StudentPsychAlert) -> bool:
     return False
 
 
+@idempotent("psych_service.review_alert")
 def review_alert(db: Session, actor: SysUser, alert_id: int,
                  req: PsychActionRequest) -> PsychAlertDTO:
     """API072 人工复核/跟进/终结（M3 控制器复用）。"""
@@ -436,14 +443,22 @@ def review_alert(db: Session, actor: SysUser, alert_id: int,
     if a.version != req.expected_version:
         raise VersionConflictError(a.version)
 
+    _require_psych_access(actor)
+    profile=require_student_visible(db, actor, a.student_profile_id)
+    if profile.psych_consent_status!="GRANTED":raise NotFoundError()
+    if a.status in ("DISMISSED", "CLOSED"):
+        raise StateConflictError("已终结预警不能继续处理")
     if req.action == "NOTE":
         if not _can_note_alert(db, actor, a):
             raise ForbiddenError("无权处理该预警")
     else:
         _require_psych_access(actor)
-        if actor.employee_role not in ("ADVISOR", "SENIOR_ADVISOR", "ADMIN"):
+        p = db.get(StudentProfile, a.student_profile_id)
+        if actor.employee_role != "ADMIN" and db.scalar(select(SysDepartment.id).where(SysDepartment.id == p.dept_id, SysDepartment.head_user_id == actor.id)) is None:
             raise ForbiddenError("仅主管或管理员可复核/终结预警")
 
+    transitions={"CONFIRM":{"PENDING_REVIEW"},"START_HANDLING":{"CONFIRMED"},"DISMISS":{"PENDING_REVIEW","CONFIRMED"},"CLOSE":{"CONFIRMED","HANDLING"}}
+    if req.action in transitions and a.status not in transitions[req.action]:raise StateConflictError("当前预警状态不允许该操作")
     now = datetime.now(timezone.utc)
     history = list(a.handling_history or [])
     history.append({"action": req.action, "actor": str(actor.id), "at": now.isoformat(),

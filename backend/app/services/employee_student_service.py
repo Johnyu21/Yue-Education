@@ -7,6 +7,7 @@ M3 员工学生管理 —— 学生列表/详情、调班换顾问、升学项�
   - 升学项目关联：本人顾问/主管部门/管理员
   - 范围外一律 404（不暴露存在性）
 """
+from app.core.idempotency import idempotent
 import logging
 from datetime import datetime, timezone
 
@@ -155,6 +156,7 @@ def get_student(db: Session, actor: SysUser, student_id: int) -> StudentStaffOut
 # =============================================================
 # API049 调班/换顾问/学籍状态
 # =============================================================
+@idempotent("employee_student_service.update_relationship")
 def update_relationship(db: Session, actor: SysUser, student_id: int,
                         data: RelationshipUpdateIn) -> dict:
     profile = require_student_visible(db, actor, student_id)
@@ -163,13 +165,14 @@ def update_relationship(db: Session, actor: SysUser, student_id: int,
     if profile.version != data.expected_version:
         raise VersionConflictError(profile.version)
 
-    # 已确认：调班/换顾问前必须先转派未审单
-    if data.class_id is not None or data.advisor_user_id is not None:
-        pending = db.scalar(select(StudentAdminService.id).where(
-            StudentAdminService.student_profile_id == profile.id,
-            StudentAdminService.status == "PENDING"))
-        if pending is not None:
-            raise PendingRequestsRequireReassignError()
+    # Only pending work still owned by a relationship being replaced blocks handover.
+    old_handlers=set()
+    if data.class_id is not None and data.class_id!=profile.class_id and profile.class_id:
+        old_class=db.get(SysClass,profile.class_id)
+        if old_class and old_class.head_teacher_id:old_handlers.add(old_class.head_teacher_id)
+    if data.advisor_user_id is not None and data.advisor_user_id!=profile.advisor_user_id and profile.advisor_user_id:old_handlers.add(profile.advisor_user_id)
+    if old_handlers and db.scalar(select(StudentAdminService.id).where(StudentAdminService.student_profile_id==profile.id,StudentAdminService.status=="PENDING",StudentAdminService.assignee_user_id.in_(old_handlers)).limit(1)) is not None:
+        raise PendingRequestsRequireReassignError()
 
     if data.class_id is not None:
         cls = db.get(SysClass, data.class_id)
@@ -207,6 +210,7 @@ def update_relationship(db: Session, actor: SysUser, student_id: int,
 # =============================================================
 # API044 新增升学项目关联
 # =============================================================
+@idempotent("employee_student_service.add_enrollment")
 def add_enrollment(db: Session, actor: SysUser, student_id: int,
                    data: EnrollmentCreateIn) -> dict:
     profile = require_student_visible(db, actor, student_id)
@@ -277,6 +281,7 @@ def add_enrollment(db: Session, actor: SysUser, student_id: int,
 # =============================================================
 # API045 结束/恢复项目关联
 # =============================================================
+@idempotent("employee_student_service.update_enrollment")
 def update_enrollment(db: Session, actor: SysUser, student_id: int, enrollment_id: int,
                       data: EnrollmentUpdateIn) -> dict:
     profile = require_student_visible(db, actor, student_id)

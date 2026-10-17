@@ -3,7 +3,8 @@
 """
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from app.core.dto import BaseModel
+from pydantic import Field
 
 # ---- 版本 + 幂等键（M4 原有，不改）----
 

@@ -6,7 +6,7 @@ data_source 本轮固定 TEST；score_type NUMERIC/GRADE/PASS_FAIL。
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import BigInteger, Date, DateTime, Numeric, String, Text
+from sqlalchemy import BigInteger, Integer, Date, DateTime, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.session import Base
@@ -28,5 +28,7 @@ class StudentScore(Base):
     recorded_by_user_id: Mapped[int] = mapped_column(BigInteger)
     remark: Mapped[str | None] = mapped_column(Text)
     data_source: Mapped[str] = mapped_column(String(20), default="TEST")
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    __mapper_args__ = {"version_id_col": version}
     create_time: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

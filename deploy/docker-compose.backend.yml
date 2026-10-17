@@ -1,0 +1,17 @@
+services:
+  backend:
+    build:
+      context: ../backend
+    env_file: ../backend/.env
+    environment:
+      ENVIRONMENT: prod
+      DEBUG: "false"
+      FILE_STORAGE_ROOT: /app/storage
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - education_files:/app/storage
+    restart: unless-stopped
+    stop_grace_period: 30s
+volumes:
+  education_files:

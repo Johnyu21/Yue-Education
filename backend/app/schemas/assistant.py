@@ -4,11 +4,12 @@
 Dify 与后端内部契约（payload_json / output_json）使用 snake_case（对齐 M4 文档示例）；
 HTTP 响应 AssistantResult 使用 camelCase。
 """
-from datetime import datetime
+from pydantic import AwareDatetime as datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from app.core.dto import BaseModel
+from pydantic import Field
 
 
 # ---- 请求 ----
@@ -20,7 +21,7 @@ class AssistantContext(BaseModel):
 
 class AssistantRequest(BaseModel):
     message_id: UUID
-    conversation_id: str | None = None
+    conversation_id: str | None = Field(default=None,max_length=128)
     message: str = Field(min_length=1, max_length=8000)
     input_kind: Literal["CHAT", "CHECK_IN"] = "CHAT"   # CHECK_IN 仅学生入口
     context: AssistantContext | None = None
@@ -51,7 +52,7 @@ class AssistantResult(BaseModel):
     sources: list[SourceItem] = []
     missingFields: list[str] = []
     proposal: Proposal | None = None
-    aiStatus: Literal["LIVE", "UNAVAILABLE"] = "LIVE"
+    aiStatus: Literal["LIVE", "MOCK", "UNAVAILABLE"] = "LIVE"
     warnings: list[str] = []
 
 

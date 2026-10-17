@@ -1,11 +1,13 @@
 """
 心理关怀 请求与响应 DTO（⚠️ 敏感，读取需 psych_access_enabled）
 """
-from datetime import date, datetime
+from datetime import date
+from pydantic import AwareDatetime as datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from app.core.dto import BaseModel
+from pydantic import Field
 
 
 # ---- 请求 ----

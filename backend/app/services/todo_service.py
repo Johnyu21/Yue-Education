@@ -119,8 +119,8 @@ def _psych_todos(db: Session, actor: SysUser) -> list[TodoOut]:
     if not actor.psych_access_enabled:
         return []
     ids = visible_student_ids(db, actor)
-    stmt = select(StudentPsychAlert).where(
-        StudentPsychAlert.status.in_(_OPEN_ALERT_STATUS))
+    stmt = select(StudentPsychAlert).join(StudentProfile,StudentProfile.id==StudentPsychAlert.student_profile_id).where(
+        StudentPsychAlert.status.in_(_OPEN_ALERT_STATUS),StudentProfile.psych_consent_status=="GRANTED")
     if ids is not None:
         stmt = stmt.where(StudentPsychAlert.student_profile_id.in_(ids))
     stmt = stmt.order_by(StudentPsychAlert.last_triggered_at.desc()).limit(_SOURCE_CAP)
@@ -146,7 +146,16 @@ def list_todos(db: Session, actor: SysUser, *, type: str | None = None,
     todos.extend(_service_todos(db, actor))
     todos.extend(_feedback_todos(db, actor))
     todos.extend(_psych_todos(db, actor))
-    # 扩展点：日报退回（DAILY_REPORT_RETURN）由 M5 的日报模块提供，届时在此追加。
+    from app.models.m5_report_models import Daily
+    from app.repositories.m5_report_repository import context
+    from app.services.m5_report_service import scoped_daily_query,restricted_daily
+    user=context(db,actor)
+    for d in db.scalars(scoped_daily_query(user).where(Daily.status.in_(["SUBMITTED","RETURNED"])).order_by(Daily.report_date,Daily.id).limit(_SOURCE_CAP)):
+        if restricted_daily(user,d):continue
+        if d.status=="RETURNED" and d.user_id==actor.id:
+            todos.append(TodoOut(key="DAILY_REPORT_RETURN:"+d.id,type="DAILY_REPORT_RETURN",title="日报已退回，请修改",entityId=d.id,relatedType="daily_report",actionRoute="/employees/daily-reports/"+d.id))
+        elif d.status=="SUBMITTED" and user["is_dept_head"] and d.user_id!=actor.id:
+            todos.append(TodoOut(key="DAILY_REPORT_REVIEW:"+d.id,type="DAILY_REPORT_REVIEW",title="日报待审核",entityId=d.id,relatedType="daily_report",actionRoute="/employees/daily-reports/"+d.id))
 
     if type:
         todos = [t for t in todos if t.type == type]

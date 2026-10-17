@@ -33,12 +33,12 @@ logger = logging.getLogger(__name__)
 # 允许的扩展名（白名单，比黑名单安全）
 ALLOWED_EXT = {
     ".pdf", ".jpg", ".jpeg", ".png",
-    ".doc", ".docx", ".xls", ".xlsx",
+    ".doc", ".docx", ".xls", ".xlsx", ".txt",
 }
 
 # 允许的 MIME 类型
 ALLOWED_MIME = {
-    "application/pdf", "image/jpeg", "image/png",
+    "text/plain", "application/pdf", "image/jpeg", "image/png",
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "application/vnd.ms-excel",
@@ -90,6 +90,8 @@ def save_upload(file: UploadFile, owner_user_id: int) -> str:
     if file.content_type and file.content_type not in ALLOWED_MIME:
         raise InvalidRequestError(f"文件类型不被接受：{file.content_type}")
 
+    mime_by_ext={'.pdf':'application/pdf','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.txt':'text/plain','.doc':'application/msword','.xls':'application/vnd.ms-excel','.docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document','.xlsx':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}
+    if file.content_type and file.content_type!=mime_by_ext[ext]:raise InvalidRequestError("文件MIME与扩展名不一致")
     # ③ 文件名重新生成（⚠️ 绝不用 file.filename 拼路径）
     new_name = secrets.token_hex(16) + ext
 
@@ -98,7 +100,7 @@ def save_upload(file: UploadFile, owner_user_id: int) -> str:
     abs_dir = (_storage_root() / rel_dir).resolve()
 
     # ⑤ ⚠️ 双重保险：确认最终路径仍在存储根目录内（防穿越）
-    if not str(abs_dir).startswith(str(_storage_root())):
+    if not abs_dir.is_relative_to(_storage_root()):
         raise InvalidRequestError("非法的存储路径")
 
     abs_dir.mkdir(parents=True, exist_ok=True)
@@ -117,6 +119,11 @@ def save_upload(file: UploadFile, owner_user_id: int) -> str:
                 )
             out.write(chunk)
 
+    try:
+        _validate_content(abs_path, ext)
+    except Exception:
+        abs_path.unlink(missing_ok=True)
+        raise
     object_key = (rel_dir / new_name).as_posix()
     logger.info("文件已保存 owner=%s key=%s size=%s", owner_user_id, object_key, total)
     return object_key
@@ -132,9 +139,28 @@ def resolve_path(object_key: str) -> Path | None:
     abs_path = (root / object_key).resolve()
 
     # 必须在根目录内，否则拒绝
-    if not str(abs_path).startswith(str(root)):
+    if not abs_path.is_relative_to(root):
         logger.warning("阻断路径穿越尝试：%s", object_key)
         return None
     if not abs_path.is_file():
         return None
     return abs_path
+
+
+def _validate_content(path, ext):
+    import zipfile
+    head=path.read_bytes()[:16]
+    signatures={'.pdf':b'%PDF-','.png':b'\x89PNG\r\n\x1a\n','.jpg':b'\xff\xd8\xff','.jpeg':b'\xff\xd8\xff',
+        '.doc':b'\xd0\xcf\x11\xe0','.xls':b'\xd0\xcf\x11\xe0'}
+    if ext in signatures and not head.startswith(signatures[ext]):raise InvalidRequestError('文件内容与扩展名不一致')
+    if ext in {'.docx','.xlsx'}:
+        try:
+            with zipfile.ZipFile(path) as archive:
+                if len(archive.infolist())>10000:raise InvalidRequestError("文档压缩条目过多")
+                if sum(x.file_size for x in archive.infolist())>50*1024*1024:raise InvalidRequestError('文档解压后超过大小限制')
+                required='word/document.xml' if ext=='.docx' else 'xl/workbook.xml'
+                if required not in archive.namelist():raise InvalidRequestError('无效的Office文档')
+        except zipfile.BadZipFile as exc:raise InvalidRequestError('损坏的Office文档') from exc
+    if ext=='.txt':
+        try:path.read_text(encoding='utf-8-sig')
+        except UnicodeError as exc:raise InvalidRequestError('文本必须为UTF-8编码') from exc

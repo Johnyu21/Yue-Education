@@ -4,7 +4,8 @@
 Dify 只输出意图/参数/草稿；写操作由后端签发提议卡片（confirmation_token），
 员工确认后调普通业务接口再鉴权。本 Schema 只做结构校验，不做业务授权。
 """
-from pydantic import BaseModel, Field
+from app.core.dto import BaseModel
+from pydantic import Field
 
 
 class WfEnterpriseOutput(BaseModel):

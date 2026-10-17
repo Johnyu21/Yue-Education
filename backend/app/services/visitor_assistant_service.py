@@ -135,6 +135,8 @@ def handle_visitor_message(db: Session, req: AssistantRequest, *,
     session_draft = visitor_session.get(conversation_id)
 
     payload = _build_payload(db, req, conversation_id)
+    payload["draft"] = session_draft
+    db.rollback()
 
     try:
         raw = run_visitor(payload, user=conversation_id,
@@ -188,6 +190,6 @@ def handle_visitor_message(db: Session, req: AssistantRequest, *,
         sources=sources,
         missingFields=missing,
         proposal=proposal,
-        aiStatus="LIVE",
+        aiStatus="MOCK" if m2_config.dify_mode()=="mock" else "LIVE",
         warnings=list(raw.get("warnings") or []),
     )

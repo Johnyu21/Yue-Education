@@ -103,7 +103,7 @@ def psych_alert_action(alert_id: int, data: PsychActionRequest,
         verify_confirmation(user, data.confirmation_token, operation="PSYCH_ALERT_NOTE",
                             entity_id=alert_id,
                             payload=m3_canonical.psych_note_payload(data),
-                            expected_version=data.expected_version)
+                            expected_version=data.expected_version, request_key=data.request_key)
     # M3 兜底：堵 M4 用 employee_role 判断主管的越权缺口
     psych_guard.guard_alert_action(db, user, alert_id, data.action)
     with with_business_transaction(db):

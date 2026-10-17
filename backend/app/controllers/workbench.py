@@ -1,7 +1,7 @@
 """
 工作台 —— 统一待办（API088，实时查询，无 todo 表）
 """
-from datetime import datetime
+from pydantic import AwareDatetime as datetime
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session

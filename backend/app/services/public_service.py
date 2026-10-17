@@ -169,6 +169,8 @@ def get_public_project(db: Session, project_id: int) -> dict:
 def create_project(db: Session, user: SysUser, data: ProjectCreateIn) -> dict:
     scope = _scope(db, user)
     _require_any_management(scope, "项目")
+    if not scope.is_admin and data.default_dept_id not in scope.is_head_of:
+        raise ForbiddenError("只能在本人主管部门创建项目")
     _validate_fee_pair(data.fee_amount, data.fee_currency)
 
     with with_business_transaction(db):
@@ -245,8 +247,9 @@ def update_project(db: Session, user: SysUser, project_id: int,
                 project.rule_approved_by = None
 
         if data.approve_rules:
-            if not project.admission_rules:
-                raise RuleNotApprovedError("缺少结构化准入条件，无法审核通过")
+            from app.services.assessment_rules import valid_rules
+            if not valid_rules(project.admission_rules) or not project.rule_version:
+                raise RuleNotApprovedError("缺少有效结构化准入条件或规则版本")
             project.rule_approved_at = datetime.now(timezone.utc)
             project.rule_approved_by = user.id
 
@@ -267,6 +270,8 @@ def update_project(db: Session, user: SysUser, project_id: int,
 # ============================================================
 def list_public_events(db: Session, *, page: int, page_size: int,
                        status: str = "OPEN"):
+    if status not in PUBLIC_EVENT_STATUS:
+        raise ValidationError("不支持的公开活动状态")
     items, total = event_repo.list_by_status(db, status=status,
                                              page=page, page_size=page_size)
     counts = event_repo.count_active_map(db, [e.id for e in items])

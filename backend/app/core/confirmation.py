@@ -96,6 +96,7 @@ def verify_confirmation(
     entity_id: int | None,
     payload,
     expected_version: int | None = None,
+    request_key: str | None = None,
 ) -> dict:
     """校验确认令牌。任何一项对不上就拒绝。
 
@@ -143,6 +144,9 @@ def verify_confirmation(
     # ⑥ 幂等键必须一致
     if not claims.get("rk"):
         raise InvalidRequestError("确认信息缺少幂等键")
+
+    if request_key is not None and claims["rk"] != str(request_key):
+        raise InvalidRequestError("确认信息与请求键不符")
 
     return claims
 

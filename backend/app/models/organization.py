@@ -15,6 +15,8 @@ class SysDepartment(Base):
     __tablename__ = "sys_department"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    __mapper_args__ = {"version_id_col": version}
     code: Mapped[str] = mapped_column(String(40), unique=True)
     name: Mapped[str] = mapped_column(String(100))
     parent_id: Mapped[int | None] = mapped_column(BigInteger)
@@ -26,6 +28,8 @@ class SysClass(Base):
     __tablename__ = "sys_class"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    __mapper_args__ = {"version_id_col": version}
     code: Mapped[str] = mapped_column(String(40), unique=True)   # ⚠️ 班级编码（必填）
     name: Mapped[str] = mapped_column(String(80))
     course_type: Mapped[str | None] = mapped_column(String(80))

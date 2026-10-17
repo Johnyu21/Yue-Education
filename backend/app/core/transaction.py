@@ -27,8 +27,9 @@ from contextlib import contextmanager
 
 from sqlalchemy.exc import DBAPIError, IntegrityError, OperationalError
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import StaleDataError
 
-from app.core.errors import DuplicateResourceError, StateConflictError
+from app.core.errors import DuplicateResourceError, StateConflictError, VersionConflictError
 
 logger = logging.getLogger(__name__)
 
@@ -58,12 +59,14 @@ def with_business_transaction(db: Session) -> Iterator[_Outcome]:
         if friendly is not exc:
             logger.warning("事务回滚（已翻译）: %s", exc.__class__.__name__)
             raise friendly from exc
-        logger.exception("事务回滚（未翻译异常）")
+        logger.warning("事务回滚 type=%s",exc.__class__.__name__)
         raise
 
 
 def _translate(exc: Exception) -> Exception:
     """把底层数据库错误翻译成 AppError，避免 500 泄露细节。"""
+    if isinstance(exc, StaleDataError):
+        return VersionConflictError()
     if isinstance(exc, IntegrityError):
         msg = str(exc.orig) if exc.orig else str(exc)
         low = msg.lower()

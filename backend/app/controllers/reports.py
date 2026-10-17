@@ -13,7 +13,6 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.deps import require_password_changed
-from app.core.errors import NotImplementedYetError
 from app.core.responses import ok
 from app.db.session import get_db
 from app.models.user import SysUser
@@ -21,33 +20,25 @@ from app.models.user import SysUser
 router = APIRouter(tags=["智能报告"])
 
 
-def _todo(api: str, who: str = "M5"):
-    raise NotImplementedYetError(f"{api} 尚未实现（负责人：{who}）")
 
 
 @router.post("/api/v1/me/academic-assessment")
 def academic_assessment(user: SysUser = Depends(require_password_changed),
                         db: Session = Depends(get_db)):
     """API075 学业评估"""
-    _todo("API075")
-
-
-@router.post("/api/v1/reports/preview")
-def preview_report(user: SysUser = Depends(require_password_changed),
-                   db: Session = Depends(get_db)):
-    """API091 报告预览
-
-    ⚠️ 步骤：
-      1. 按 scope 取数据（主管看本部门，管理员全域）
-      2. Python 算好指标（数字）
-      3. 调 Dify 把指标组织成文字分析
-      4. Dify 失败 → 仍返回指标，ai_status=UNAVAILABLE
-
-    报告类型（对应需求 5 类）：
-      - customer   全域客户经营分析
-      - daily      员工日报汇总（日/周）
-      - psych      学生心理健康周报（⚠️ 依赖心理授权）
-      - complaint  投诉处理周报
-    """
-    _todo("API091")
-
+    from sqlalchemy import select
+    from app.core.errors import ForbiddenError
+    from app.models.score import StudentScore
+    from app.repositories.common import my_profile_id
+    if not user.is_student:raise ForbiddenError("仅学生可查看本人学业评估")
+    pid=my_profile_id(db,user)
+    from app.core.config import settings
+    query=select(StudentScore).where(StudentScore.student_profile_id==pid)
+    if settings.environment=="prod":query=query.where(StudentScore.data_source!="TEST")
+    rows=list(db.scalars(query))
+    numeric=[float(r.score_numeric/r.max_score*100) for r in rows if r.score_type=='NUMERIC' and r.max_score]
+    return ok({"numericCount":len(numeric),"otherCount":len(rows)-len(numeric),
+        "averagePercent":round(sum(numeric)/len(numeric),2) if numeric else None,
+        "dataStatus":"AVAILABLE" if numeric else "INSUFFICIENT_DATA",
+        "aiStatus":"UNAVAILABLE","dataSources":sorted({r.data_source for r in rows}),
+        "explanation":"仅将数值成绩按各自满分归一为百分比后计算平均，等级和通过制不混算。"})

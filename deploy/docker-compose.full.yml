@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: education
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/.env}
+      POSTGRES_DB: education
+    volumes:
+      - education_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U education -d education"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  migrate:
+    build: ../backend
+    env_file: ../backend/.env
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: education
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/.env}
+      POSTGRES_DB: education
+    command: ["python", "-m", "app.db.migrate"]
+    depends_on:
+      db:
+        condition: service_healthy
+  backend:
+    build: ../backend
+    env_file: ../backend/.env
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: education
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/.env}
+      POSTGRES_DB: education
+      FILE_STORAGE_ROOT: /app/storage
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - education_files:/app/storage
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+volumes:
+  education_db:
+  education_files:

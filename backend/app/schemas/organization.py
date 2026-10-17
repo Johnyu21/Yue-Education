@@ -4,7 +4,8 @@
 ⚠️ DTO 白名单：只声明允许客户端传入的字段。
    权限相关字段（employee_role 变更等）走单独的、受控的接口。
 """
-from pydantic import BaseModel, Field
+from app.core.dto import BaseModel
+from pydantic import Field
 
 
 # ---- 部门 ----

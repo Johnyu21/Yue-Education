@@ -60,6 +60,7 @@ class StudentPsychAlert(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     version: Mapped[int] = mapped_column(Integer, default=1)
+    __mapper_args__ = {"version_id_col": version}
     create_time: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     update_time: Mapped[datetime] = mapped_column(

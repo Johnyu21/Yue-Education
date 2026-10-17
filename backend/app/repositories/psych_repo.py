@@ -37,13 +37,13 @@ def list_observations(db: Session, profile_id: int, *, start_date, end_date,
     return paginate(db, stmt, page, page_size)
 
 
-def get_daily_final_states(db: Session, profile_id: int, days: int) -> list[dict]:
+def get_daily_final_states(db: Session, profile_id: int, days: int, end_date=None) -> list[dict]:
     """最近 N 个相邻自然日（业务时区）的最后有效观测；缺失日为 None。
 
     返回 [{"assessment_date": date, "emotion_state": str|None}, ...]（旧→新）。
     """
     tz = ZoneInfo(settings.business_timezone)
-    today = datetime.now(tz).date()
+    today = end_date or datetime.now(tz).date()
     start = today - timedelta(days=days - 1)
 
     rows = db.scalars(

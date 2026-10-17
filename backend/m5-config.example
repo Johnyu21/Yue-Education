@@ -1,0 +1,6 @@
+# Copy to backend/.env.m5; keep real keys out of Git.
+M5_AI_MODE=DIFY
+M5_DIFY_BASE_URL=http://your-dify-host/v1
+M5_DIFY_ASSISTANT_KEY=
+M5_DIFY_REPORT_KEY=
+M5_AI_TIMEOUT=45
