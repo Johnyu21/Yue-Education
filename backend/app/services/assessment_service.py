@@ -47,8 +47,16 @@ _drafts: dict[str, tuple[dict, float]] = {}
 # 参与判定的客户事实字段
 _LEAD_FACT_FIELDS = ("gender", "city", "education", "date_of_birth")
 
-# 画像必填字段（WF_ASSESSMENT 的 required_fields 默认口径，与 mock 共用）
-_REQUIRED_PROFILE_FIELDS = ("education", "language_level", "date_of_birth")
+# 画像**无条件必填**字段（WF_ASSESSMENT 的 required_fields 默认口径，与 mock 共用）
+#
+# 口径（2026-10-17 与 M2 负责人确认）：
+#   - 学历 education：研判必须项，缺了不给结论；
+#   - 语言成绩 language_level / 出生日期 date_of_birth 等：**附加项**，
+#     仍会被提取并写入报告 evidence，但只要已审核规则没有引用它们，就不会因为缺失
+#     而把项目判成 NEEDS_INFO、也不会因此取消评分；
+#   - 规则里引用到的字段（如语言成绩门槛、年龄门槛）会自动进入必填清单，
+#     这时它就是该项目的硬条件，缺失即 NEEDS_INFO。
+_REQUIRED_PROFILE_FIELDS = ("education",)
 
 # 由其它字段派生、不需要 AI 直接提取的字段
 _DERIVED_FIELDS = {"age"}
@@ -131,10 +139,14 @@ def _rule_fields(node) -> list[str]:
 
 
 def _required_fields(projects: list[CourseProject]) -> list[str]:
-    """送进工作流的必填字段清单：画像默认项 ∪ 已审核规则引用的字段。
+    """送进工作流的必填字段清单：学历（无条件）∪ 已审核规则引用到的字段。
 
     ⚠️ "必填"只在这里定义一次：工作流的 missing_fields 归一到本清单，
        mock 样本也读同一个 payload 字段，live 与 mock 的缺项口径才不会各说一套。
+
+    语言成绩/出生日期等**默认不是必填**（附加项）：它们照常被提取并写入证据，
+    但只要规则没引用就不会造成 NEEDS_INFO；规则一旦引用（如"雅思 ≥ 6.0"），
+    该字段即成为该项目硬条件，缺失同样进缺项并导致 NEEDS_INFO。
     """
     fields = list(_REQUIRED_PROFILE_FIELDS)
     for project in projects:

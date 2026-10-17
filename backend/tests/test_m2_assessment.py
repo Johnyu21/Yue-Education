@@ -200,6 +200,31 @@ def test_缺信息返回NEEDS_INFO并列出缺项(m2_db, m2_env):
     assert "education" in project["missingFields"]
 
 
+def test_学历同义归一_职高算中专_技校算大专():
+    """2026-10-17 口径：职高→中专、技校→大专（连同既有 专科→大专、中职/中技→中专）。"""
+    from datetime import datetime, timezone
+    from types import SimpleNamespace
+    from app.services.assessment_rules import evaluate_project
+
+    def project(values):
+        return SimpleNamespace(
+            id=1, name="alias", rule_version="v1",
+            rule_approved_at=datetime.now(timezone.utc),
+            admission_rules={"criteria": [
+                {"field": "education", "op": "IN", "values": values, "label": "学历要求"}]})
+
+    zhongzhuan = project(["中专"])
+    assert evaluate_project(zhongzhuan, {"education": "职高"})["decision"] == "MATCH"
+    assert evaluate_project(zhongzhuan, {"education": "中职"})["decision"] == "MATCH"
+    assert evaluate_project(zhongzhuan, {"education": "中技"})["decision"] == "MATCH"
+    assert evaluate_project(zhongzhuan, {"education": "高中"})["decision"] == "NO_MATCH"
+
+    dazhuan = project(["大专"])
+    assert evaluate_project(dazhuan, {"education": "技校"})["decision"] == "MATCH"
+    assert evaluate_project(dazhuan, {"education": "专科"})["decision"] == "MATCH"
+    assert evaluate_project(dazhuan, {"education": "本科"})["decision"] == "NO_MATCH"
+
+
 # ============================================================
 # 权限 / 并发
 # ============================================================

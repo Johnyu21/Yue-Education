@@ -136,19 +136,22 @@
 
 | # | 输入 payload 要点 | 期望 facts | 期望 missing_fields | 说明 |
 |---|---|---|---|---|
-| 1 | resume_text 含"本科 雅思6.5 1998年5月12日"，required_fields 为默认 3 项 | education/language_level/date_of_birth | [] | 三项均可提取且带 evidence |
-| 2 | resume_text 为空，confirmed_facts 有 education | facts 仅含 confirmed_facts | language_level/date_of_birth | warnings 含 NO_RESUME_TEXT |
-| 3 | resume_text 只说"大专" | education | language_level/date_of_birth | 缺项进 missing_fields |
-| 4 | confirmed_facts 已有 education=本科，简历也写本科 | education 保留顾问值 | 其余缺项 | 净化节点用 confirmed_facts 覆盖同名键 |
+| 1 | resume_text 含"本科 雅思6.5 1998年5月12日"，required_fields 默认（仅学历） | education/language_level/date_of_birth | [] | 三项都提取并带 evidence；语言/生日是附加项，不缺项 |
+| 2 | resume_text 为空，confirmed_facts 有 education | facts 仅含 confirmed_facts | [] | warnings 含 NO_RESUME_TEXT；学历已核对，不再算缺项 |
+| 3 | resume_text 只说"大专" | education | [] | 附加项缺失不进 missing_fields |
+| 4 | confirmed_facts 已有 education=本科，简历也写本科 | education 保留顾问值 | [] | 净化节点用 confirmed_facts 覆盖同名键 |
 | 5 | 简历写了期望薪资/身份证号 | 不提取 | — | snippet 中长数字串被替换为 `[已脱敏]` |
-| 6 | 简历只写"想去德国留学" | 无新增 facts | 全部必填项 | 不推断学历/语言 |
+| 6 | 简历只写"想去德国留学" | 无新增 facts | ["education"] | 学历必填，缺了才进缺项；不推断学历/语言 |
 | 7 | project_rules 为空对象 / rules 为 null | facts 正常 | — | 提取得出即可，规则判定由后端做 |
 | 8 | 简历含"雅思 6.5 分" 与 "托福 90" | language_level 取首个命中 | — | 证据 source_ref 指向对应行 |
-| 9 | required_fields 额外含 `city`，简历未提城市 | 其余字段照常 | 含 `city` | 缺项必须跟随后端清单 |
-| 10 | 模型返回带 `"score":90,"decision":"MATCH"` | 两键被丢弃 | — | 净化节点强制剔除越权字段 |
+| 9 | 规则引用 language_level（required_fields 含它），简历未提语言成绩 | 其它字段照常 | 含 `language_level` | 规则引用即成为硬条件 |
+| 10 | 规则引用 city（required_fields 含它），简历未提城市 | 其余字段照常 | 含 `city` | 缺项必须跟随后端清单 |
+| 11 | 模型返回带 `"score":90,"decision":"MATCH"` | 两键被丢弃 | — | 净化节点强制剔除越权字段 |
 
 **口径**：结构必须能被后端 `assessment._validate` 解析（含 `facts` 对象、`evidence` 数组）；
 `evidence` 里每个 `source_ref` 形如 `resume:p<行号>` 且 `snippet` 为最小必要片段；
+**学历 `education` 是唯一无条件必填项**，`language_level` / `date_of_birth` / `city` 等
+只有当 `required_fields` 里出现（即项目规则引用）时才必填；
 `missing_fields` 只能取 `payload.required_fields` 的子集（净化节点会重算，非清单字段一律丢弃）；
 **任何样本都不得输出打分或录取结论**（后端按已审核 `admission_rules` 计算，未配置规则返回 `NEEDS_INFO` 且分数为空）。
 
