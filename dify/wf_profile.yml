@@ -226,7 +226,10 @@ workflow:
                 2. 只能从简历原文提取事实：education（学历）、language_level（语言水平/成绩）、
                    date_of_birth（出生日期）、city（城市）、gender（性别）等；
                    每个提取出的字段必须在 evidence 中给出 source_ref 与最小必要 snippet。
-                3. **严禁编造**：材料里没有的信息一律不写进 facts，而是放进 missing_fields；
+                3. **严禁编造**：材料里没有的信息一律不写进 facts。
+                   必填字段（见"必填字段清单"）缺失时放进 missing_fields；
+                   **不在必填清单里的字段（如语言成绩、出生日期）是附加项**，
+                   缺了不要放进 missing_fields，能提取到就照常提取并给 evidence。
                    不得推断或添加年龄门槛、语言分数线、资金证明要求、录取结论。
                 4. 不得输出 score / decision / MATCH / NO_MATCH —— 那是后端按已审核规则计算的职责。
                 5. 简历文本为空或无法识别时 → facts 只含已核对事实，missing_fields 列全必填缺项，
@@ -264,7 +267,8 @@ workflow:
 
             FORBIDDEN_KEYS = {"score", "decision", "match", "match_level", "match_result"}
             SENSITIVE_RE = re.compile(r"\d{15,19}")
-            DEFAULT_REQUIRED = ["education", "language_level", "date_of_birth"]
+            # 兜底必填项（后端总会带 required_fields；此项与后端口径一致：学历唯一必填）
+            DEFAULT_REQUIRED = ["education"]
 
 
             def _load(value, expect):

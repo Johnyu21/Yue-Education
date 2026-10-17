@@ -331,7 +331,7 @@
   "lead_id": "客户ID",
   "request_id": "本次研判请求 UUID（防旧任务覆盖）",
   "confirmed_facts": { "education": "顾问已核对的学历" },
-  "required_fields": ["education", "language_level", "date_of_birth", "city"],
+  "required_fields": ["education", "city"],
   "resume_text": "简历纯文本，可能为空或被截断（上限 20000 字）",
   "project_rules": [
     { "project_id": "11", "rule_version": 3, "rules": { "已审核结构化条件" } }
@@ -341,8 +341,10 @@
 
 > ⚠️ 只发**单个客户**的已核对事实与简历最小片段；
 > **不把整张客户表、员工 token 或其它客户数据发给 Dify**。
-> ⚠️ `required_fields` 由后端 `assessment_service._required_fields` 计算
-> （画像默认 3 项 ∪ 已审核规则引用的字段，排除派生字段 `age`）；
+> ⚠️ `required_fields` 由后端 `assessment_service._required_fields` 计算：
+> **学历 `education` 无条件必填** ∪ 已审核规则引用到的字段（排除派生字段 `age`）。
+> 规则若引用 `language_level`（如"雅思 ≥ 6.0"）、`date_of_birth`（年龄门槛）、`city` 等，
+> 这些字段才进入必填清单。
 > 工作流的 `missing_fields` **只能**从这里取，这样 live 与 mock 的缺项口径一致。
 > ⚠️ `project_rules[].rules` 在规则**未审核**时为 `null`，工作流不得据此推断门槛。
 
@@ -352,9 +354,9 @@
 {
   "schema_version": "1.0",
   "mode": "ASSESSMENT_EXTRACT",
-  "facts": { "education": "客户确认的学历" },
+  "facts": { "education": "客户确认的学历", "language_level": "雅思 6.5" },
   "evidence": [{ "field": "education", "source_ref": "resume:p1", "snippet": "最小必要原文片段" }],
-  "missing_fields": ["language_level"],
+  "missing_fields": ["education"],
   "warnings": []
 }
 ```
@@ -362,7 +364,10 @@
 ## 4. 关键约束（WF_ASSESSMENT）
 
 - **只做提取**：`facts` 仅包含有据可依的字段，`confirmed_facts` 原样保留；
-  没有依据的信息放进 `missing_fields`，**严禁编造**年龄/语言/资金门槛。
+  **严禁编造**年龄/语言/资金门槛。
+- **学历必填、其它默认附加**：`language_level`（语言成绩）、`date_of_birth`（出生日期）等
+  属于**附加项**——能提取就照常提取并给 evidence，但缺失**不进** `missing_fields`；
+  只有当项目规则引用到某字段时，它才是该项目的硬条件。
 - **必须可追溯**：每个提取字段给出 `evidence.source_ref`（如 `resume:p12`）与最小必要 `snippet`。
 - **不判定、不打分**：不得输出 `score` 或 `MATCH/NO_MATCH`，
   匹配结论与分数由后端按 `course_project.admission_rules`（**已审核**）确定性计算；

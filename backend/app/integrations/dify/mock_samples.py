@@ -267,9 +267,11 @@ _LANGUAGE_KEYWORDS = ("雅思", "IELTS", "托福", "TOEFL", "德福", "TestDaF",
 _SCORE_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(分|分以上)?")
 _DATE_RE = re.compile(r"(19\d{2}|20\d{2})\s*[-/年]\s*(\d{1,2})\s*[-/月]\s*(\d{1,2})")
 
-# payload 未给 required_fields 时的兜底必填画像字段
+# payload 未给 required_fields 时的兜底必填字段
 # （正式口径由后端 assessment_service._required_fields 计算后随 payload 传入）
-_REQUIRED_PROFILE_FIELDS = ("education", "language_level", "date_of_birth")
+#
+# 学历是唯一无条件必填项；语言成绩/出生日期等为附加项，仅规则引用时才必填。
+_REQUIRED_PROFILE_FIELDS = ("education",)
 
 
 def _required(payload: dict) -> tuple[str, ...]:

@@ -66,8 +66,9 @@ M5日报和报告使用streaming，由后端消费SSE并仅接受workflow_finish
 
 Dify提取的事实只作为参考证据，不直接并入正式事实。准入判定来自已审核的admission_rules，支持all_of/any_of组合；缺失或非法规则返回NEEDS_INFO，不给虚假MATCH。研判调用前结束数据库事务；回写检查任务号、起始版本、项目规则版本和当前权限，事实或规则变化时旧结果作废。
 
-缺失项口径由后端在 payload 里给出的 required_fields 决定（画像默认三项 ∪ 已审核规则引用字段），
-工作流的 missing_fields 只能是它的子集；模型输出的 score/decision 在净化节点被直接丢弃。
+缺失项口径由后端在 payload 里给出的 required_fields 决定：**学历 education 无条件必填**，
+其余字段（语言成绩、出生日期、城市等）只有被已审核规则引用时才必填；工作流的 missing_fields
+只能是它的子集。模型输出的 score/decision 在净化节点被直接丢弃。
 project_rules[].rules 在规则未审核时为 null，工作流不得据此推断门槛。
 访客侧 payload 另含 draft（已收集草稿）与 history（最近 8 条问答），用于多轮续填与指代消解，
 两者都只含公开对话内容，不含客户库或员工数据。

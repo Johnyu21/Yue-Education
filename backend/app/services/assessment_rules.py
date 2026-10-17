@@ -64,7 +64,7 @@ def _check_one(criterion: dict, facts: dict) -> str:
 
     value = facts.get(field)
     if field == "education":
-        aliases={"专科":"大专","中职":"中专","中技":"中专"}
+        aliases={"专科":"大专","中职":"中专","中技":"中专","职高":"中专","技校":"大专"}
         value=aliases.get(value,value)
         criterion={**criterion}
         if "values" in criterion:criterion["values"]=[aliases.get(v,v) for v in criterion["values"]]
