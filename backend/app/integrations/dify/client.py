@@ -27,7 +27,9 @@ class DifyClient:
         if not self.base_url:
             raise AIUnavailableError("Dify 未配置")
 
-        url = f"{self.base_url}/v1/workflows/run"
+        # 兼容 base_url 是否以 /v1 结尾（Dify 控制台展示的地址自带 /v1）
+        base = self.base_url
+        url = f"{base}/workflows/run" if base.endswith("/v1") else f"{base}/v1/workflows/run"
         headers = {"Authorization": f"Bearer {api_key}"}
         body = {"inputs": inputs, "response_mode": "blocking", "user": user}
 
