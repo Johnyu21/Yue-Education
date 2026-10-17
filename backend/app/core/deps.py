@@ -41,7 +41,10 @@ def get_actor(
     if payload is None:
         raise TokenExpiredError("登录已失效，请重新登录")
 
-    user_id = int(payload["sub"])
+    try:
+        user_id = int(payload["sub"])
+        if user_id<1 or not isinstance(payload.get("tv"),int):raise ValueError()
+    except (ValueError,TypeError,KeyError):raise TokenExpiredError("登录令牌无效")
     token_tv = payload.get("tv")
 
     user = db.get(SysUser, user_id)

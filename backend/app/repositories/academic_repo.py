@@ -2,6 +2,7 @@
 成绩 / 日程 / 申请进度 查询（学生本人或员工授权范围）
 """
 from sqlalchemy import func, select
+from app.core.config import settings
 from sqlalchemy.orm import Session
 
 from app.models.academic_schedule import StudentAcademicSchedule
@@ -14,6 +15,7 @@ from app.repositories.common import paginate
 def list_scores(db: Session, profile_id: int, *, enrollment_id: int | None = None,
                 subject: str | None = None, page: int = 1, page_size: int = 20):
     stmt = select(StudentScore).where(StudentScore.student_profile_id == profile_id)
+    if settings.environment=="prod":stmt=stmt.where(StudentScore.data_source!="TEST")
     if enrollment_id is not None:
         stmt = stmt.where(StudentScore.enrollment_id == enrollment_id)
     if subject:
@@ -27,6 +29,7 @@ def list_schedules(db: Session, profile_id: int, *, start_at=None, end_at=None,
                    schedule_type: str | None = None, page: int = 1, page_size: int = 20):
     stmt = select(StudentAcademicSchedule).where(
         StudentAcademicSchedule.student_profile_id == profile_id)
+    if settings.environment=="prod":stmt=stmt.where(StudentAcademicSchedule.data_source!="TEST")
     if start_at is not None:
         stmt = stmt.where(StudentAcademicSchedule.start_at >= start_at)
     if end_at is not None:

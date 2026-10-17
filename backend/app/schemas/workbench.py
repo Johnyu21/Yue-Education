@@ -4,10 +4,11 @@
 - ServiceAssignmentIn：API055 主管转派待审单（M4 assign_service 的入参）
 - TodoOut：API088 统一待办（实时查询，无 todo 表）
 """
-from datetime import datetime
+from pydantic import AwareDatetime as datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from app.core.dto import BaseModel
+from pydantic import Field
 
 
 class ServiceAssignmentIn(BaseModel):

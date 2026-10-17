@@ -4,11 +4,12 @@
 响应复用 schemas/student.py 的 ApplicationEventDTO / ApplicationCaseDTO。
 ⚠️ 本系统只做内部登记，不调用校方/签证外部系统。
 """
-from datetime import datetime
+from pydantic import AwareDatetime as datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from app.core.dto import BaseModel
+from pydantic import Field
 
 
 class ApplicationCreateIn(BaseModel):

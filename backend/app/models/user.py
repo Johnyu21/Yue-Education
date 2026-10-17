@@ -31,6 +31,9 @@ class SysUser(Base):
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=False)
     temporary_password_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    __mapper_args__ = {"version_id_col": version}
+
     token_version: Mapped[int] = mapped_column(Integer, default=0)
 
     # 只读属性：方便判断

@@ -3,7 +3,8 @@
 
 schema 负责"接口传什么"，和 model（数据库存什么）分开。
 """
-from pydantic import BaseModel, Field
+from app.core.dto import BaseModel
+from pydantic import Field
 
 
 # ---- 请求 ----
@@ -27,6 +28,13 @@ class UserOut(BaseModel):
     employeeRole: str | None = None
     deptId: str | None = None
     mustChangePassword: bool = False
+    version: int = 1
+    isAdmin: bool = False
+    isDeptHead: bool = False
+    headOfDepartmentIds: list[str] = []
+    classTeacherOfIds: list[str] = []
+    canHandleFeedback: bool = False
+    psychAccessEnabled: bool = False
 
 
 class LoginOut(BaseModel):

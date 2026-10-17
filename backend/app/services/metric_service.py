@@ -137,7 +137,9 @@ def _metric_lead_count(db, actor, *, filters, group_by, start, end, label):
     stmt = _lead_scope_stmt(db, actor)
     if filters.get("status"):
         stmt = stmt.where(CrmLead.status == filters["status"])
-    warnings = ["客户数暂不支持按创建时间筛选"] if start is not None else []
+    if start is not None:stmt=stmt.where(CrmLead.create_time>=start)
+    if end is not None:stmt=stmt.where(CrmLead.create_time<end)
+    warnings=[]
 
     if group_by == "STATUS":
         rows = _grouped(db, stmt, "status")

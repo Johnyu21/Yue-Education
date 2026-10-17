@@ -5,11 +5,13 @@
 写入 DTO 禁止未知字段；owner_user_id / dept_id / status / profile_summary 等
 一律由后端按业务规则决定，不接受客户端传入。
 """
-from datetime import date, datetime
+from datetime import date
+from pydantic import AwareDatetime as datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from app.core.dto import BaseModel
+from pydantic import Field
 
 
 # ---------------- 留资 ----------------

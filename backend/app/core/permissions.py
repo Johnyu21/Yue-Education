@@ -124,7 +124,7 @@ class Scope:
     def can_modify_psych(self) -> bool:
         """能否人工改心理状态。要求主管/管理员 + 心理授权。"""
         return self.can_see_psych() and (
-            self.is_admin or self.user.employee_role in ("ADVISOR", "SENIOR_ADVISOR", "ADMIN")
+            self.is_admin or bool(self.is_head_of)
         )
 
 
@@ -146,7 +146,7 @@ def build_scope(db: Session, user: SysUser, purpose: str) -> Scope:
     )
 
     # 主管能看本部门数据
-    dept_ids = (user.dept_id,) if (user.dept_id and (is_admin or head_of)) else ()
+    dept_ids = head_of
 
     scope = Scope(
         user=user,

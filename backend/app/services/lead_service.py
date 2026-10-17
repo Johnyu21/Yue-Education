@@ -17,7 +17,9 @@ from __future__ import annotations
 import logging
 from uuid import NAMESPACE_URL, uuid5
 
-from sqlalchemy import select
+from sqlalchemy import select, text
+from app.core.public_idempotency import reserve_public_request
+from app.core.errors import StateConflictError
 from sqlalchemy.orm import Session
 
 from app.core.errors import ValidationError
@@ -106,12 +108,15 @@ def acquire_lead(db: Session, *, name: str, mobile: str, source: str, request_ke
     Returns:
         (lead, created)：created 表示本次是否新建了主档。
     """
+    mobile=normalize_mobile(mobile)
+    db.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 9102))"),{"key":mobile})
     facts = facts or {}
     meta = {"source": source, **(details or {})}
 
     # ① 幂等快捷路径：该 request_key 已经建过主档
     lead = lead_repo.get_by_request_key(db, request_key)
     if lead is not None:
+        if lead.mobile!=mobile:raise StateConflictError("请求键已被其他客户使用")
         return lead, False
 
     created = False
@@ -119,6 +124,7 @@ def acquire_lead(db: Session, *, name: str, mobile: str, source: str, request_ke
     # ② 一人一档：按规范手机号复用
     lead = lead_repo.get_by_mobile(db, mobile)
     if lead is not None:
+        lead.version+=1
         _fill_missing_facts(lead, facts)
         if intended_project_id and lead.intended_project_id is None:
             lead.intended_project_id = intended_project_id
@@ -187,6 +193,7 @@ def capture_lead(db: Session, data: LeadCaptureIn) -> dict:
     }
 
     with with_business_transaction(db):
+        reserve_public_request(db,"lead.capture",data.request_key,data.model_dump(mode="json"))
         _, created = acquire_lead(
             db,
             name=name,

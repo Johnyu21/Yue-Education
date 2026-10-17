@@ -13,7 +13,7 @@
 import logging
 from datetime import datetime, timezone
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.core.errors import InvalidRequestError, NotFoundError, StateConflictError
@@ -52,7 +52,8 @@ def update_department(db: Session, dept_id: int, **changes) -> SysDepartment:
 
     ⚠️ 树循环检查：不能把"自己的某个后代"设为上级，否则遍历部门树会死循环。
     """
-    dept = db.get(SysDepartment, dept_id)
+    db.execute(text("SELECT pg_advisory_xact_lock(910104)"))
+    dept = db.get(SysDepartment, dept_id,with_for_update=True,populate_existing=True)
     if dept is None:
         raise NotFoundError("部门不存在")
 
@@ -66,21 +67,23 @@ def update_department(db: Session, dept_id: int, **changes) -> SysDepartment:
             if cur == dept_id:
                 raise InvalidRequestError("不能把下级部门设为上级（会形成环）")
             p = db.get(SysDepartment, cur)
-            cur = p.parent_id if p else None
+            if p is None:raise NotFoundError("上级部门不存在")
+            cur = p.parent_id
             hops += 1
+        if cur is not None:raise InvalidRequestError("部门层级过深或已存在循环")
 
     if "head_user_id" in changes and changes["head_user_id"] is not None:
         head = db.get(SysUser, changes["head_user_id"])
         if head is None:
             raise NotFoundError("指定的主管不存在")
-        if not head.is_employee:
+        if not head.is_employee or head.status!="NORMAL":
             raise InvalidRequestError("部门主管必须是员工")
         # 主管必须属于该部门（或管理员）
         if head.dept_id != dept_id and head.employee_role != "ADMIN":
             raise InvalidRequestError("主管必须属于该部门")
 
     for k, v in changes.items():
-        if hasattr(dept, k) and v is not None:
+        if hasattr(dept, k):
             setattr(dept, k, v)
     db.flush()
     return dept
@@ -122,7 +125,7 @@ def update_class(db: Session, class_id: int, **changes) -> SysClass:
         _assert_valid_teacher(db, changes["head_teacher_id"])
 
     for k, v in changes.items():
-        if hasattr(cls, k) and v is not None:
+        if hasattr(cls, k):
             setattr(cls, k, v)
     db.flush()
     return cls
@@ -178,7 +181,7 @@ def update_user(db: Session, user_id: int, actor: SysUser, **changes) -> SysUser
     ⚠️ 改权限后 **token_version+1** → 旧令牌立即失效
     ⚠️ 主管只能改本部门普通员工，不能给自己或管理员变权
     """
-    user = db.get(SysUser, user_id)
+    user = db.get(SysUser, user_id,with_for_update=True,populate_existing=True)
     if user is None:
         raise NotFoundError("用户不存在")
 
@@ -196,12 +199,18 @@ def update_user(db: Session, user_id: int, actor: SysUser, **changes) -> SysUser
             raise InvalidRequestError("主管不能修改管理员")
         if actor.id == user_id:
             raise InvalidRequestError("主管不能给自己变权")
+        if changes.get("employee_role")=="ADMIN" or ("dept_id" in changes and changes["dept_id"]!=user.dept_id):raise InvalidRequestError("仅管理员可创建管理员或调整跨部门归属")
     else:
         raise InvalidRequestError("没有权限修改该账号")
 
+    if user.employee_role=="ADMIN" and (changes.get("status")=="DISABLED" or ("employee_role" in changes and changes["employee_role"]!="ADMIN")):
+        db.execute(text("SELECT pg_advisory_xact_lock(910105)"))
+        if db.scalar(select(func.count()).select_from(SysUser).where(SysUser.employee_role=="ADMIN",SysUser.status=="NORMAL",SysUser.id!=user_id))==0:raise StateConflictError("必须保留至少一个有效管理员")
+    if changes.get("employee_role")=="NEWCOMER" or changes.get("status") == "DISABLED" or ("dept_id" in changes and changes["dept_id"] != user.dept_id):
+        check_can_deactivate(db, user_id)
     changed_sensitive = False
     for k, v in changes.items():
-        if not hasattr(user, k) or v is None:
+        if not hasattr(user, k):
             continue
         if getattr(user, k) != v:
             setattr(user, k, v)
@@ -239,6 +248,18 @@ def check_can_deactivate(db: Session, user_id: int) -> None:
 
     ⚠️ M1-06 要求："停用班主任/顾问前检查待处理记录和在读学生，要求交接"
     """
+    from app.models.admin_service import StudentAdminService
+    from app.models.feedback_ticket import StudentFeedbackTicket
+    from app.models.lead import CrmLead
+    from app.models.psych import StudentPsychAlert
+    pending = [(SysDepartment, SysDepartment.head_user_id == user_id),
+        (StudentAdminService, (StudentAdminService.assignee_user_id == user_id) & (StudentAdminService.status == "PENDING")),
+        (StudentFeedbackTicket, (StudentFeedbackTicket.assignee_user_id == user_id) & StudentFeedbackTicket.status.in_(["PENDING","PROCESSING"])),
+        (CrmLead, (CrmLead.owner_user_id == user_id) & CrmLead.status.in_(["NEW","FOLLOWING"])),
+        (StudentPsychAlert, (StudentPsychAlert.follow_up_user_id == user_id) & StudentPsychAlert.status.in_(["PENDING_REVIEW","CONFIRMED","HANDLING"]))]
+    for model,condition in pending:
+        if db.scalar(select(model.id).where(condition).limit(1)) is not None:
+            raise StateConflictError("该员工仍有负责关系或待处理事项，请先交接")
     # 是否还是班主任
     cls = db.scalar(select(SysClass.id).where(SysClass.head_teacher_id == user_id))
     if cls is not None:

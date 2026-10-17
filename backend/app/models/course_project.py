@@ -29,6 +29,7 @@ class CourseProject(Base):
     fee_currency: Mapped[str | None] = mapped_column(String(3))
     is_published: Mapped[bool] = mapped_column(Boolean, default=False)
     version: Mapped[int] = mapped_column(Integer, default=1)
+    __mapper_args__ = {"version_id_col": version}
     create_time: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     update_time: Mapped[datetime] = mapped_column(

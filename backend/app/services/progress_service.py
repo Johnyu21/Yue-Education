@@ -9,11 +9,12 @@ M3 申请进度登记 —— API080 建内部跟踪事项 / API081 追加进度�
   4. DETAIL/ASSIGNMENT 沿用当前阶段，不改写历史。
   5. 本模块只 flush，不 commit。
 """
+from app.core.idempotency import idempotent
 import logging
 import uuid
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.core.confirmation import verify_confirmation
@@ -95,6 +96,7 @@ def _root_id(db: Session, case_no: UUID) -> int | None:
 # =============================================================
 # API080 人工建立内部跟踪事项
 # =============================================================
+@idempotent("progress_service.create_case")
 def create_case(db: Session, actor: SysUser, data: ApplicationCreateIn) -> dict:
     profile = require_student_visible(db, actor, data.student_profile_id)
     _require_case_manager(db, actor, profile)
@@ -152,6 +154,7 @@ def create_case(db: Session, actor: SysUser, data: ApplicationCreateIn) -> dict:
 # =============================================================
 # API081 追加进度 / 补料说明
 # =============================================================
+@idempotent("progress_service.advance_case")
 def advance_case(db: Session, actor: SysUser, case_no_str: str,
                  data: ApplicationAdvanceIn) -> dict:
     try:
@@ -168,7 +171,7 @@ def advance_case(db: Session, actor: SysUser, case_no_str: str,
     if data.confirmation_token:
         verify_confirmation(actor, data.confirmation_token, operation="ADVANCE_APPLICATION",
                             entity_id=None,
-                            payload=m3_canonical.application_advance_payload(case_no_str, data))
+                            payload=m3_canonical.application_advance_payload(case_no_str, data), request_key=data.request_key)
 
     latest = _latest_event(db, case_no)
     if latest is None:
@@ -178,6 +181,10 @@ def advance_case(db: Session, actor: SysUser, case_no_str: str,
         raise NotFoundError("资源不存在")
     _require_case_manager(db, actor, profile)
 
+    db.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:key,9103))"),{"key":str(case_no)})
+    db.expire_all()
+    latest=_latest_event(db,case_no)
+    if data.assignee_user_id is not None:_validate_assignee(db,actor,profile,data.assignee_user_id)
     if data.expected_sequence != latest.sequence_no:
         raise SequenceConflictError()
 

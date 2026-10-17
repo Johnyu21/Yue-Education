@@ -3,11 +3,12 @@
 
 请求字段 snake_case（对齐 04 文档），响应字段 camelCase（对齐 M1 UserOut 风格），ID 转字符串。
 """
-from datetime import datetime
+from pydantic import AwareDatetime as datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from app.core.dto import BaseModel
+from pydantic import Field
 
 
 # ---- 请求 ----

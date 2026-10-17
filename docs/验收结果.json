@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-17",
+  "python": "3.12.14",
+  "postgresql": "15.19",
+  "database": "yue_education",
+  "databaseTables": 31,
+  "migrations": 8,
+  "testDatabase": "yue_education_test",
+  "testResult": {
+    "passed": 164,
+    "failed": 0,
+    "skipped": 0,
+    "warnings": 3,
+    "seconds": 78.92,
+    "exitCode": 0
+  },
+  "httpSmoke": {
+    "live": 200,
+    "ready": 200,
+    "openapi": 200,
+    "anonymousMe": 401,
+    "anonymousReports": 401
+  },
+  "openApiPaths": 109,
+  "frontendChanged": false,
+  "pdfVisualPages": 3,
+  "wordContentParagraphs": 71,
+  "externalIntegrationVerified": false,
+  "containerStartupVerified": false,
+  "backupRestoreVerified": false,
+  "testSchemasRemaining": 0,
+  "businessSampleRows": {
+    "users": 0,
+    "leads": 0,
+    "students": 0
+  }
+}

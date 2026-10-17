@@ -328,3 +328,9 @@ def assessment_extract(payload: dict) -> dict:
         "missing_fields": missing,
         "warnings": warnings,
     }
+
+
+def student_output(payload):
+    text=str(payload.get("message") or "")
+    intent=next((v for k,v in [("成绩","SCORE_QUERY"),("日程","SCHEDULE_QUERY"),("进度","CASE_QUERY"),("档案","PROFILE_QUERY"),("评估","ASSESSMENT_QUERY")] if k in text),"OTHER")
+    return {"schema_version":"1.0","intent":intent,"answer":"当前为离线模式，请使用表单核对并办理业务。","sources":[],"missing_fields":[],"warnings":["MOCK_MODE"]}

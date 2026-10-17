@@ -4,8 +4,10 @@
 学生侧 + 导出的 M3 Interface（claim_feedback / handle_feedback）。
 priority 只由后端决定，学生 DTO 不返回 priority 与内部历史。
 """
+from app.core.idempotency import idempotent
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from app.core.config import settings
 from uuid import UUID
 
 from sqlalchemy import select
@@ -22,6 +24,7 @@ from app.core.errors import (
 from app.core.notification import notify
 from app.models.feedback_ticket import StudentFeedbackTicket
 from app.models.student import StudentProfile
+from app.models.organization import SysDepartment
 from app.models.user import SysUser
 from app.repositories import feedback_repo
 from app.repositories.common import my_profile_id
@@ -80,18 +83,25 @@ def canonical_feedback_payload(req: FeedbackCreateRequest) -> dict:
 # =============================================================
 # 学生侧
 # =============================================================
+@idempotent("feedback_service.submit_feedback")
 def submit_feedback(db: Session, user: SysUser, req: FeedbackCreateRequest) -> FeedbackStudentDTO:
     profile_id = my_profile_id(db, user)
     if profile_id <= 0:
         raise NotFoundError("学生档案不存在")
 
+    if not req.confirmed:
+        raise InvalidRequestError("请确认后再提交")
     existing = feedback_repo.get_ticket_by_request_key(db, req.request_key)
     if existing is not None:
+        if existing.student_profile_id != profile_id:
+            raise NotFoundError("资源不存在")
+        if any(getattr(existing,k) != v for k,v in canonical_feedback_payload(req).items()):
+            raise StateConflictError("请求键已被其他内容使用")
         return _to_student_dto(existing)
 
     if req.confirmation_token:
         verify_confirmation(user, req.confirmation_token, operation="SUBMIT_FEEDBACK",
-                            entity_id=None, payload=canonical_feedback_payload(req))
+                            entity_id=None, payload=canonical_feedback_payload(req), request_key=req.request_key)
 
     profile = db.get(StudentProfile, profile_id)
     priority = "HIGH" if req.category == "COMPLAINT" else "NORMAL"
@@ -110,6 +120,7 @@ def submit_feedback(db: Session, user: SysUser, req: FeedbackCreateRequest) -> F
         status="PENDING",
         handling_history=[],
         request_key=req.request_key,
+        due_at=datetime.now(timezone.utc) + timedelta(hours=settings.sla_feedback_hours),
         version=1,
     )
     db.add(t)
@@ -144,6 +155,7 @@ def get_my_ticket(db: Session, user: SysUser, ticket_id: int) -> FeedbackStudent
     return _to_student_dto(t)
 
 
+@idempotent("feedback_service.confirm_feedback")
 def confirm_feedback(db: Session, user: SysUser, ticket_id: int, *,
                      expected_version: int, request_key: UUID) -> FeedbackStudentDTO:
     """API063 学生确认解决并关闭。"""
@@ -166,6 +178,7 @@ def confirm_feedback(db: Session, user: SysUser, ticket_id: int, *,
     return _to_student_dto(t)
 
 
+@idempotent("feedback_service.reopen_feedback")
 def reopen_feedback(db: Session, user: SysUser, ticket_id: int, *,
                     expected_version: int, request_key: UUID, reason: str) -> FeedbackStudentDTO:
     """API064 学生不认可解决结果：RESOLVED → PROCESSING，保留前次解决历史。"""
@@ -189,6 +202,7 @@ def reopen_feedback(db: Session, user: SysUser, ticket_id: int, *,
     return _to_student_dto(t)
 
 
+@idempotent("feedback_service.rate_feedback")
 def rate_feedback(db: Session, user: SysUser, ticket_id: int, req: RatingRequest) -> dict:
     """API065 学生评价 1~5 分（仅 CLOSED 且未评价）。"""
     profile_id = my_profile_id(db, user)
@@ -223,6 +237,7 @@ def _require_after_sales(db: Session, actor: SysUser, t: StudentFeedbackTicket) 
         raise NotFoundError("资源不存在")
 
 
+@idempotent("feedback_service.claim_feedback")
 def claim_feedback(db: Session, actor: SysUser, ticket_id: int, *,
                    expected_version: int, request_key: UUID) -> FeedbackStaffDTO:
     """API061 售后认领（M3 控制器复用）。"""
@@ -247,6 +262,7 @@ def claim_feedback(db: Session, actor: SysUser, ticket_id: int, *,
     return _to_staff_dto(t)
 
 
+@idempotent("feedback_service.handle_feedback")
 def handle_feedback(db: Session, actor: SysUser, ticket_id: int,
                     req: FeedbackHandlingRequest) -> FeedbackStaffDTO:
     """API062 售后跟进/解决/转派（M3 控制器复用）。"""
@@ -260,11 +276,13 @@ def handle_feedback(db: Session, actor: SysUser, ticket_id: int,
     now = datetime.now(timezone.utc)
     history = list(t.handling_history or [])
 
+    if t.status not in ("PENDING", "PROCESSING"):
+        raise StateConflictError("当前工单状态不允许处理")
     if req.action == "ASSIGN":
-        if actor.employee_role != "ADMIN" and actor.dept_id != t.dept_id:
+        if actor.employee_role != "ADMIN" and db.scalar(select(SysDepartment.id).where(SysDepartment.id == t.dept_id, SysDepartment.head_user_id == actor.id)) is None:
             raise ForbiddenError("无权转派")
         new_assignee = db.get(SysUser, req.assignee_user_id) if req.assignee_user_id else None
-        if new_assignee is None or not new_assignee.can_handle_feedback:
+        if new_assignee is None or not new_assignee.is_employee or new_assignee.status != "NORMAL" or not new_assignee.can_handle_feedback or new_assignee.dept_id != t.dept_id:
             raise InvalidRequestError("目标处理人需有售后权限")
         t.assignee_user_id = new_assignee.id
         if t.status == "PENDING":

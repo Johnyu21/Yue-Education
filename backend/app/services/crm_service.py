@@ -11,6 +11,7 @@ M3 CRM 闭环 —— 线索列表/详情/建客户/补充资料/认领/转派/�
      临时密码只在首次成功响应出现一次，不写日志。
   6. 本模块函数只 flush，不 commit（事务边界在 controller 的 with_business_transaction）。
 """
+from app.core.idempotency import idempotent
 import logging
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
@@ -253,11 +254,12 @@ def get_lead(db: Session, actor: SysUser, lead_id: int) -> LeadStaffOut:
 # =============================================================
 # API034 员工手工/转写确认建客户
 # =============================================================
+@idempotent("crm_service.create_lead")
 def create_lead(db: Session, actor: SysUser, data: LeadManualIn) -> dict:
     _require_lead_write(actor)
     if data.confirmation_token:
         verify_confirmation(actor, data.confirmation_token, operation="CREATE_LEAD",
-                            entity_id=None, payload=m3_canonical.lead_create_payload(data))
+                            entity_id=None, payload=m3_canonical.lead_create_payload(data), request_key=data.request_key)
     if data.dept_id is not None:
         if actor.employee_role != "ADMIN":
             raise ForbiddenError("仅管理员可指定归属部门")
@@ -319,6 +321,7 @@ def create_lead(db: Session, actor: SysUser, data: LeadManualIn) -> dict:
 # =============================================================
 # API035 补充核对后的客户资料
 # =============================================================
+@idempotent("crm_service.update_lead")
 def update_lead(db: Session, actor: SysUser, lead_id: int, data: LeadUpdateIn) -> LeadStaffOut:
     _require_lead_write(actor)
     lead = _get_lead_in_scope(db, actor, lead_id)
@@ -354,6 +357,7 @@ def update_lead(db: Session, actor: SysUser, lead_id: int, data: LeadUpdateIn) -
 # =============================================================
 # API036 认领（条件更新，并发只有一人成功）
 # =============================================================
+@idempotent("crm_service.claim_lead")
 def claim_lead(db: Session, actor: SysUser, lead_id: int, *,
                expected_version: int, request_key) -> dict:
     _require_lead_write(actor)
@@ -404,6 +408,7 @@ def claim_lead(db: Session, actor: SysUser, lead_id: int, *,
 # =============================================================
 # API037 分配/转派（主管/管理员）
 # =============================================================
+@idempotent("crm_service.assign_lead")
 def assign_lead(db: Session, actor: SysUser, lead_id: int, *, owner_user_id: int,
                 expected_version: int, reason: str, request_key) -> dict:
     _require_lead_write(actor)
@@ -425,7 +430,11 @@ def assign_lead(db: Session, actor: SysUser, lead_id: int, *, owner_user_id: int
     if (target is None or target.status != "NORMAL"
             or target.employee_role not in (*_ADVISOR_ROLES, "ADMIN")):
         raise InvalidRequestError("转派目标需为有效顾问")
-    if target.employee_role != "ADMIN" and target.dept_id != lead.dept_id:
+    if lead.dept_id is None and actor.employee_role == "ADMIN":
+        if target.dept_id is None:
+            raise InvalidRequestError("目标顾问必须有有效部门")
+        lead.dept_id = target.dept_id
+    elif target.employee_role != "ADMIN" and target.dept_id != lead.dept_id:
         raise InvalidRequestError("转派目标须与客户同部门")
 
     old_owner = lead.owner_user_id
@@ -463,6 +472,7 @@ def list_follow_ups(db: Session, actor: SysUser, lead_id: int, *,
 # =============================================================
 # API039 写联系记录 / 下次计划
 # =============================================================
+@idempotent("crm_service.add_follow_up")
 def add_follow_up(db: Session, actor: SysUser, lead_id: int, data: FollowUpIn) -> dict:
     _require_lead_write(actor)
     lead = _get_lead_in_scope(db, actor, lead_id)
@@ -476,7 +486,7 @@ def add_follow_up(db: Session, actor: SysUser, lead_id: int, data: FollowUpIn) -
         verify_confirmation(actor, data.confirmation_token, operation="ADD_FOLLOWUP",
                             entity_id=lead_id,
                             payload=m3_canonical.follow_up_payload(data),
-                            expected_version=data.expected_version)
+                            expected_version=data.expected_version, request_key=data.request_key)
 
     if lead.version != data.expected_version:
         raise VersionConflictError(lead.version)
@@ -497,6 +507,7 @@ def add_follow_up(db: Session, actor: SysUser, lead_id: int, data: FollowUpIn) -
 # =============================================================
 # API040 流失 / 恢复 / 开始跟进
 # =============================================================
+@idempotent("crm_service.transition_lead")
 def transition_lead(db: Session, actor: SysUser, lead_id: int,
                     data: LeadTransitionIn) -> dict:
     _require_lead_write(actor)
@@ -505,7 +516,7 @@ def transition_lead(db: Session, actor: SysUser, lead_id: int,
         verify_confirmation(actor, data.confirmation_token, operation="TRANSITION_LEAD",
                             entity_id=lead_id,
                             payload=m3_canonical.transition_payload(data),
-                            expected_version=data.expected_version)
+                            expected_version=data.expected_version, request_key=data.request_key)
     if lead.version != data.expected_version:
         raise VersionConflictError(lead.version)
     if lead.status == "SIGNED":
@@ -534,12 +545,13 @@ def transition_lead(db: Session, actor: SysUser, lead_id: int,
 # =============================================================
 # API043 确认线下签约并转学生（5 表原子事务）
 # =============================================================
+@idempotent("crm_service.convert_to_student")
 def convert_to_student(db: Session, actor: SysUser, lead_id: int,
                        data: ConversionIn) -> dict:
     _require_lead_write(actor)
 
     # 锁客户行，防并发重复转化
-    lead = db.get(CrmLead, lead_id, with_for_update=True)
+    lead = db.get(CrmLead, lead_id, with_for_update=True,populate_existing=True)
     if lead is None:
         raise NotFoundError("资源不存在")
     if not _can_view_lead(db, actor, lead):
@@ -570,6 +582,7 @@ def convert_to_student(db: Session, actor: SysUser, lead_id: int,
     if not data.contract_confirmed:
         raise InvalidRequestError("必须确认线下已完成签约")
 
+    if not lead.owner_user_id:raise InvalidRequestError("请先认领或分配负责顾问")
     # ---- 前置校验 ----
     project = db.get(CourseProject, data.course_project_id)
     if project is None:
@@ -580,6 +593,9 @@ def convert_to_student(db: Session, actor: SysUser, lead_id: int,
         raise InvalidRequestError("班级不存在")
     if not cls.head_teacher_id:
         raise ClassTeacherRequiredError()
+    teacher=db.get(SysUser,cls.head_teacher_id)
+    if not teacher or not teacher.is_employee or teacher.status!="NORMAL":raise ClassTeacherRequiredError()
+    if actor.employee_role!="ADMIN" and cls.dept_id!=lead.dept_id:raise DepartmentMismatchError("班级与客户归属部门不一致")
 
     advisor = db.get(SysUser, data.advisor_user_id)
     if (advisor is None or advisor.status != "NORMAL"
@@ -602,11 +618,14 @@ def convert_to_student(db: Session, actor: SysUser, lead_id: int,
             amount = Decimal(data.contract_amount)
         except (InvalidOperation, TypeError) as exc:
             raise InvalidRequestError("合同金额格式不正确") from exc
-        if amount < 0:
-            raise InvalidRequestError("合同金额不能为负")
+        precision=CrmLead.__table__.c.contract_amount.type.precision
+        scale=CrmLead.__table__.c.contract_amount.type.scale
+        if not amount.is_finite() or amount<0 or amount>=Decimal(10)**(precision-scale):raise InvalidRequestError("合同金额须为有效非负金额且不能超出范围")
+        if amount!=amount.quantize(Decimal("0.01")):raise InvalidRequestError("合同金额最多两位小数")
     if (amount is None) != (data.contract_currency is None):
         raise InvalidRequestError("合同金额与币种必须同时提供或同时省略")
 
+    if data.contract_currency is not None and (len(data.contract_currency)!=3 or not data.contract_currency.isascii() or not data.contract_currency.isalpha()):raise InvalidRequestError("币种须为三位字母代码")
     now = datetime.now(timezone.utc)
 
     # ① 学生账号（student：无角色、无部门、无敏感授权）
@@ -663,7 +682,7 @@ def convert_to_student(db: Session, actor: SysUser, lead_id: int,
     lead.signed_at = now
     lead.contract_ref = data.contract_ref
     lead.contract_amount = amount
-    lead.contract_currency = data.contract_currency
+    lead.contract_currency = data.contract_currency.upper() if data.contract_currency else None
     lead.version += 1
 
     # ⑤ SIGNED 跟进

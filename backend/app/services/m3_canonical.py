@@ -35,6 +35,7 @@ def follow_up_payload(data: FollowUpIn) -> dict:
         "content": data.content,
         "follow_up_type": data.follow_up_type,
         "next_follow_up_at": _iso(data.next_follow_up_at),
+        "next_follow_up_at_provided":"next_follow_up_at" in data.model_fields_set,
     }
 
 

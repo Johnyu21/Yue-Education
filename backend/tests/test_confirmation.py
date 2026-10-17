@@ -159,3 +159,14 @@ def test_登录令牌不能当确认令牌(users):
 
 def test_有效期是5分钟(users):
     assert CONFIRM_TTL_MINUTES == 5
+
+
+def test_followup_omitted_plan_cannot_be_changed_to_clear(users):
+    from uuid import uuid4
+    from app.schemas.lead import FollowUpIn
+    from app.services.m3_canonical import follow_up_payload
+    key=uuid4()
+    keep=FollowUpIn(content='Synthetic followup',expected_version=1,request_key=key)
+    clear=FollowUpIn(content='Synthetic followup',expected_version=1,request_key=key,next_follow_up_at=None)
+    token=sign_confirmation(users['a'],'ADD_FOLLOWUP',entity_id=1,payload=follow_up_payload(keep),expected_version=1,request_key=str(key))
+    with pytest.raises(InvalidRequestError):verify_confirmation(users['a'],token,operation='ADD_FOLLOWUP',entity_id=1,payload=follow_up_payload(clear),expected_version=1,request_key=key)

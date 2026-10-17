@@ -20,7 +20,7 @@ def get_by_id(db: Session, event_id: int) -> EventLecture | None:
 def lock_by_id(db: Session, event_id: int) -> EventLecture | None:
     """在事务内锁定活动行，用于名额复查（报名与取消共用同一锁序）。"""
     return db.scalar(
-        select(EventLecture).where(EventLecture.id == event_id).with_for_update()
+        select(EventLecture).where(EventLecture.id == event_id).with_for_update().execution_options(populate_existing=True)
     )
 
 

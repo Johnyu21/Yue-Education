@@ -30,6 +30,11 @@ def _client() -> DifyClient:
 
 def run_workflow(audience: str, payload: dict, user: str, timeout: float = 45.0) -> dict:
     """按受众选择工作流并调用，返回解析后的 output_json（dict）。"""
+    if settings.dify_mode == "disabled":
+        raise AIUnavailableError("AI能力未启用")
+    if settings.dify_mode == "mock" and audience == "student":
+        from app.integrations.dify.mock_samples import student_output
+        return student_output(payload)
     get_key = _AUDIENCE_KEYS.get(audience)
     if get_key is None:
         raise AIUnavailableError(f"未知工作流受众 {audience}")
@@ -37,7 +42,7 @@ def run_workflow(audience: str, payload: dict, user: str, timeout: float = 45.0)
     if not key:
         raise AIUnavailableError(f"{audience} 工作流未配置 key")
 
-    client = _client()
+    client = DifyClient(settings.dify_base_url, timeout=timeout)
     outputs = client.run_workflow(
         key,
         {"payload_json": json.dumps(payload, ensure_ascii=False)},
@@ -49,7 +54,9 @@ def run_workflow(audience: str, payload: dict, user: str, timeout: float = 45.0)
         raise AIBadResponseError("工作流未返回 output_json")
     if isinstance(raw, str):
         try:
-            return json.loads(raw)
+            parsed=json.loads(raw)
+            if not isinstance(parsed,dict):raise AIBadResponseError("output_json必须为对象")
+            return parsed
         except json.JSONDecodeError as exc:
             raise AIBadResponseError("output_json 不是合法 JSON") from exc
     if isinstance(raw, dict):

@@ -1,6 +1,7 @@
 """
 成绩 / 日程提醒 / 申请进度 / 签约前评估摘要 / 升学意向 业务
 """
+from app.core.idempotency import idempotent
 import logging
 from datetime import datetime, timezone
 from uuid import UUID
@@ -47,7 +48,7 @@ def _resolve_profile_id(db: Session, user: SysUser, student_id: int | None) -> i
 # ---- 成绩（只读）----
 def _score_to_dto(s) -> ScoreDTO:
     return ScoreDTO(
-        id=str(s.id), subject=s.subject, scoreType=s.score_type, scoreText=s.score_text,
+        id=str(s.id), version=s.version, subject=s.subject, scoreType=s.score_type, scoreText=s.score_text,
         scoreNumeric=str(s.score_numeric) if s.score_numeric is not None else None,
         maxScore=str(s.max_score) if s.max_score is not None else None,
         gradedAt=s.graded_at,
@@ -86,6 +87,7 @@ def list_schedules(db: Session, user: SysUser, *, start_at=None, end_at=None,
     return [_schedule_to_dto(s) for s in items], total
 
 
+@idempotent("academic_service.set_reminder")
 def set_reminder(db: Session, user: SysUser, schedule_id: int, req: ReminderRequest) -> dict:
     profile_id = _own_profile_id(db, user)
     sched = academic_repo.get_schedule(db, schedule_id)
@@ -176,7 +178,7 @@ def get_initial_assessment(db: Session, user: SysUser) -> dict:
 
     report = lead.assessment_report or {}
     matches = [
-        {"projectId": str(p.get("project_id")) if p.get("project_id") else None,
+        {"projectId": str(p.get("projectId") or p.get("project_id")) if (p.get("projectId") or p.get("project_id")) else None,
          "decision": p.get("decision")}
         for p in (report.get("projects") or [])
     ]
@@ -185,7 +187,10 @@ def get_initial_assessment(db: Session, user: SysUser) -> dict:
 
 
 # ---- 升学意向（API095）----
+@idempotent("academic_service.create_upgrade_interest")
 def create_upgrade_interest(db: Session, user: SysUser, req: UpgradeInterestRequest) -> dict:
+    if not req.confirmed:
+        raise InvalidRequestError("请确认后再提交")
     profile = student_repo.get_profile_by_user(db, user.id)
     if profile is None:
         raise NotFoundError("学生档案不存在")
@@ -195,12 +200,12 @@ def create_upgrade_interest(db: Session, user: SysUser, req: UpgradeInterestRequ
     lead = db.get(CrmLead, profile.converted_lead_id)
     if lead is None:
         raise NotFoundError("来源客户不存在")
-    if not lead.owner_user_id:
-        raise StateConflictError("暂无负责顾问，请联系管理员")
+    if not profile.advisor_user_id:
+        raise StateConflictError("暂无个人顾问，请联系管理员")
 
     if req.confirmation_token:
         verify_confirmation(user, req.confirmation_token, operation="UPGRADE_INTEREST",
-                            entity_id=None, payload={"course_project_id": req.course_project_id})
+                            entity_id=None, payload={"course_project_id": req.course_project_id, "note": req.note}, request_key=req.request_key)
 
     # 幂等
     existing = db.scalar(select(CrmFollowUp.id).where(
@@ -213,7 +218,8 @@ def create_upgrade_interest(db: Session, user: SysUser, req: UpgradeInterestRequ
     if project is None or not project.is_published:
         raise InvalidRequestError("项目不存在或未发布")
 
-    advisor = db.get(SysUser, lead.owner_user_id)
+    advisor = db.get(SysUser, profile.advisor_user_id)
+    if not advisor or not advisor.is_employee or advisor.status!="NORMAL":raise StateConflictError("个人顾问不可用，请联系管理员")
     content = req.note or f"学生对项目「{project.name}」表达联系意向"
     fu = CrmFollowUp(
         lead_id=lead.id, actor_user_id=user.id, follow_up_type="UPSELL_INTEREST",
@@ -223,7 +229,7 @@ def create_upgrade_interest(db: Session, user: SysUser, req: UpgradeInterestRequ
     db.add(fu)
     db.flush()
 
-    notify(db, f"lead:{lead.id}:upgrade:{fu.id}", [lead.owner_user_id],
+    notify(db, f"lead:{lead.id}:upgrade:{fu.id}", [advisor.id],
            category="SYSTEM", title="学生升学意向",
            content=f"学生「{user.real_name}」对项目「{project.name}」表达联系意向",
            related_type="lead", related_id=lead.id)

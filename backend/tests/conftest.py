@@ -9,6 +9,10 @@ from app.core.config import settings
 from app.core.security import hash_password
 from app.models.user import SysUser
 
+if not (settings.environment == "test" and settings.test_database_enabled
+        and settings.postgres_db.endswith("_test") and settings.postgres_schema.startswith("test_")):
+    raise RuntimeError("测试仅允许通过 python -m scripts.test_backend 在独立测试库随机 schema 中运行")
+
 Engine = create_engine(settings.database_url)
 Session = sessionmaker(bind=Engine)
 
@@ -16,6 +20,8 @@ _P = hash_password("pw12345678")
 
 
 def _cleanup(db):
+    db.execute(text("DELETE FROM crm_follow_up WHERE lead_id IN (SELECT id FROM crm_lead WHERE owner_user_id IN (SELECT id FROM sys_user WHERE username LIKE 'm4_%'))"))
+    db.execute(text("DELETE FROM crm_lead WHERE owner_user_id IN (SELECT id FROM sys_user WHERE username LIKE 'm4_%')"))
     db.execute(text("DELETE FROM notification WHERE recipient_user_id IN (SELECT id FROM sys_user WHERE username LIKE 'm4_%')"))
     db.execute(text("DELETE FROM student_psych_alert WHERE student_profile_id IN (SELECT id FROM student_profile WHERE user_id IN (SELECT id FROM sys_user WHERE username LIKE 'm4_%'))"))
     db.execute(text("DELETE FROM student_psych_profile WHERE student_profile_id IN (SELECT id FROM student_profile WHERE user_id IN (SELECT id FROM sys_user WHERE username LIKE 'm4_%'))"))

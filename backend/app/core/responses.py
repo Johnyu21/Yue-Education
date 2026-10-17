@@ -44,7 +44,8 @@ def setup_request_id(app: FastAPI) -> None:
         # 客户端带了就用它的（限长防注入），否则自己生成
         # ⚠️ 规范要求 request_id 是合法 UUID（便于日志系统索引）
         rid = request.headers.get("X-Request-ID") or str(uuid.uuid4())
-        rid = rid[:64]
+        try:rid=str(uuid.UUID(rid))
+        except (ValueError,TypeError):rid=str(uuid.uuid4())
         request.state.request_id = rid
         token = _request_id.set(rid)          # 存进 contextvar，ok()/fail() 自动读
         try:
@@ -110,7 +111,7 @@ def setup_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(Exception)
     async def handle_unknown(request: Request, exc: Exception):
         # 完整错误写日志（后端自己看），响应只给一句通用提示
-        logger.exception("未预期异常 request_id=%s", current_request_id())
+        logger.error("未预期异常 request_id=%s type=%s", current_request_id(),exc.__class__.__name__)
         return JSONResponse(
             status_code=500,
             content=fail("INTERNAL_ERROR", "服务器内部错误"),

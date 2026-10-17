@@ -130,7 +130,7 @@ def handle_feedback_ticket(ticket_id: int, data: FeedbackHandlingRequest,
         verify_confirmation(user, data.confirmation_token, operation="HANDLE_FEEDBACK",
                             entity_id=ticket_id,
                             payload=m3_canonical.feedback_handling_payload(data),
-                            expected_version=data.expected_version)
+                            expected_version=data.expected_version, request_key=data.request_key)
     with with_business_transaction(db):
         dto = feedback_service.handle_feedback(db, user, ticket_id, data)
     return ok(dto.model_dump(mode="json"))

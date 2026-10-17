@@ -4,7 +4,7 @@
 M4：学生自助（档案/成绩/日程/进度查询/升学意向）
 M3：员工学生管理（列表/详情/关系/升学项目/进度登记/员工查日程）
 """
-from datetime import datetime
+from pydantic import AwareDatetime as datetime
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session

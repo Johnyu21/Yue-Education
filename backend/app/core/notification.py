@@ -93,26 +93,12 @@ def notify(
     # ---- 去重 & 创建 ----
     created = []
     for user_id in dict.fromkeys(recipients):        # 去重且保序
-        # 已存在同事件的通知 → 跳过（幂等）
-        exists = db.scalar(
-            select(Notification.id).where(
-                Notification.recipient_user_id == user_id,
-                Notification.business_event_key == event_key,
-            )
-        )
-        if exists:
-            continue
-
-        db.add(Notification(
-            recipient_user_id=user_id,
-            category=category,
-            title=title,
-            content=content,
-            related_type=related_type,
-            related_id=related_id,
-            business_event_key=event_key,
-        ))
-        created.append(user_id)
+        from sqlalchemy.dialects.postgresql import insert
+        statement = insert(Notification).values(
+            recipient_user_id=user_id,category=category,title=title,content=content,
+            related_type=related_type,related_id=related_id,business_event_key=event_key,
+        ).on_conflict_do_nothing(index_elements=["recipient_user_id","business_event_key"]).returning(Notification.id)
+        if db.scalar(statement) is not None:created.append(user_id)
 
     if created:
         db.flush()          # 让新建的通知有 id，但不提交（交给外层事务）

@@ -29,6 +29,7 @@ class StudentAcademicSchedule(Base):
     data_source: Mapped[str] = mapped_column(String(20), default="TEST")
     created_by_user_id: Mapped[int] = mapped_column(BigInteger)
     version: Mapped[int] = mapped_column(Integer, default=1)
+    __mapper_args__ = {"version_id_col": version}
     create_time: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     update_time: Mapped[datetime] = mapped_column(

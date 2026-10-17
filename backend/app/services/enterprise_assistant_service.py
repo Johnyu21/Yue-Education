@@ -13,6 +13,9 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
+from pydantic import ValidationError as SchemaValidationError
+from app.core.config import settings
+from app.core import runtime_state
 from sqlalchemy.orm import Session
 
 from app.core.confirmation import CONFIRM_TTL_MINUTES, new_request_key, sign_confirmation
@@ -56,7 +59,6 @@ from app.services import (
 logger = logging.getLogger(__name__)
 
 # 短期会话缓存（15 分钟，仅存候选对象 id，不存聊天正文）
-_CACHE: dict[str, dict] = {}
 _CACHE_TTL = timedelta(minutes=15)
 
 _KNOWLEDGE_REPLY = "该问题需要员工知识库支持，目前资料不足，请联系行政或查看制度文件。"
@@ -76,19 +78,13 @@ def _iso(value) -> str | None:
 def _cache_put(conversation_id: str | None, kind: str, ids: list[int]) -> None:
     if not conversation_id:
         return
-    _CACHE[conversation_id] = {"kind": kind, "ids": ids, "expires": _now() + _CACHE_TTL}
+    runtime_state.put("employee:"+conversation_id,{"kind":kind,"ids":ids},900)
 
 
 def _cache_get(conversation_id: str | None) -> dict | None:
     if not conversation_id:
         return None
-    item = _CACHE.get(conversation_id)
-    if item is None:
-        return None
-    if item["expires"] < _now():
-        _CACHE.pop(conversation_id, None)
-        return None
-    return item
+    return runtime_state.get("employee:"+conversation_id)
 
 
 def _is_head(db: Session, actor: SysUser) -> bool:
@@ -122,10 +118,10 @@ def _result(req: AssistantRequest, answer: str, *, proposal: Proposal | None = N
         conversationId=req.conversation_id,
         messageId=str(req.message_id),
         answer=answer,
-        sources=[SourceItem(**s) for s in (sources or []) if isinstance(s, dict)],
+        sources=[SourceItem(documentId=s.get("document_id",s.get("documentId")),title=s.get("title"),section=s.get("section")) for s in (sources or []) if isinstance(s,dict)],
         missingFields=missing or [],
         proposal=proposal,
-        aiStatus=ai_status,
+        aiStatus="MOCK" if settings.dify_mode=="mock" and ai_status=="LIVE" else ai_status,
         warnings=warnings or [],
     )
 
@@ -273,12 +269,19 @@ def _handle_read(db: Session, actor: SysUser, req: AssistantRequest,
     params = wf.params or {}
     intent = wf.intent
 
-    if intent in ("ORG_SEARCH",):
-        return _result(req, "组织通讯录接口由 M1 提供，当前尚未就绪，请联系管理员。",
-                       warnings=["ORG_API_NOT_READY"])
-    if intent in ("DAILY_SEARCH",):
-        return _result(req, "日报查询由 M5 的日报模块提供，当前尚未就绪。",
-                       warnings=["DAILY_API_NOT_READY"])
+    if intent=="ORG_SEARCH":
+        q=select(SysUser).where(SysUser.user_type=='EMPLOYEE',SysUser.status=='NORMAL')
+        keyword=str(params.get('keyword') or params.get('name') or '').strip()
+        if keyword:q=q.where(SysUser.real_name.ilike('%'+keyword+'%'))
+        people=list(db.scalars(q.order_by(SysUser.id).limit(30)))
+        return _result(req,'组织通讯录：\n'+'\n'.join(str(p.id)+'｜'+p.real_name+'｜'+str(p.employee_role or '') for p in people))
+    if intent=="DAILY_SEARCH":
+        from app.repositories.m5_report_repository import context
+        from app.services.m5_report_service import scoped_daily_query,daily_dto
+        from app.models.m5_report_models import Daily
+        user=context(db,actor)
+        records=[daily_dto(d,user) for d in db.scalars(scoped_daily_query(user).order_by(Daily.report_date.desc()).limit(20))]
+        return _result(req,'最近日报：\n'+'\n'.join(d['report_date']+'｜'+d['employee_display_name']+'｜'+d['status']+('｜专项内容无权限' if d['restricted'] else '｜'+d['content'].get('work_summary','')) for d in records))
 
     try:
         if intent in ("LEAD_SEARCH", "LEAD_DETAIL"):
@@ -288,7 +291,7 @@ def _handle_read(db: Session, actor: SysUser, req: AssistantRequest,
             if total == 1:
                 dto = crm_service.get_lead(db, actor, int(items[0].id))
                 return _result(req, _render_lead_detail(dto))
-            _cache_put(req.conversation_id, "lead", [int(i.id) for i in items])
+            _cache_put((str(actor.id)+":"+req.conversation_id) if req.conversation_id else None, "lead", [int(i.id) for i in items])
             return _result(req, _render_lead_list(items, total),
                            missing=["selection"])
 
@@ -377,8 +380,7 @@ def _handle_write(db: Session, actor: SysUser, req: AssistantRequest,
     intent = wf.intent
 
     if intent == "DAILY_DRAFT":
-        return _result(req, "日报草稿由 M5 的日报模块提供，当前尚未就绪。",
-                       warnings=["DAILY_API_NOT_READY"])
+        return _result(req,"请在日报助手核对日期并生成草稿；确认后再保存和提交审核。",proposal=Proposal(operation="DAILY_DRAFT",preview={"assistantEndpoint":"/api/v1/m5/chat/messages","saveEndpoint":"/api/v1/m5/dailies","draft":draft}))
 
     if intent == "LEAD_CREATE":
         name = str(draft.get("name") or "").strip()
@@ -411,7 +413,7 @@ def _handle_write(db: Session, actor: SysUser, req: AssistantRequest,
         if lead_id is None:
             items, total = _search_leads(db, actor, params)
             if total > 1:
-                _cache_put(req.conversation_id, "lead", [int(i.id) for i in items])
+                _cache_put((str(actor.id)+":"+req.conversation_id) if req.conversation_id else None, "lead", [int(i.id) for i in items])
                 return _result(req, _render_lead_list(items, total), missing=["selection"])
             return _result(req, "请提供客户姓名或编号。", missing=["lead_id"])
         lead = crm_service.get_lead(db, actor, lead_id)
@@ -421,9 +423,9 @@ def _handle_write(db: Session, actor: SysUser, req: AssistantRequest,
             if not content:
                 return _result(req, "请告诉我跟进内容。", missing=["content"])
             try:
+                plan={"next_follow_up_at":params["next_follow_up_at"]} if "next_follow_up_at" in params else {}
                 data = FollowUpIn(content=content, expected_version=lead.version,
-                                  request_key=UUID(new_request_key()),
-                                  next_follow_up_at=params.get("next_follow_up_at"))
+                                  request_key=UUID(new_request_key()),**plan)
             except Exception:
                 return _result(req, "跟进内容格式不正确，请重试。", missing=["content"])
             proposal, answer = _proposal(
@@ -431,7 +433,7 @@ def _handle_write(db: Session, actor: SysUser, req: AssistantRequest,
                 payload=m3_canonical.follow_up_payload(data),
                 expected_version=lead.version,
                 preview={"leadId": str(lead_id), "content": content,
-                         "nextFollowUpAt": _iso(data.next_follow_up_at)},
+                         "nextFollowUpAt": _iso(data.next_follow_up_at),"nextFollowUpAtProvided":"next_follow_up_at" in data.model_fields_set},
                 answer=f"将为客户「{lead.name}」记录跟进：{content}。请确认。")
             return _result(req, answer, proposal=proposal)
 
@@ -575,7 +577,7 @@ def handle_enterprise_message(db: Session, actor: SysUser,
         raise ForbiddenError("仅员工可使用企业助手")
 
     # 1) 同名消歧：会话缓存中的候选 + 用户回复编号
-    cached = _cache_get(req.conversation_id)
+    cached = _cache_get((str(actor.id)+":"+req.conversation_id) if req.conversation_id else None)
     text = req.message.strip()
     if cached and re.fullmatch(r"\d{1,2}", text):
         idx = int(text) - 1
@@ -583,15 +585,17 @@ def handle_enterprise_message(db: Session, actor: SysUser,
             lead_id = cached["ids"][idx]
             try:
                 dto = crm_service.get_lead(db, actor, lead_id)
-                _CACHE.pop(req.conversation_id, None)
+                runtime_state.drop("employee:"+str(actor.id)+":"+str(req.conversation_id))
                 return _result(req, _render_lead_detail(dto))
             except NotFoundError:
                 return _result(req, "该客户已不在你的可见范围。")
 
     # 2) 调 Dify（事务外）
     payload = _build_payload(db, actor, req)
+    actor_id=actor.id
+    db.rollback()
     try:
-        raw = run_enterprise_workflow(payload, user=actor.id)
+        raw = run_enterprise_workflow(payload, user=actor_id)
         wf = WfEnterpriseOutput(**raw)
     except (AIUnavailableError, AITimeoutError, AIBadResponseError) as exc:
         logger.info("企业助手 AI 不可用：%s", exc.__class__.__name__)

@@ -1,11 +1,13 @@
 """
 学生档案 / 成绩 / 日程 / 申请进度 请求与响应 DTO
 """
-from datetime import date, datetime
+from datetime import date
+from pydantic import AwareDatetime as datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from app.core.dto import BaseModel
+from pydantic import Field
 
 
 # ---- 请求 ----
@@ -72,6 +74,7 @@ class StudentSelfDTO(BaseModel):
 
 
 class ScoreDTO(BaseModel):
+    version: int = 1
     id: str
     subject: str
     scoreType: str

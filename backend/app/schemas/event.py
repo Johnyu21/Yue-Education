@@ -3,11 +3,12 @@
 
 约定：请求体 snake_case；响应体 camelCase；ID 为十进制字符串；时间为 ISO 8601 带时区。
 """
-from datetime import datetime
+from pydantic import AwareDatetime as datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from app.core.dto import BaseModel
+from pydantic import Field
 
 
 # ---------------- 响应 ----------------

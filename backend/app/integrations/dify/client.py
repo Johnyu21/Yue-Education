@@ -39,15 +39,17 @@ class DifyClient:
             logger.warning("Dify 调用超时（%ss）", self.timeout)
             raise AITimeoutError() from exc
         except httpx.HTTPError as exc:
-            logger.warning("Dify 连接失败：%s", exc)
+            logger.warning("Dify 连接失败：%s", exc.__class__.__name__)
             raise AIUnavailableError("AI 服务连接失败") from exc
 
         if resp.status_code in (401, 403):
             raise AIUnavailableError("AI 服务鉴权失败")
+        if resp.status_code==429:
+            raise AIUnavailableError("AI服务繁忙，请稍后重试")
         if resp.status_code >= 500:
             raise AIUnavailableError("AI 服务暂不可用")
         if resp.status_code != 200:
-            logger.warning("Dify 返回 %s：%s", resp.status_code, resp.text[:300])
+            logger.warning("Dify 返回异常状态 %s", resp.status_code)
             raise AIBadResponseError("AI 返回异常状态")
 
         try:
@@ -55,9 +57,13 @@ class DifyClient:
         except ValueError as exc:
             raise AIBadResponseError("AI 返回不是合法 JSON") from exc
 
-        run = data.get("data") or {}
+        if not isinstance(data,dict) or not isinstance(data.get("data"),dict):raise AIBadResponseError("AI返回结构异常")
+        run = data["data"]
         if run.get("status") == "failed":
-            logger.warning("Dify 工作流执行失败：%s", run.get("error"))
+            logger.warning("Dify 工作流执行失败")
             raise AIBadResponseError("AI 工作流执行失败")
 
-        return run.get("outputs") or {}
+        if run.get("status") not in (None,"succeeded"):raise AIBadResponseError("AI工作流未完成")
+        outputs=run.get("outputs")
+        if not isinstance(outputs,dict):raise AIBadResponseError("AI输出结构异常")
+        return outputs

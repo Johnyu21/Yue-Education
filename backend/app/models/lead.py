@@ -60,3 +60,7 @@ class CrmLead(Base):
     # ---- 幂等与并发 ----
     request_key: Mapped[UUID] = mapped_column(Uuid, unique=True)     # 首次创建幂等键
     version: Mapped[int] = mapped_column(Integer, default=1)
+    __mapper_args__ = {"version_id_col": version}
+
+    create_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    update_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

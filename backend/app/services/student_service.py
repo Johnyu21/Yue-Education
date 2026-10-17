@@ -4,8 +4,11 @@
 含导出的 M3 Interface：decide_service / assign_service。
 写操作在同一事务内完成校验、状态、通知（事务边界在 controller）。
 """
+from app.core.idempotency import idempotent
+from app.services import m3_canonical
 import logging
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
+from app.core.mobile import normalize_mobile
 from uuid import UUID
 
 from sqlalchemy import select, text
@@ -171,15 +174,23 @@ def _check_leave_overlap(db: Session, profile_id: int, start_at: datetime, end_a
         raise StateConflictError("请假时间与已有申请重叠")
 
 
+@idempotent("student_service.submit_service")
 def submit_service(db: Session, user: SysUser, req: ServiceCreateRequest) -> dict:
     """API052 学生确认提交行政服务。"""
     profile = student_repo.get_profile_by_user(db, user.id)
     if profile is None:
         raise NotFoundError("学生档案不存在")
 
+    if not req.confirmed:
+        raise InvalidRequestError("请确认后再提交")
+
     # 幂等：同一 request_key 直接返回既有结果
     existing = service_repo.get_service_by_request_key(db, req.request_key)
     if existing is not None:
+        if existing.submitted_by_user_id != user.id:
+            raise NotFoundError("资源不存在")
+        if any(getattr(existing,k) != v for k,v in canonical_service_payload(req).items() if k not in {"start_at","end_at"}) or _iso(existing.start_at) != _iso(req.start_at) or _iso(existing.end_at) != _iso(req.end_at):
+            raise StateConflictError("请求键已被其他内容使用")
         return {"id": str(existing.id), "status": existing.status,
                 "assignee_display_name": _service_to_dto(db, existing).assigneeDisplayName,
                 "version": existing.version}
@@ -189,8 +200,9 @@ def submit_service(db: Session, user: SysUser, req: ServiceCreateRequest) -> dic
         verify_confirmation(
             user, req.confirmation_token, operation="SUBMIT_SERVICE",
             entity_id=None, payload=canonical_service_payload(req),
-        )
+         request_key=req.request_key)
 
+    profile = db.get(StudentProfile, profile.id, with_for_update=True, populate_existing=True)
     # 校验
     if req.service_type == "LEAVE":
         if not req.start_at or not req.end_at or req.end_at <= req.start_at:
@@ -199,8 +211,19 @@ def submit_service(db: Session, user: SysUser, req: ServiceCreateRequest) -> dic
     if req.service_type == "INFO_CHANGE" and not req.change_request:
         raise InvalidRequestError("信息修改必须提供新旧值")
 
+    if req.service_type=="INFO_CHANGE":
+        change=req.change_request
+        allowed=_INFO_CHANGE_STUDENT_FIELDS | _IDENTITY_FIELDS
+        if not change.new_values or not set(change.new_values)<=allowed or set(change.old_values)!=set(change.new_values):raise InvalidRequestError("新旧字段必须一致，且仅能修改允许的资料字段")
+        for field,value in change.new_values.items():
+            if field=="date_of_birth":
+                try:
+                    if value is not None and date.fromisoformat(value)>date.today():raise ValueError()
+                except (ValueError,TypeError):raise InvalidRequestError("出生日期必须为有效的YYYY-MM-DD且不晚于今天")
+            elif value is not None and (not isinstance(value,str) or not value.strip() or len(value)>160):raise InvalidRequestError("资料字段必须为有效文本")
+            if field in _IDENTITY_FIELDS and (not isinstance(value,str) or not value.strip()):raise InvalidRequestError("身份字段不能为空")
+            if field=="mobile" and normalize_mobile(value)!=value:raise InvalidRequestError("手机号须为规范格式")
     # 锁定学生主行（重叠检测 + 并发）
-    profile = db.get(StudentProfile, profile.id, with_for_update=True)
 
     assignee = _resolve_assignee(db, profile, req.service_type)
 
@@ -233,6 +256,7 @@ def submit_service(db: Session, user: SysUser, req: ServiceCreateRequest) -> dic
             "assignee_display_name": assignee.real_name, "version": svc.version}
 
 
+@idempotent("student_service.cancel_service")
 def cancel_service(db: Session, user: SysUser, service_id: int, *,
                    expected_version: int, request_key: UUID, reason: str) -> dict:
     """API053 学生取消待审单（仅本人 PENDING）。"""
@@ -293,6 +317,7 @@ def _check_decider_permission(db: Session, actor: SysUser, svc: StudentAdminServ
     raise ForbiddenError("无权处理该申请")
 
 
+@idempotent("student_service.decide_service")
 def decide_service(db: Session, actor: SysUser, service_id: int,
                    req: ServiceDecisionRequest) -> ServiceDTO:
     """API054 员工审批（M3 控制器复用此业务函数）。
@@ -311,8 +336,8 @@ def decide_service(db: Session, actor: SysUser, service_id: int,
     if req.confirmation_token:
         verify_confirmation(actor, req.confirmation_token, operation="DECIDE_SERVICE",
                             entity_id=service_id,
-                            payload={"decision": req.decision, "note": req.note},
-                            expected_version=req.expected_version)
+                            payload=m3_canonical.decide_service_payload(req.decision,req.note,req.identity_verification),
+                            expected_version=req.expected_version, request_key=req.request_key)
 
     now = datetime.now(timezone.utc)
     if req.decision == "APPROVE" and svc.service_type == "INFO_CHANGE":
@@ -347,14 +372,14 @@ def _apply_info_change(db: Session, svc: StudentAdminService, req: ServiceDecisi
     user = db.get(SysUser, svc.submitted_by_user_id)
 
     for field, new_val in new.items():
-        if field in _IDENTITY_FIELDS and not req.identity_verification:
+        if field in _IDENTITY_FIELDS and (not req.identity_verification or field not in req.identity_verification.verified_fields):
             raise InvalidRequestError(f"字段 {field} 属于身份信息，需人工核验后才能批准")
 
         if field in _INFO_CHANGE_STUDENT_FIELDS:
             current = getattr(profile, field)
-            if old.get(field) != current:
+            if old.get(field) != (current.isoformat() if isinstance(current,date) else current):
                 raise StateConflictError(f"字段 {field} 原值已变更，请刷新后处理")
-            setattr(profile, field, new_val)
+            setattr(profile, field, date.fromisoformat(new_val) if field=="date_of_birth" and new_val is not None else new_val)
         elif field == "real_name":
             if old.get(field) != user.real_name:
                 raise StateConflictError("姓名原值已变更，请刷新后处理")
@@ -369,6 +394,7 @@ def _apply_info_change(db: Session, svc: StudentAdminService, req: ServiceDecisi
             user.token_version += 1          # 变更登录身份，撤销旧会话
 
 
+@idempotent("student_service.assign_service")
 def assign_service(db: Session, actor: SysUser, service_id: int, *,
                    assignee_user_id: int, expected_version: int,
                    reason: str, request_key: UUID) -> ServiceDTO:
@@ -388,7 +414,7 @@ def assign_service(db: Session, actor: SysUser, service_id: int, *,
             raise ForbiddenError("无权转派")
 
     new_assignee = db.get(SysUser, assignee_user_id)
-    if new_assignee is None or new_assignee.status != "NORMAL":
+    if new_assignee is None or not new_assignee.is_employee or new_assignee.status != "NORMAL" or new_assignee.dept_id != svc.dept_id:
         raise InvalidRequestError("转派目标无效")
 
     history = list(svc.handling_history or [])

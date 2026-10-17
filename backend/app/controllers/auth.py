@@ -9,7 +9,9 @@
   5. AI 调用**放事务外**（M1-S1）
   6. 每个接口下有 API 编号注释
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
+from app.services import rate_limit
+from app.core.config import settings
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_actor
@@ -22,8 +24,10 @@ from app.services import auth_service
 router = APIRouter(prefix="/api/v1/auth", tags=["认证"])
 
 
-def to_user_out(u: SysUser) -> dict:
+def to_user_out(u: SysUser,db:Session) -> dict:
     """model → 接口输出。id 转字符串，防 JS 精度丢失。"""
+    from app.core.permissions import build_scope
+    scope=build_scope(db,u,"student")
     return UserOut(
         id=str(u.id),
         username=u.username,
@@ -31,27 +35,30 @@ def to_user_out(u: SysUser) -> dict:
         userType=u.user_type,
         employeeRole=u.employee_role,
         deptId=str(u.dept_id) if u.dept_id else None,
-        mustChangePassword=u.must_change_password,
+        mustChangePassword=u.must_change_password,version=u.version,isAdmin=scope.is_admin,isDeptHead=bool(scope.is_head_of),
+        headOfDepartmentIds=[str(x) for x in scope.is_head_of],classTeacherOfIds=[str(x) for x in scope.class_teacher_of],
+        canHandleFeedback=bool(u.can_handle_feedback),psychAccessEnabled=bool(u.psych_access_enabled),
     ).model_dump()
 
 
 @router.post("/login")
-def login(data: LoginIn, db: Session = Depends(get_db)):
+def login(data: LoginIn, request: Request, db: Session = Depends(get_db)):
     """API003 登录。"""
+    rate_limit.check(rate_limit.client_key(request,"login"),settings.login_rate_limit_per_minute)
     user = auth_service.authenticate(db, data.username, data.password)
     token, expires_in = auth_service.issue_token(user)
     out = LoginOut(
         accessToken=token,
         expiresIn=expires_in,
-        user=UserOut(**to_user_out(user)),
+        user=UserOut(**to_user_out(user,db)),
     )
     return ok(out.model_dump())
 
 
 @router.get("/me")
-def me(user: SysUser = Depends(get_actor)):
+def me(user: SysUser = Depends(get_actor),db:Session=Depends(get_db)):
     """API004 当前身份与能力。前端据此决定显示哪个界面。"""
-    return ok(to_user_out(user))
+    return ok(to_user_out(user,db))
 
 
 @router.post("/password-change")

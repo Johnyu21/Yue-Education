@@ -41,6 +41,7 @@ class StudentFeedbackTicket(Base):
     handling_history: Mapped[list] = mapped_column(JSONB, default=list)
     request_key: Mapped[object] = mapped_column(Uuid, unique=True)
     version: Mapped[int] = mapped_column(Integer, default=1)
+    __mapper_args__ = {"version_id_col": version}
     create_time: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     update_time: Mapped[datetime] = mapped_column(

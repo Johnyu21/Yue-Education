@@ -39,3 +39,8 @@ storage/
 # ---- 数据库本地数据（如有）----
 *.sqlite3
 pgdata/
+
+*.credentials.txt
+backups/
+
+!backend/.env.test.example

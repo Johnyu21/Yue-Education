@@ -12,6 +12,9 @@
 from __future__ import annotations
 
 import logging
+import hmac
+from app.core.public_idempotency import reserve_public_request
+from app.core.errors import StateConflictError
 from datetime import datetime, timezone
 from uuid import NAMESPACE_URL, uuid5
 
@@ -138,6 +141,11 @@ def register_event(db: Session, event_id: int, data: RegistrationIn, *,
             mobile = normalize_mobile(data.mobile)
             student_profile_id, lead_id = None, None      # 访客稍后绑定线索
 
+        fresh_request=reserve_public_request(db,"event.register",data.request_key,{"event_id":event_id,"mobile":mobile,"name":name,"student_profile_id":student_profile_id,"request":data.model_dump(mode="json")})
+        if not fresh_request and existing is None:raise StateConflictError("该报名请求已结束，请使用新请求键")
+        if existing is not None:
+            if existing.event_id!=event_id or existing.mobile!=mobile or existing.student_profile_id!=student_profile_id:raise StateConflictError("请求键已被其他报名使用")
+
         # ④ 访客必须绑定线索（复用或新建，含 ACQUIRED 跟进）
         if not is_student:
             lead, _ = lead_service.acquire_lead(
@@ -177,6 +185,8 @@ def register_event(db: Session, event_id: int, data: RegistrationIn, *,
         # ⑦ 写报名（已取消的重新报名 → 更新同一记录，保留原 request_key）
         if same is not None:
             reg = same
+            reg.request_key=data.request_key
+            reg.registered_at=datetime.now(timezone.utc)
             reg.status = "REGISTERED"
             reg.canceled_at = None
             reg.registrant_name = name
@@ -245,6 +255,8 @@ def cancel_registration(db: Session, registration_id: int,
         if ev is None:
             raise NotFoundError("资源不存在")
 
+        reg=db.get(EventRegistration,registration_id,with_for_update=True,populate_existing=True)
+
         # 鉴权：学生本人 或 有效访客凭据；不通过一律 404（不暴露报名是否存在）
         if user is not None and user.is_student:
             if user.must_change_password:
@@ -253,6 +265,8 @@ def cancel_registration(db: Session, registration_id: int,
             if profile is None or reg.student_profile_id != profile.id:
                 raise NotFoundError("资源不存在")
         else:
+            if not data.cancel_token or not hmac.compare_digest(voucher.hash_voucher(data.cancel_token),reg.cancel_token_hash or ""):
+                raise NotFoundError("资源不存在")
             if not voucher.verify_cancel_voucher(data.cancel_token, reg.event_id,
                                                  reg.id, reg.request_key):
                 raise NotFoundError("资源不存在")

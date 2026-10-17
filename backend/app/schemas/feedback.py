@@ -3,11 +3,12 @@
 
 priority 只由后端决定，学生请求与响应白名单均不接受/不返回 priority。
 """
-from datetime import datetime
+from pydantic import AwareDatetime as datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from app.core.dto import BaseModel
+from pydantic import Field
 
 
 # ---- 请求 ----
