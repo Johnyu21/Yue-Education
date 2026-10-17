@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import logging
 
+from app.core.config import settings
 from app.core.errors import AIBadResponseError
 from app.integrations.dify import mock_samples, run_workflow
-from app.services import m2_config
 
 logger = logging.getLogger(__name__)
 
@@ -56,9 +56,9 @@ def run_visitor(payload: dict, *, user: str = "visitor",
     失败语义：Dify 不可用抛 AIUnavailableError、超时抛 AITimeoutError、
     输出不合契约抛 AIBadResponseError —— 由 service 层统一降级。
     """
-    if m2_config.dify_mode() == "mock":
+    if settings.dify_mode == "mock":
         return _validate(mock_samples.visitor_answer(payload))
 
-    timeout = timeout_s or m2_config.ai_timeout_visitor_seconds()
+    timeout = timeout_s or settings.ai_timeout_visitor_seconds
     raw = run_workflow("visitor", payload, user, timeout=float(timeout))
     return _validate(raw)

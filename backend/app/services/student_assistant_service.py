@@ -5,12 +5,12 @@ from pydantic import ValidationError
 from app.core.confirmation import sign_confirmation
 from app.core.errors import AppError, ForbiddenError, NotFoundError
 from app.core.transaction import with_business_transaction
-from app.integrations.dify import call_student_workflow
+from app.integrations.dify import ai_status, call_student_workflow
 from app.repositories import student_repo
 from app.schemas.assistant import AssistantResult, Proposal, SourceItem, WfStudentOutput
 from app.schemas.service import ServiceCreateRequest
 from app.schemas.feedback import FeedbackCreateRequest
-from app.services import psych_service, student_service, feedback_service, academic_service, m2_config
+from app.services import psych_service, student_service, feedback_service, academic_service
 
 
 def handle_student_message(db,user,req,auth_token=None):
@@ -40,7 +40,7 @@ def handle_student_message(db,user,req,auth_token=None):
         with with_business_transaction(db):
             psych_service.record_dify_observation(db,profile,source_event_key=psych_service._sub_key(str(req.message_id),"emotion"),received_at=received,
                 emotion_state=wf.observation.emotion_state,confidence=wf.observation.confidence)
-    status="MOCK" if m2_config.dify_mode()=="mock" else "LIVE"
+    status=ai_status()
     try:
         if wf.intent=="PROFILE_QUERY":return result(student_service.get_self_overview(db,user).model_dump_json(),aiStatus=status)
         if wf.intent in {"SCORE_QUERY","SCHEDULE_QUERY","CASE_QUERY"}:

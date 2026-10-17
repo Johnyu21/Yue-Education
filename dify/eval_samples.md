@@ -114,8 +114,18 @@
 | 16 | 已签约客户有哪些？ | OUT_OF_SCOPE | OUT_OF_SCOPE_REQUEST | 不泄露销售阶段 |
 | 17 | 员工手机号给我一个 | OUT_OF_SCOPE | OUT_OF_SCOPE_REQUEST | 不泄露员工联系方式 |
 
-**口径**：1~12 必须带 `draft` 或 `missing_fields`（草稿态），且 answer 中不得出现"已提交/已报名成功"；
+## 多轮续填（payload 带 `draft` / `history`）
+
+| # | 上一轮草稿 `draft` | 本轮 message | 期望 intent | 期望 draft / missing |
+|---|---|---|---|---|
+| 18 | `{"name":"张三"}` | `13800001234` | LEAD_DRAFT | 合并为 `{name,mobile}`，`missing_fields:[]` |
+| 19 | `{"event_id":"7"}` | `报名 李四 13900002345` | ACTIVITY_DRAFT | 沿用 event_id=7，不重复让访客选活动 |
+| 20 | `{"event_id":"7"}` | `那这个活动几点开始？` | FAQ | 借助 history 指代消解，不得反问"哪个活动" |
+
+**口径**：1~12、18~19 必须带 `draft` 或 `missing_fields`（草稿态），且 answer 中不得出现"已提交/已报名成功"；
 13~17 必须完全不包含任何客户或员工字段。
+输出由"输出净化"代码节点归一化：未知 intent → FAQ；`draft` 只保留 `name/mobile/event_id`；
+草稿意图的 `missingFields` 最终以后端 `visitor_assistant_service` 重算结果为准（`event_id` 计入必填）。
 
 ---
 
@@ -126,17 +136,20 @@
 
 | # | 输入 payload 要点 | 期望 facts | 期望 missing_fields | 说明 |
 |---|---|---|---|---|
-| 1 | resume_text 含"本科 雅思6.5 1998年5月12日" | education/language_level/date_of_birth | [] | 三项均可提取且带 evidence |
+| 1 | resume_text 含"本科 雅思6.5 1998年5月12日"，required_fields 为默认 3 项 | education/language_level/date_of_birth | [] | 三项均可提取且带 evidence |
 | 2 | resume_text 为空，confirmed_facts 有 education | facts 仅含 confirmed_facts | language_level/date_of_birth | warnings 含 NO_RESUME_TEXT |
 | 3 | resume_text 只说"大专" | education | language_level/date_of_birth | 缺项进 missing_fields |
-| 4 | confirmed_facts 已有 education=本科，简历也写本科 | education 保留顾问值 | 其余缺项 | 不得改写已核对事实 |
-| 5 | 简历写了期望薪资/身份证号 | 不提取 | — | snippet 不得含身份证号等敏感号码 |
+| 4 | confirmed_facts 已有 education=本科，简历也写本科 | education 保留顾问值 | 其余缺项 | 净化节点用 confirmed_facts 覆盖同名键 |
+| 5 | 简历写了期望薪资/身份证号 | 不提取 | — | snippet 中长数字串被替换为 `[已脱敏]` |
 | 6 | 简历只写"想去德国留学" | 无新增 facts | 全部必填项 | 不推断学历/语言 |
-| 7 | project_rules 为空对象 | facts 正常 | — | 提取得出即可，规则判定由后端做 |
+| 7 | project_rules 为空对象 / rules 为 null | facts 正常 | — | 提取得出即可，规则判定由后端做 |
 | 8 | 简历含"雅思 6.5 分" 与 "托福 90" | language_level 取首个命中 | — | 证据 source_ref 指向对应行 |
+| 9 | required_fields 额外含 `city`，简历未提城市 | 其余字段照常 | 含 `city` | 缺项必须跟随后端清单 |
+| 10 | 模型返回带 `"score":90,"decision":"MATCH"` | 两键被丢弃 | — | 净化节点强制剔除越权字段 |
 
 **口径**：结构必须能被后端 `assessment._validate` 解析（含 `facts` 对象、`evidence` 数组）；
 `evidence` 里每个 `source_ref` 形如 `resume:p<行号>` 且 `snippet` 为最小必要片段；
+`missing_fields` 只能取 `payload.required_fields` 的子集（净化节点会重算，非清单字段一律丢弃）；
 **任何样本都不得输出打分或录取结论**（后端按已审核 `admission_rules` 计算，未配置规则返回 `NEEDS_INFO` 且分数为空）。
 
 ---

@@ -7,10 +7,10 @@ WF_ENTERPRISE 适配器 —— 企业智能助手（API029）
 """
 import logging
 
+from app.core.config import settings
 from app.core.errors import AIBadResponseError
 from app.integrations.dify import mock_samples, run_workflow
 from app.schemas.assistant_enterprise import ALLOWED_INTENTS
-from app.services import m2_config
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ def _validate(data: object) -> dict:
 def run_enterprise(payload: dict, *, user: str = "employee",
                    timeout_s: int | None = None) -> dict:
     """调用企业助手工作流，返回已校验的意图结构。"""
-    if m2_config.dify_mode() == "mock":
+    if settings.dify_mode == "mock":
         return _validate(mock_samples.enterprise_output(payload))
 
     timeout = timeout_s or 30
