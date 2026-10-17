@@ -1,0 +1,1215 @@
+# WF_ENTERPRISE —— 企业智能助手（Dify 1.12.x Workflow）
+# 模型 provider/name 与知识库 dataset_ids 已留空，导入后在画布上配置。
+# 契约：Start 输入 payload_json（JSON 字符串），End 输出 output_json（JSON 字符串）。
+
+app:
+  description: 企业智能助手 WF_ENTERPRISE —— 客户/跟进/审批/售后/心理/进度/待办/知识库
+  icon: 🤖
+  icon_background: '#E4FBCC'
+  mode: workflow
+  name: WF_ENTERPRISE
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.1.3
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - remote_url
+        - local_file
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: code
+      id: edge-start-source-parse
+      source: start
+      sourceHandle: source
+      target: parse
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: question-classifier
+      id: edge-parse-source-classifier
+      source: parse
+      sourceHandle: source
+      target: classifier
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: llm
+      id: edge-classifier-c_lead-llm_c_lead
+      source: classifier
+      sourceHandle: c_lead
+      target: llm_c_lead
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: llm
+      id: edge-classifier-c_follow-llm_c_follow
+      source: classifier
+      sourceHandle: c_follow
+      target: llm_c_follow
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: llm
+      id: edge-classifier-c_status-llm_c_status
+      source: classifier
+      sourceHandle: c_status
+      target: llm_c_status
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: llm
+      id: edge-classifier-c_daily-llm_c_daily
+      source: classifier
+      sourceHandle: c_daily
+      target: llm_c_daily
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: llm
+      id: edge-classifier-c_org-llm_c_org
+      source: classifier
+      sourceHandle: c_org
+      target: llm_c_org
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: llm
+      id: edge-classifier-c_service-llm_c_service
+      source: classifier
+      sourceHandle: c_service
+      target: llm_c_service
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: llm
+      id: edge-classifier-c_feedback-llm_c_feedback
+      source: classifier
+      sourceHandle: c_feedback
+      target: llm_c_feedback
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: llm
+      id: edge-classifier-c_psych-llm_c_psych
+      source: classifier
+      sourceHandle: c_psych
+      target: llm_c_psych
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: llm
+      id: edge-classifier-c_progress-llm_c_progress
+      source: classifier
+      sourceHandle: c_progress
+      target: llm_c_progress
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: llm
+      id: edge-classifier-c_todo-llm_c_todo
+      source: classifier
+      sourceHandle: c_todo
+      target: llm_c_todo
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: llm
+      id: edge-classifier-c_knowledge-llm_c_knowledge
+      source: classifier
+      sourceHandle: c_knowledge
+      target: llm_c_knowledge
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: variable-aggregator
+      id: edge-llm_c_lead-source-aggregate
+      source: llm_c_lead
+      sourceHandle: source
+      target: aggregate
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: variable-aggregator
+      id: edge-llm_c_follow-source-aggregate
+      source: llm_c_follow
+      sourceHandle: source
+      target: aggregate
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: variable-aggregator
+      id: edge-llm_c_status-source-aggregate
+      source: llm_c_status
+      sourceHandle: source
+      target: aggregate
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: variable-aggregator
+      id: edge-llm_c_daily-source-aggregate
+      source: llm_c_daily
+      sourceHandle: source
+      target: aggregate
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: variable-aggregator
+      id: edge-llm_c_org-source-aggregate
+      source: llm_c_org
+      sourceHandle: source
+      target: aggregate
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: variable-aggregator
+      id: edge-llm_c_service-source-aggregate
+      source: llm_c_service
+      sourceHandle: source
+      target: aggregate
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: variable-aggregator
+      id: edge-llm_c_feedback-source-aggregate
+      source: llm_c_feedback
+      sourceHandle: source
+      target: aggregate
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: variable-aggregator
+      id: edge-llm_c_psych-source-aggregate
+      source: llm_c_psych
+      sourceHandle: source
+      target: aggregate
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: variable-aggregator
+      id: edge-llm_c_progress-source-aggregate
+      source: llm_c_progress
+      sourceHandle: source
+      target: aggregate
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: variable-aggregator
+      id: edge-llm_c_todo-source-aggregate
+      source: llm_c_todo
+      sourceHandle: source
+      target: aggregate
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: variable-aggregator
+      id: edge-llm_c_knowledge-source-aggregate
+      source: llm_c_knowledge
+      sourceHandle: source
+      target: aggregate
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: variable-aggregator
+        targetType: code
+      id: edge-aggregate-source-validate
+      source: aggregate
+      sourceHandle: source
+      target: validate
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: knowledge-retrieval
+      id: edge-validate-source-knowledge
+      source: validate
+      sourceHandle: source
+      target: knowledge
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: edge-knowledge-source-answer_llm
+      source: knowledge
+      sourceHandle: source
+      target: answer_llm
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: edge-answer_llm-source-assemble
+      source: answer_llm
+      sourceHandle: source
+      target: assemble
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: end
+      id: edge-assemble-source-end
+      source: assemble
+      sourceHandle: source
+      target: end
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: payload_json
+          max_length: 20000
+          options: []
+          required: true
+          type: paragraph
+          variable: payload_json
+      height: 116
+      id: start
+      position:
+        x: 60
+        y: 420
+      positionAbsolute:
+        x: 60
+        y: 420
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "import json\n\n\ndef main(payload_json: str) -> dict:\n    try:\n        data = json.loads(payload_json or \"{}\")\n    except Exception:\n        data = {}\n    return {\n        \"message\"\
+          : str(data.get(\"message\") or \"\"),\n        \"actor_json\": json.dumps(data.get(\"actor\") or {}, ensure_ascii=False),\n    }\n"
+        code_language: python3
+        outputs:
+          message:
+            children: null
+            type: string
+          actor_json:
+            children: null
+            type: string
+        selected: false
+        title: 解析入参
+        type: code
+        variables:
+        - value_selector:
+          - start
+          - payload_json
+          value_type: string
+          variable: payload_json
+      height: 120
+      id: parse
+      position:
+        x: 360
+        y: 420
+      positionAbsolute:
+        x: 360
+        y: 420
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        classes:
+        - id: c_lead
+          name: 意向客户（录入/查询/详情）
+        - id: c_follow
+          name: 跟进记录（写跟进/查历史）
+        - id: c_status
+          name: 客户状态（流失/恢复）
+        - id: c_daily
+          name: 员工日报（草稿/查询）
+        - id: c_org
+          name: 组织架构与通讯录
+        - id: c_service
+          name: 学生审批（请假/考务/信息修改）
+        - id: c_feedback
+          name: 售后工单（清单/解决/跟进）
+        - id: c_psych
+          name: 心理关怀（待复核/记录说明）
+        - id: c_progress
+          name: 申请进度（查询/推进）
+        - id: c_todo
+          name: 统一待办
+        - id: c_knowledge
+          name: 新人指引/制度/闲聊
+        instruction: ''
+        instructions: ''
+        model:
+          completion_params:
+            temperature: 0.1
+          mode: chat
+          name: ''
+          provider: ''
+        query_variable_selector:
+        - parse
+        - message
+        selected: false
+        title: 问题分类器
+        type: question-classifier
+        vision:
+          enabled: false
+      height: 360
+      id: classifier
+      position:
+        x: 680
+        y: 420
+      positionAbsolute:
+        x: 680
+        y: 420
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: ''
+          provider: ''
+        prompt_template:
+        - id: sys-c_lead
+          role: system
+          text: "你是\"意向客户\"参数提取助手。只输出一个 JSON 对象，不要解释、不要 markdown 代码块。\n输出格式：\n{\"intent\":\"LEAD_CREATE|LEAD_SEARCH|LEAD_DETAIL\",\"params\":{\"keyword\":null,\"lead_id\":null,\"status\":null},\n \"draft\"\
+            :{\"name\":null,\"mobile\":null,\"gender\":null,\"city\":null,\"education\":null,\n          \"intended_project_id\":null,\"study_purpose\":null,\"interest_level\":null,\"content\":null},\n\
+            \ \"missing_fields\":[]}\n规则：\n1. \"新增/录入/新建客户\"→LEAD_CREATE，draft 填姓名/手机号等；\n2. \"查/找/有哪些客户\"→LEAD_SEARCH，条件放 params.keyword/status；\n3. \"某客户详情\"→LEAD_DETAIL，尽量给 keyword 或 lead_id；\n4. 未提到的字段保持\
+            \ null，禁止编造；\"已签约\"不在此意图内，提醒走转化流程。\n用户输入：{{#parse.message#}}"
+        - id: user-c_lead
+          role: user
+          text: '{{#parse.message#}}'
+        reasoning_format: separated
+        selected: false
+        structured_output_enabled: false
+        title: 意向客户（录入/查询/详情）
+        type: llm
+        vision:
+          enabled: false
+      height: 110
+      id: llm_c_lead
+      position:
+        x: 1040
+        y: 40
+      positionAbsolute:
+        x: 1040
+        y: 40
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: ''
+          provider: ''
+        prompt_template:
+        - id: sys-c_follow
+          role: system
+          text: "你是\"跟进记录\"参数提取助手。只输出一个 JSON 对象，不要解释、不要 markdown。\n输出格式：\n{\"intent\":\"FOLLOWUP_ADD|FOLLOWUP_LIST\",\"params\":{\"lead_id\":null,\"keyword\":null},\n \"draft\":{\"content\":null},\"missing_fields\"\
+            :[]}\n规则：\n1. \"记跟进/写跟进/跟进一下\"→FOLLOWUP_ADD，content 为员工描述的跟进内容；\n2. \"查跟进记录/跟进历史\"→FOLLOWUP_LIST；\n3. 客户用姓名（keyword）或编号（lead_id）定位；禁止编造。\n用户输入：{{#parse.message#}}"
+        - id: user-c_follow
+          role: user
+          text: '{{#parse.message#}}'
+        reasoning_format: separated
+        selected: false
+        structured_output_enabled: false
+        title: 跟进记录（写跟进/查历史）
+        type: llm
+        vision:
+          enabled: false
+      height: 110
+      id: llm_c_follow
+      position:
+        x: 1040
+        y: 160
+      positionAbsolute:
+        x: 1040
+        y: 160
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: ''
+          provider: ''
+        prompt_template:
+        - id: sys-c_status
+          role: system
+          text: "你是\"客户状态\"参数提取助手。只输出一个 JSON 对象，不要解释、不要 markdown。\n输出格式：\n{\"intent\":\"LEAD_CHANGE_STATUS\",\"params\":{\"lead_id\":null,\"keyword\":null,\n \"target_status\":\"LOST|FOLLOWING\",\"reason\"\
+            :null},\"missing_fields\":[]}\n规则：\n1. \"流失/放弃\"→LOST，必须提取原因 reason；\n2. \"恢复跟进/重新联系\"→FOLLOWING，reason 为恢复说明；\n3. \"已签约\"不在此意图，回答提示走\"签约转学生\"流程。\n用户输入：{{#parse.message#}}"
+        - id: user-c_status
+          role: user
+          text: '{{#parse.message#}}'
+        reasoning_format: separated
+        selected: false
+        structured_output_enabled: false
+        title: 客户状态（流失/恢复）
+        type: llm
+        vision:
+          enabled: false
+      height: 110
+      id: llm_c_status
+      position:
+        x: 1040
+        y: 280
+      positionAbsolute:
+        x: 1040
+        y: 280
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: ''
+          provider: ''
+        prompt_template:
+        - id: sys-c_daily
+          role: system
+          text: '你是"员工日报"参数提取助手。只输出一个 JSON 对象，不要解释、不要 markdown。
+
+            输出格式：
+
+            {"intent":"DAILY_DRAFT|DAILY_SEARCH","params":{},"draft":{"original_text":null},"missing_fields":[]}
+
+            规则：口述工作内容→DAILY_DRAFT，original_text 为员工原话；查询日报→DAILY_SEARCH。
+
+            用户输入：{{#parse.message#}}'
+        - id: user-c_daily
+          role: user
+          text: '{{#parse.message#}}'
+        reasoning_format: separated
+        selected: false
+        structured_output_enabled: false
+        title: 员工日报（草稿/查询）
+        type: llm
+        vision:
+          enabled: false
+      height: 110
+      id: llm_c_daily
+      position:
+        x: 1040
+        y: 400
+      positionAbsolute:
+        x: 1040
+        y: 400
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: ''
+          provider: ''
+        prompt_template:
+        - id: sys-c_org
+          role: system
+          text: '你是"组织架构"参数提取助手。只输出一个 JSON 对象，不要解释、不要 markdown。
+
+            输出格式：{"intent":"ORG_SEARCH","params":{"keyword":null},"missing_fields":[]}
+
+            规则：查询部门/同事/联系方式→ORG_SEARCH；keyword 为部门名或姓名。
+
+            用户输入：{{#parse.message#}}'
+        - id: user-c_org
+          role: user
+          text: '{{#parse.message#}}'
+        reasoning_format: separated
+        selected: false
+        structured_output_enabled: false
+        title: 组织架构与通讯录
+        type: llm
+        vision:
+          enabled: false
+      height: 110
+      id: llm_c_org
+      position:
+        x: 1040
+        y: 520
+      positionAbsolute:
+        x: 1040
+        y: 520
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: ''
+          provider: ''
+        prompt_template:
+        - id: sys-c_service
+          role: system
+          text: "你是\"学生审批\"参数提取助手。只输出一个 JSON 对象，不要解释、不要 markdown。\n输出格式：\n{\"intent\":\"LEAVE_DECIDE|SERVICE_LIST\",\"params\":{\"service_id\":null,\n \"decision\":\"APPROVE|REJECT\",\"note\":null,\"status\"\
+            :null},\"missing_fields\":[]}\n规则：\n1. \"批准/同意/驳回某个申请\"→LEAVE_DECIDE，必须提取 service_id（编号）；\n2. \"待审/申请列表\"→SERVICE_LIST，status 默认 PENDING；\n3. 未给编号时 missing_fields 填 service_id，不要猜。\n用户输入：{{#parse.message#}}"
+        - id: user-c_service
+          role: user
+          text: '{{#parse.message#}}'
+        reasoning_format: separated
+        selected: false
+        structured_output_enabled: false
+        title: 学生审批（请假/考务/信息修改）
+        type: llm
+        vision:
+          enabled: false
+      height: 110
+      id: llm_c_service
+      position:
+        x: 1040
+        y: 640
+      positionAbsolute:
+        x: 1040
+        y: 640
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: ''
+          provider: ''
+        prompt_template:
+        - id: sys-c_feedback
+          role: system
+          text: "你是\"售后工单\"参数提取助手。只输出一个 JSON 对象，不要解释、不要 markdown。\n输出格式：\n{\"intent\":\"FEEDBACK_LIST|FEEDBACK_HANDLE\",\"params\":{\"ticket_id\":null,\n \"action\":\"NOTE|RESOLVE|ASSIGN\",\"note\":null,\"\
+            resolution\":null,\n \"assignee_user_id\":null},\"missing_fields\":[]}\n规则：\n1. \"售后/投诉/工单列表\"→FEEDBACK_LIST；\n2. \"解决/处理工单\"→FEEDBACK_HANDLE，RESOLVE 必须提取 resolution；\n3. 未给编号时 missing_fields\
+            \ 填 ticket_id。\n用户输入：{{#parse.message#}}"
+        - id: user-c_feedback
+          role: user
+          text: '{{#parse.message#}}'
+        reasoning_format: separated
+        selected: false
+        structured_output_enabled: false
+        title: 售后工单（清单/解决/跟进）
+        type: llm
+        vision:
+          enabled: false
+      height: 110
+      id: llm_c_feedback
+      position:
+        x: 1040
+        y: 760
+      positionAbsolute:
+        x: 1040
+        y: 760
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: ''
+          provider: ''
+        prompt_template:
+        - id: sys-c_psych
+          role: system
+          text: '你是"心理关怀"参数提取助手。只输出一个 JSON 对象，不要解释、不要 markdown。
+
+            输出格式：
+
+            {"intent":"PSYCH_LIST|PSYCH_NOTE","params":{"alert_id":null,"note":null},"missing_fields":[]}
+
+            规则：
+
+            1. "待复核/预警列表"→PSYCH_LIST；
+
+            2. "记录关怀/跟进说明"→PSYCH_NOTE，只记录 NOTE，不做确认/关闭；
+
+            3. 严禁输出学生情绪原话或风险结论。
+
+            用户输入：{{#parse.message#}}'
+        - id: user-c_psych
+          role: user
+          text: '{{#parse.message#}}'
+        reasoning_format: separated
+        selected: false
+        structured_output_enabled: false
+        title: 心理关怀（待复核/记录说明）
+        type: llm
+        vision:
+          enabled: false
+      height: 110
+      id: llm_c_psych
+      position:
+        x: 1040
+        y: 880
+      positionAbsolute:
+        x: 1040
+        y: 880
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: ''
+          provider: ''
+        prompt_template:
+        - id: sys-c_progress
+          role: system
+          text: "你是\"申请进度\"参数提取助手。只输出一个 JSON 对象，不要解释、不要 markdown。\n输出格式：\n{\"intent\":\"APPLICATION_SEARCH|APPLICATION_UPDATE\",\"params\":{\"student_name\":null,\n \"case_no\":null,\"event_kind\":\"STAGE|DETAIL|ASSIGNMENT\"\
+            ,\n \"stage\":\"PROCESSING|COMPLETED\",\"detail\":null},\"missing_fields\":[]}\n规则：\n1. \"查进度/文书/签证/院校\"→APPLICATION_SEARCH；\n2. \"推进/更新进度\"→APPLICATION_UPDATE，detail 必填；\n3. STAGE 只能 PROCESSING\
+            \ 或 COMPLETED，不能跳阶。\n用户输入：{{#parse.message#}}"
+        - id: user-c_progress
+          role: user
+          text: '{{#parse.message#}}'
+        reasoning_format: separated
+        selected: false
+        structured_output_enabled: false
+        title: 申请进度（查询/推进）
+        type: llm
+        vision:
+          enabled: false
+      height: 110
+      id: llm_c_progress
+      position:
+        x: 1040
+        y: 1000
+      positionAbsolute:
+        x: 1040
+        y: 1000
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: ''
+          provider: ''
+        prompt_template:
+        - id: sys-c_todo
+          role: system
+          text: '你是"待办"参数提取助手。只输出一个 JSON 对象，不要解释、不要 markdown。
+
+            输出格式：{"intent":"TODO_LIST","params":{},"missing_fields":[]}
+
+            用户输入：{{#parse.message#}}'
+        - id: user-c_todo
+          role: user
+          text: '{{#parse.message#}}'
+        reasoning_format: separated
+        selected: false
+        structured_output_enabled: false
+        title: 统一待办
+        type: llm
+        vision:
+          enabled: false
+      height: 110
+      id: llm_c_todo
+      position:
+        x: 1040
+        y: 1120
+      positionAbsolute:
+        x: 1040
+        y: 1120
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: ''
+          provider: ''
+        prompt_template:
+        - id: sys-c_knowledge
+          role: system
+          text: '你是"知识库/闲聊"参数提取助手。只输出一个 JSON 对象，不要解释、不要 markdown。
+
+            输出格式：{"intent":"KNOWLEDGE|OTHER","params":{},"answer":null,"missing_fields":[]}
+
+            规则：问制度/入职/流程/公司信息→KNOWLEDGE；打招呼或无关→OTHER；不知道就如实说资料不足。
+
+            用户输入：{{#parse.message#}}'
+        - id: user-c_knowledge
+          role: user
+          text: '{{#parse.message#}}'
+        reasoning_format: separated
+        selected: false
+        structured_output_enabled: false
+        title: 新人指引/制度/闲聊
+        type: llm
+        vision:
+          enabled: false
+      height: 110
+      id: llm_c_knowledge
+      position:
+        x: 1040
+        y: 1240
+      positionAbsolute:
+        x: 1040
+        y: 1240
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        output_type: string
+        selected: false
+        title: 参数聚合
+        type: variable-aggregator
+        variables:
+        - - llm_c_lead
+          - text
+        - - llm_c_follow
+          - text
+        - - llm_c_status
+          - text
+        - - llm_c_daily
+          - text
+        - - llm_c_org
+          - text
+        - - llm_c_service
+          - text
+        - - llm_c_feedback
+          - text
+        - - llm_c_psych
+          - text
+        - - llm_c_progress
+          - text
+        - - llm_c_todo
+          - text
+        - - llm_c_knowledge
+          - text
+      height: 260
+      id: aggregate
+      position:
+        x: 1420
+        y: 420
+      positionAbsolute:
+        x: 1420
+        y: 420
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "import json\n\nALLOWED = {\n    \"LEAD_CREATE\", \"LEAD_SEARCH\", \"LEAD_DETAIL\", \"FOLLOWUP_ADD\", \"FOLLOWUP_LIST\",\n    \"LEAD_CHANGE_STATUS\", \"DAILY_DRAFT\", \"DAILY_SEARCH\", \"\
+          ORG_SEARCH\",\n    \"SERVICE_LIST\", \"LEAVE_DECIDE\", \"FEEDBACK_LIST\", \"FEEDBACK_HANDLE\",\n    \"PSYCH_LIST\", \"PSYCH_NOTE\", \"APPLICATION_SEARCH\", \"APPLICATION_UPDATE\",\n    \"TODO_LIST\"\
+          , \"METRIC_QUERY\", \"KNOWLEDGE\", \"OTHER\",\n}\n\n\ndef main(raw: str) -> dict:\n    text = (raw or \"\").strip()\n    if text.startswith(\"```\"):\n        text = text.strip(\"`\")\n      \
+          \  if text[:4].lower() == \"json\":\n            text = text[4:]\n    try:\n        data = json.loads(text)\n    except Exception:\n        data = {}\n    intent = str(data.get(\"intent\") or\
+          \ \"OTHER\").upper()\n    if intent not in ALLOWED:\n        intent = \"OTHER\"\n    return {\n        \"intent\": intent,\n        \"action\": str(data.get(\"action\") or \"\"),\n        \"params_json\"\
+          : json.dumps(data.get(\"params\") or {}, ensure_ascii=False),\n        \"draft_json\": json.dumps(data.get(\"draft\") or {}, ensure_ascii=False),\n        \"missing_json\": json.dumps(data.get(\"\
+          missing_fields\") or [], ensure_ascii=False),\n    }\n"
+        code_language: python3
+        outputs:
+          intent:
+            children: null
+            type: string
+          action:
+            children: null
+            type: string
+          params_json:
+            children: null
+            type: string
+          draft_json:
+            children: null
+            type: string
+          missing_json:
+            children: null
+            type: string
+        selected: false
+        title: 白名单校验
+        type: code
+        variables:
+        - value_selector:
+          - aggregate
+          - output
+          value_type: string
+          variable: raw
+      height: 180
+      id: validate
+      position:
+        x: 1760
+        y: 420
+      positionAbsolute:
+        x: 1760
+        y: 420
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        dataset_ids: []
+        multiple_retrieval_config:
+          reranking_enable: false
+          reranking_model:
+            reranking_model_name: ''
+            reranking_provider_name: ''
+          score_threshold: null
+          score_threshold_enabled: false
+          top_k: 4
+        query_variable_selector:
+        - parse
+        - message
+        retrieval_mode: multiple
+        selected: false
+        title: 员工知识库检索
+        type: knowledge-retrieval
+      height: 120
+      id: knowledge
+      position:
+        x: 2080
+        y: 420
+      positionAbsolute:
+        x: 2080
+        y: 420
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - knowledge
+          - result
+        model:
+          completion_params:
+            temperature: 0.3
+          mode: chat
+          name: ''
+          provider: ''
+        prompt_template:
+        - id: sys-answer
+          role: system
+          text: '你是粤教留学的企业智能助手。当前消息与已识别的意图如下：
+
+            - 员工消息：{{#parse.message#}}
+
+            - 识别意图：{{#validate.intent#}}
+
+            - 参数：{{#validate.params_json#}}
+
+            - 知识库检索结果：{{#context#}}
+
+
+            要求：
+
+            1. 只依据给定信息回答，不编造客户、学生、数字或制度；
+
+            2. 业务意图（客户/跟进/审批/售后/心理/进度/待办）只输出一句简洁提示，例如"正在为你查询"或"请确认后执行"，**不要说已提交/已办理**；
+
+            3. 知识类问题依据检索结果回答，检索不到就明确"资料不足"；
+
+            4. 不要输出 JSON，不要输出 markdown，控制在 120 字以内。'
+        - id: user-answer
+          role: user
+          text: '{{#parse.message#}}'
+        reasoning_format: separated
+        selected: false
+        structured_output_enabled: false
+        title: 结果整理
+        type: llm
+        vision:
+          enabled: false
+      height: 140
+      id: answer_llm
+      position:
+        x: 2400
+        y: 420
+      positionAbsolute:
+        x: 2400
+        y: 420
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "import json\n\n\ndef main(intent: str, action: str, params_json: str, draft_json: str,\n         missing_json: str, answer: str) -> dict:\n    def load(value, default):\n        try:\n  \
+          \          return json.loads(value) if value else default\n        except Exception:\n            return default\n\n    draft = load(draft_json, {}) or None\n    data = {\n        \"schema_version\"\
+          : \"1.0\",\n        \"intent\": intent or \"OTHER\",\n        \"action\": action or None,\n        \"params\": load(params_json, {}),\n        \"draft\": draft,\n        \"missing_fields\": load(missing_json,\
+          \ []),\n        \"answer\": answer or \"\",\n        \"sources\": [],\n        \"warnings\": [],\n    }\n    return {\"output_json\": json.dumps(data, ensure_ascii=False)}\n"
+        code_language: python3
+        outputs:
+          output_json:
+            children: null
+            type: string
+        selected: false
+        title: 输出组装
+        type: code
+        variables:
+        - value_selector:
+          - validate
+          - intent
+          value_type: string
+          variable: intent
+        - value_selector:
+          - validate
+          - action
+          value_type: string
+          variable: action
+        - value_selector:
+          - validate
+          - params_json
+          value_type: string
+          variable: params_json
+        - value_selector:
+          - validate
+          - draft_json
+          value_type: string
+          variable: draft_json
+        - value_selector:
+          - validate
+          - missing_json
+          value_type: string
+          variable: missing_json
+        - value_selector:
+          - answer_llm
+          - text
+          value_type: string
+          variable: answer
+      height: 240
+      id: assemble
+      position:
+        x: 2720
+        y: 420
+      positionAbsolute:
+        x: 2720
+        y: 420
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - assemble
+          - output_json
+          variable: output_json
+        selected: false
+        title: 结束
+        type: end
+      height: 90
+      id: end
+      position:
+        x: 3040
+        y: 420
+      positionAbsolute:
+        x: 3040
+        y: 420
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0

@@ -10,7 +10,7 @@ from app.core.responses import ok
 from app.db.session import get_db
 from app.models.user import SysUser
 from app.schemas.assistant import AssistantRequest
-from app.services import student_assistant_service
+from app.services import enterprise_assistant_service, student_assistant_service
 
 router = APIRouter(tags=["智能助手"])
 
@@ -20,10 +20,12 @@ def _todo(api: str, who: str = "M3/M4"):
 
 
 @router.post("/api/v1/assistants/employee/messages")
-def employee_assistant(user: SysUser = Depends(require_password_changed),
+def employee_assistant(data: AssistantRequest,
+                       user: SysUser = Depends(require_password_changed),
                        db: Session = Depends(get_db)):
-    """API029 企业助手（M3）"""
-    _todo("API029", "M3")
+    """API029 企业助手（意图识别 + 授权查询 + 写操作提议，不直接写库）"""
+    result = enterprise_assistant_service.handle_enterprise_message(db, user, data)
+    return ok(result.model_dump(mode="json"))
 
 
 @router.post("/api/v1/assistants/student/messages")

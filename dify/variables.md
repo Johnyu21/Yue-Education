@@ -88,6 +88,98 @@
 
 ---
 
+# WF_ENTERPRISE 输入输出变量说明（企业助手）
+
+> 面向后端 `app/integrations/dify/enterprise.py` 与 `dify/wf_enterprise.yml`。
+> 契约：Start 输入 `payload_json`（JSON 字符串），End 输出 `output_json`（JSON 字符串）。
+
+## 1. payload_json 结构（后端组装）
+
+```json
+{
+  "schema_version": "1.0",
+  "message": "员工消息原文",
+  "message_id": "uuid",
+  "conversation_id": "可选会话 id",
+  "context": {"page": null, "selected_id": null},
+  "actor": {
+    "id": "员工ID",
+    "real_name": "姓名",
+    "employee_role": "NEWCOMER|ADVISOR|SENIOR_ADVISOR|ADMIN",
+    "dept_id": "部门ID",
+    "is_dept_head": false,
+    "can_handle_feedback": false,
+    "psych_access_enabled": false
+  }
+}
+```
+
+⚠️ payload 不包含客户库明细、投诉正文、心理原文、临时密码；授权查询由 Python 在拿到意图后执行。
+
+## 2. output_json 结构（Dify 输出）
+
+```json
+{
+  "schema_version": "1.0",
+  "intent": "LEAD_SEARCH",
+  "action": null,
+  "params": {"keyword": "张三"},
+  "draft": null,
+  "missing_fields": [],
+  "answer": "正在为你查询",
+  "sources": [],
+  "warnings": []
+}
+```
+
+## 3. 意图白名单（21 个，未知一律降级 OTHER）
+
+| 类型 | 意图 |
+|---|---|
+| 读 | LEAD_SEARCH、LEAD_DETAIL、FOLLOWUP_LIST、TODO_LIST、SERVICE_LIST、FEEDBACK_LIST、PSYCH_LIST、APPLICATION_SEARCH、METRIC_QUERY、ORG_SEARCH、DAILY_SEARCH |
+| 写（只出提议） | LEAD_CREATE、FOLLOWUP_ADD、LEAD_CHANGE_STATUS、DAILY_DRAFT、LEAVE_DECIDE、FEEDBACK_HANDLE、PSYCH_NOTE、APPLICATION_UPDATE |
+| 知识/其他 | KNOWLEDGE、OTHER |
+
+## 4. 写操作提议（由 Python 签发，不在 Dify 内）
+
+| 意图 | operation | 确认后调用的普通接口 |
+|---|---|---|
+| LEAD_CREATE | CREATE_LEAD | POST /employees/leads |
+| FOLLOWUP_ADD | ADD_FOLLOWUP | POST /employees/leads/{id}/follow-ups |
+| LEAD_CHANGE_STATUS | TRANSITION_LEAD | POST /employees/leads/{id}/status |
+| LEAVE_DECIDE | DECIDE_SERVICE | POST /services/{id}/decision |
+| FEEDBACK_HANDLE | HANDLE_FEEDBACK | POST /employees/feedback-tickets/{id}/handling |
+| PSYCH_NOTE | PSYCH_ALERT_NOTE | POST /employees/psych-alerts/{id}/actions |
+| APPLICATION_UPDATE | ADVANCE_APPLICATION | POST /employees/application-cases/{case_no}/events |
+
+确认令牌 5 分钟有效，绑定 actor/operation/entity_id/payload_hash/expected_version/request_key。
+
+## 5. 聚合指标（METRIC_QUERY）
+
+`params` 示例：
+
+```json
+{"metric": "SIGNED_COUNT", "time_range": "THIS_MONTH",
+ "group_by": "OWNER", "filters": {"status": "SIGNED"}}
+```
+
+- metric：LEAD_COUNT / SIGNED_COUNT / FOLLOWUP_COUNT / FOLLOWUP_DUE_COUNT /
+  SERVICE_PENDING_COUNT / FEEDBACK_OPEN_COUNT / APPLICATION_STAGE_COUNT / PSYCH_ALERT_COUNT
+- time_range：TODAY / THIS_WEEK / THIS_MONTH / LAST_MONTH / THIS_YEAR / ALL
+- group_by：按指标白名单（见设计文档 §3.1）
+- 所有指标先按员工 Scope 过滤再聚合；敏感指标要求售后/心理授权。
+
+## 6. 待配置项
+
+| 项 | 位置 | 说明 |
+|---|---|---|
+| LLM 大模型 | 各 LLM 节点 `model.provider` / `model.name` | 留空，导入后选择 |
+| 员工知识库 | `knowledge` 节点 `dataset_ids` | 留空，RAG 文档编写后绑定 |
+| API Key | 后端 `.env` 的 `DIFY_ENTERPRISE_KEY` | 由使用者提供 |
+
+
+---
+
 <!-- ==================== M2 追加：WF_VISITOR / WF_ASSESSMENT ==================== -->
 
 # WF_VISITOR 输入输出变量说明（M2 访客客服）

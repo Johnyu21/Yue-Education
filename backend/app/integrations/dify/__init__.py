@@ -85,3 +85,11 @@ def run_assessment_workflow(payload: dict, *, user: str = "assessment",
     from app.integrations.dify.assessment import run_assessment
 
     return run_assessment(payload, user=user, timeout_s=timeout_s)
+
+
+def run_enterprise_workflow(payload: dict, *, user: str | int = "employee",
+                            timeout_s: int | None = None) -> dict:
+    """企业助手工作流（WF_ENTERPRISE）。"""
+    from app.integrations.dify.enterprise import run_enterprise
+
+    return run_enterprise(payload, user=str(user), timeout_s=timeout_s)

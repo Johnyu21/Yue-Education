@@ -5,20 +5,16 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import require_password_changed
-from app.core.errors import NotImplementedYetError
 from app.core.responses import ok
 from app.core.transaction import with_business_transaction
 from app.db.session import get_db
 from app.models.user import SysUser
 from app.schemas.common import VersionReasonRequest
-from app.schemas.service import ServiceCreateRequest
+from app.schemas.service import ServiceCreateRequest, ServiceDecisionRequest
+from app.schemas.workbench import ServiceAssignmentIn
 from app.services import student_service
 
 router = APIRouter(tags=["行政服务"])
-
-
-def _todo(api: str, who: str = "M4"):
-    raise NotImplementedYetError(f"{api} 尚未实现（负责人：{who}）")
 
 
 @router.get("/api/v1/services")
@@ -66,16 +62,24 @@ def cancel_service(service_id: int, data: VersionReasonRequest,
 
 
 @router.post("/api/v1/services/{service_id}/decision")
-def decide_service(service_id: int,
+def decide_service(service_id: int, data: ServiceDecisionRequest,
                    user: SysUser = Depends(require_password_changed),
                    db: Session = Depends(get_db)):
-    """API054 审批请假/考务（M3，业务函数 student_service.decide_service 已就绪）"""
-    _todo("API054", "M3")
+    """API054 审批请假/考务/信息修改（M3 调 M4 业务函数）"""
+    with with_business_transaction(db):
+        dto = student_service.decide_service(db, user, service_id, data)
+    return ok(dto.model_dump(mode="json"))
 
 
 @router.post("/api/v1/services/{service_id}/assignment")
-def assign_service(service_id: int,
+def assign_service(service_id: int, data: ServiceAssignmentIn,
                    user: SysUser = Depends(require_password_changed),
                    db: Session = Depends(get_db)):
-    """API055 指派处理人（M3，业务函数 student_service.assign_service 已就绪）"""
-    _todo("API055", "M3")
+    """API055 主管转派待审单（M3 调 M4 业务函数）"""
+    with with_business_transaction(db):
+        dto = student_service.assign_service(
+            db, user, service_id,
+            assignee_user_id=data.assignee_user_id,
+            expected_version=data.expected_version,
+            reason=data.reason, request_key=data.request_key)
+    return ok(dto.model_dump(mode="json"))
