@@ -52,6 +52,7 @@ class StudentClassBrief(BaseModel):
 
 
 class StudentEnrollmentItem(BaseModel):
+    version: int
     id: str
     courseProjectId: str
     projectName: str

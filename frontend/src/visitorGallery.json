@@ -1,0 +1,58 @@
+{
+  "campus": {
+    "eyebrow": "CAMPUS & LEARNING",
+    "title": "校园与学习空间",
+    "description": "从校园环境到课堂交流，多样的学习场景呈现国际教育的日常面貌。项目培养安排与配套服务介绍见下方。",
+    "slides": [
+      {
+        "src": "/visitor-gallery/campus-courtyard.jpg",
+        "caption": "校园建筑与公共空间",
+        "alt": "校园楼宇与庭院中的活动空间",
+        "position": "50% 48%"
+      },
+      {
+        "src": "/visitor-gallery/campus-lawn.jpg",
+        "caption": "校园绿地与休憩空间",
+        "alt": "校园建筑前的草坪和开放式公共空间",
+        "position": "50% 45%"
+      },
+      {
+        "src": "/visitor-gallery/classroom-interaction.jpg",
+        "caption": "课堂互动与学习场景",
+        "alt": "学生在教室内参与小组课堂活动",
+        "position": "50% 50%"
+      },
+      {
+        "src": "/visitor-gallery/group-learning.jpg",
+        "caption": "小组研讨与协作学习",
+        "alt": "学生围坐桌边共同阅读和讨论学习资料",
+        "position": "50% 50%"
+      }
+    ]
+  },
+  "community": {
+    "eyebrow": "COMMUNITY & CONNECTION",
+    "title": "交流与成长",
+    "description": "同伴交流与协作学习，是校园生活的重要部分。相关留学政策与申请资讯，为学习生活规划提供参考。",
+    "slides": [
+      {
+        "src": "/visitor-gallery/peer-discussion.jpg",
+        "caption": "同伴交流与共同学习",
+        "alt": "学生在校园内使用笔记本电脑交流学习",
+        "position": "50% 45%"
+      },
+      {
+        "src": "/visitor-gallery/campus-conversation.jpg",
+        "caption": "校园生活中的交流时光",
+        "alt": "学生在校园草地上围坐交谈",
+        "position": "50% 53%"
+      },
+      {
+        "src": "/visitor-gallery/student-community.jpg",
+        "caption": "多元学习环境与校园生活",
+        "alt": "学生手持书本在室外校园环境中合影",
+        "position": "50% 42%"
+      }
+    ]
+  }
+}

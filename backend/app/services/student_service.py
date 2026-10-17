@@ -107,7 +107,7 @@ def get_self_overview(db: Session, user: SysUser) -> StudentSelfDTO:
         enrollments=[
             StudentEnrollmentItem(
                 id=str(e.id), courseProjectId=str(e.course_project_id),
-                projectName=names.get(e.course_project_id, ""), status=e.status,
+                projectName=names.get(e.course_project_id, ""), status=e.status, version=e.version,
             ) for e in enrollments
         ],
         version=profile.version,

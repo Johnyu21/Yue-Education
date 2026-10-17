@@ -41,10 +41,10 @@ def _require_admin(user: SysUser) -> None:
 def reset_user_password(user_id: int,
                         user: SysUser = Depends(require_password_changed),
                         db: Session = Depends(get_db)):
-    """API006 重置学生临时密码（⚠️ 明文只在响应出现一次）"""
+    """API006 管理员重置任意账号临时密码（⚠️ 明文只在响应出现一次）"""
     _require_admin(user)
     with with_business_transaction(db):
-        plain = org_svc.reset_student_password(db, user_id)
+        plain = org_svc.reset_user_password(db, user_id)
     return ok({"temporaryPassword": plain, "mustChangePassword": True})
 
 
@@ -60,7 +60,8 @@ def list_organization_users(user: SysUser = Depends(require_password_changed),
     rows = db.scalars(select(SysUser).where(SysUser.status == "NORMAL", SysUser.user_type == "EMPLOYEE")).all()
     return ok({"items": [
         {
-            "id": str(u.id), "username": u.username, "realName": u.real_name,
+            "id": str(u.id), "realName": u.real_name,
+            **({"username": u.username} if user.employee_role == "ADMIN" else {}),
             "userType": u.user_type, "employeeRole": u.employee_role,
             "deptId": str(u.dept_id) if u.dept_id else None,
             "contactInfo": u.contact_info,

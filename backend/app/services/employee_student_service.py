@@ -147,7 +147,7 @@ def get_student(db: Session, actor: SysUser, student_id: int) -> StudentStaffOut
             contactInfo=advisor.contact_info) if advisor else None,
         enrollments=[StudentEnrollmentItem(
             id=str(e.id), courseProjectId=str(e.course_project_id),
-            projectName=names.get(e.course_project_id, ""), status=e.status,
+            projectName=names.get(e.course_project_id, ""), status=e.status, version=e.version,
         ) for e in enrollments],
         version=profile.version,
     )

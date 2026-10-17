@@ -157,7 +157,7 @@
           "组织与账号管理"
         ],
         "summary": "Reset User Password",
-        "description": "API006 重置学生临时密码（⚠️ 明文只在响应出现一次）",
+        "description": "API006 管理员重置任意账号临时密码（⚠️ 明文只在响应出现一次）",
         "operationId": "reset_user_password_api_v1_management_users__user_id__password_reset_post",
         "parameters": [
           {

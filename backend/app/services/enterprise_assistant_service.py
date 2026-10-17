@@ -507,7 +507,8 @@ def _handle_write(db: Session, actor: SysUser, req: AssistantRequest,
             payload=m3_canonical.feedback_handling_payload(data),
             expected_version=ticket["version"],
             preview={"ticketId": str(ticket_id), "action": action,
-                     "note": note, "resolution": resolution},
+                     "note": note, "resolution": resolution,
+                     "assigneeUserId": str(data.assignee_user_id) if data.assignee_user_id is not None else None},
             answer=f"将处理工单 #{ticket_id}（{action}）。请确认。")
         return _result(req, answer, proposal=proposal)
 
@@ -562,7 +563,10 @@ def _handle_write(db: Session, actor: SysUser, req: AssistantRequest,
             payload=m3_canonical.application_advance_payload(case_no, data),
             expected_version=None,
             preview={"caseNo": case_no, "eventKind": event_kind,
-                     "stage": stage, "detail": detail},
+                     "stage": stage, "detail": detail,
+                     "expectedSequence": data.expected_sequence,
+                     "occurredAt": _iso(data.occurred_at),
+                     "assigneeUserId": str(data.assignee_user_id) if data.assignee_user_id is not None else None},
             answer=f"将为申请 {case_no} 追加进度：{detail}。请确认。")
         return _result(req, answer, proposal=proposal)
 

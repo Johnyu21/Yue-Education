@@ -225,13 +225,11 @@ def update_user(db: Session, user_id: int, actor: SysUser, **changes) -> SysUser
     return user
 
 
-def reset_student_password(db: Session, user_id: int) -> str:
-    """重置学生临时密码，返回明文（**只展示一次**）。"""
-    user = db.get(SysUser, user_id)
+def reset_user_password(db: Session, user_id: int) -> str:
+    """由管理员入口重置账号临时密码，返回明文一次。"""
+    user = db.get(SysUser, user_id, with_for_update=True, populate_existing=True)
     if user is None:
         raise NotFoundError("用户不存在")
-    if not user.is_student:
-        raise InvalidRequestError("只能重置学生账号的密码")
 
     from datetime import timedelta
     plain = generate_temp_password()

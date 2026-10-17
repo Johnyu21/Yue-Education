@@ -1,0 +1,599 @@
+{
+  "total": 118,
+  "connected": 118,
+  "missing": [],
+  "obsolete": [],
+  "entries": [
+    {
+      "endpoint": "POST /api/v1/auth/login",
+      "feature": "正式登录",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/auth/me",
+      "feature": "会话恢复与权限",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/auth/password-change",
+      "feature": "首次及自主改密",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/management/users/{user_id}/password-reset",
+      "feature": "管理员重置员工、学生及管理员密码",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/organization/users",
+      "feature": "员工通讯录",
+      "alias": false
+    },
+    {
+      "endpoint": "PATCH /api/v1/management/users/{user_id}",
+      "feature": "维护员工资料",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/organization/departments",
+      "feature": "部门管理",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/management/departments",
+      "feature": "新建部门",
+      "alias": false
+    },
+    {
+      "endpoint": "PATCH /api/v1/management/departments/{dept_id}",
+      "feature": "维护部门",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/organization/classes",
+      "feature": "班级管理",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/management/classes",
+      "feature": "新建班级",
+      "alias": false
+    },
+    {
+      "endpoint": "PATCH /api/v1/management/classes/{class_id}",
+      "feature": "维护班级",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/files",
+      "feature": "附件上传",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/me/notifications",
+      "feature": "通知消息",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/me/notifications/{notification_id}/read",
+      "feature": "标记已读",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/management/users",
+      "feature": "创建员工账号",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/files/{object_key}",
+      "feature": "私有附件下载",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/public/projects",
+      "feature": "留学项目",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/public/projects/{project_id}",
+      "feature": "留学项目详情",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/management/projects",
+      "feature": "新建项目",
+      "alias": false
+    },
+    {
+      "endpoint": "PATCH /api/v1/management/projects/{project_id}",
+      "feature": "维护与发布项目",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/public/events",
+      "feature": "活动资讯",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/public/events/{event_id}",
+      "feature": "活动资讯详情",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/management/events",
+      "feature": "新建活动",
+      "alias": false
+    },
+    {
+      "endpoint": "PATCH /api/v1/management/events/{event_id}",
+      "feature": "维护与发布活动",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/public/leads",
+      "feature": "访客咨询登记",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/events/{event_id}/registrations",
+      "feature": "报名活动",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/registrations/{registration_id}/cancel",
+      "feature": "取消活动报名",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/me/registrations",
+      "feature": "我的活动报名",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/assistants/visitor/messages",
+      "feature": "访客咨询悬窗",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/assistants/employee/messages",
+      "feature": "企业员工悬窗",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/assistants/student/messages",
+      "feature": "学生助手悬窗",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/transcriptions",
+      "feature": "核对语音转写",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/employees/leads",
+      "feature": "客户接待与跟进",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/employees/leads",
+      "feature": "新建客户",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/employees/leads/{lead_id}",
+      "feature": "客户接待与跟进详情",
+      "alias": false
+    },
+    {
+      "endpoint": "PATCH /api/v1/employees/leads/{lead_id}",
+      "feature": "补充客户资料",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/employees/leads/{lead_id}/claim",
+      "feature": "认领客户",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/employees/leads/{lead_id}/assignment",
+      "feature": "分配顾问",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/employees/leads/{lead_id}/follow-ups",
+      "feature": "跟进记录",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/employees/leads/{lead_id}/follow-ups",
+      "feature": "新增跟进",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/employees/leads/{lead_id}/status",
+      "feature": "调整跟进状态",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/employees/leads/{lead_id}/assessments",
+      "feature": "发起客户研判",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/employees/leads/{lead_id}/assessment",
+      "feature": "查看研判报告",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/employees/leads/{lead_id}/conversion",
+      "feature": "签约并转入学生",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/employees/leads/{lead_id}/resume-extraction",
+      "feature": "提取简历草稿",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/employees/students/{student_id}/enrollments",
+      "feature": "新增项目关联",
+      "alias": false
+    },
+    {
+      "endpoint": "PATCH /api/v1/employees/students/{student_id}/enrollments/{enrollment_id}",
+      "feature": "更新项目关联",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/me/student-profile",
+      "feature": "我的档案",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/employees/students",
+      "feature": "学生档案",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/employees/students/{student_id}",
+      "feature": "项目关联",
+      "alias": false
+    },
+    {
+      "endpoint": "PATCH /api/v1/employees/students/{student_id}/relationships",
+      "feature": "调整班级与顾问",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/me/scores",
+      "feature": "我的成绩",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/employees/students/{student_id}/scores",
+      "feature": "学生成绩",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/employees/students/{student_id}/scores",
+      "feature": "录入成绩",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/me/schedules",
+      "feature": "我的日程",
+      "alias": false
+    },
+    {
+      "endpoint": "PUT /api/v1/me/schedules/{schedule_id}/reminder",
+      "feature": "设置或取消提醒",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/application-cases",
+      "feature": "申请进度",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/application-cases/{case_no}/timeline",
+      "feature": "申请进度详情",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/employees/application-cases",
+      "feature": "登记申请事项",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/employees/application-cases/{case_no}/events",
+      "feature": "追加申请进度",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/me/initial-assessment",
+      "feature": "入学与学业评估",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/employees/students/{student_id}/schedules",
+      "feature": "教务日程",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/employees/students/{student_id}/schedules",
+      "feature": "新增教务事项",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/me/upgrade-interests",
+      "feature": "登记后续升学意向",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/services",
+      "feature": "行政申请",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/services",
+      "feature": "提交行政申请",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/services/{service_id}",
+      "feature": "行政申请详情",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/services/{service_id}/cancel",
+      "feature": "取消申请",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/services/{service_id}/decision",
+      "feature": "审批申请",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/services/{service_id}/assignment",
+      "feature": "分配处理人",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/me/feedback-tickets",
+      "feature": "我的反馈",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/me/feedback-tickets",
+      "feature": "提交反馈",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/me/feedback-tickets/{ticket_id}",
+      "feature": "我的反馈详情",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/me/feedback-tickets/{ticket_id}/confirm",
+      "feature": "确认解决",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/me/feedback-tickets/{ticket_id}/reopen",
+      "feature": "重新打开",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/me/feedback-tickets/{ticket_id}/rating",
+      "feature": "评价服务",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/employees/feedback-tickets",
+      "feature": "投诉与售后",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/employees/feedback-tickets/{ticket_id}",
+      "feature": "投诉与售后详情",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/employees/feedback-tickets/{ticket_id}/claim",
+      "feature": "认领工单",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/employees/feedback-tickets/{ticket_id}/handling",
+      "feature": "处理或转派工单",
+      "alias": false
+    },
+    {
+      "endpoint": "PUT /api/v1/me/psych-consent",
+      "feature": "心理关怀同意管理",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/employees/psych/students",
+      "feature": "关怀概览",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/employees/students/{student_id}/psych-observations",
+      "feature": "查看心理观测",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/employees/students/{student_id}/psych-corrections",
+      "feature": "修正心理观测",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/employees/psych-alerts",
+      "feature": "关怀跟进",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/employees/psych-alerts/{alert_id}",
+      "feature": "关怀跟进详情",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/employees/psych-alerts/{alert_id}/actions",
+      "feature": "复核与处置",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/workbench/todos",
+      "feature": "待办事项",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/me/academic-assessment",
+      "feature": "生成学业摘要",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/m5/capabilities",
+      "feature": "报告类型与岗位能力",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/m5/dailies",
+      "feature": "分页日报列表",
+      "alias": false
+    },
+    {
+      "endpoint": "PUT /api/v1/m5/dailies",
+      "feature": "日报保存",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/m5/dailies/{did}/history",
+      "feature": "日报通过历史",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/m5/dailies/{did}/action",
+      "feature": "日报审核与提交",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/m5/reports/preview",
+      "feature": "生成报告快照",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/m5/reports",
+      "feature": "已保存报告",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/m5/reports",
+      "feature": "携快照保存报告",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/m5/reports/{rid}",
+      "feature": "重开报告",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/m5/reports/{rid}/submit",
+      "feature": "主管周报提交",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/m5/reports/{rid}/export/{fmt}",
+      "feature": "Word与PDF导出",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/m5/chat",
+      "feature": "报告助手恢复会话",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/m5/chat/messages",
+      "feature": "报告助手悬窗",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/reports/preview",
+      "feature": "报告生成入口",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/me/daily-reports",
+      "feature": "本人日报",
+      "alias": false
+    },
+    {
+      "endpoint": "PUT /api/v1/me/daily-reports/{report_date}",
+      "feature": "日报保存（兼容别名）",
+      "alias": true
+    },
+    {
+      "endpoint": "POST /api/v1/me/daily-reports/{report_date}/ai-draft",
+      "feature": "AI整理日报",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/me/daily-reports/{report_id}/submit",
+      "feature": "日报审核与提交（兼容别名）",
+      "alias": true
+    },
+    {
+      "endpoint": "POST /api/v1/me/daily-reports/{report_id}/withdraw",
+      "feature": "日报审核与提交（兼容别名）",
+      "alias": true
+    },
+    {
+      "endpoint": "POST /api/v1/employees/daily-reports/{report_id}/approve",
+      "feature": "日报审核与提交（兼容别名）",
+      "alias": true
+    },
+    {
+      "endpoint": "POST /api/v1/employees/daily-reports/{report_id}/return",
+      "feature": "日报审核与提交（兼容别名）",
+      "alias": true
+    },
+    {
+      "endpoint": "GET /api/v1/employees/daily-reports",
+      "feature": "部门日报",
+      "alias": false
+    },
+    {
+      "endpoint": "PUT /api/v1/employees/students/{student_id}/scores/{score_id}",
+      "feature": "修订成绩",
+      "alias": false
+    },
+    {
+      "endpoint": "PUT /api/v1/employees/students/{student_id}/schedules/{schedule_id}",
+      "feature": "修订教务事项",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/employees/lead-imports/preview",
+      "feature": "Excel逐行预检",
+      "alias": false
+    },
+    {
+      "endpoint": "POST /api/v1/employees/lead-imports/apply",
+      "feature": "确认批量导入",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/health/live",
+      "feature": "进程连通检查",
+      "alias": false
+    },
+    {
+      "endpoint": "GET /api/v1/health/ready",
+      "feature": "数据库就绪检查",
+      "alias": false
+    }
+  ],
+  "scope": "界面/调用映射覆盖；不等同于每项接口均通过真实云端联调"
+}

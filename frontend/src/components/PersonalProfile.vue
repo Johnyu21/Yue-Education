@@ -1,0 +1,9 @@
+<script setup lang="ts">
+import {onMounted,ref} from 'vue'
+import {api,errorText} from '../api/client'
+import {items} from '../api'
+const props=defineProps<{user:any}>();defineEmits(['close','password'])
+const contact=ref(''),profile=ref<any>(null),error=ref('')
+onMounted(async()=>{try{if(props.user.userType==='STUDENT')profile.value=await api.get('/me/student-profile');else{const all=items(await api.get('/organization/users'));contact.value=all.find(x=>String(x.id)===String(props.user.id))?.contactInfo||''}}catch(e){error.value=errorText(e)}})
+</script>
+<template><div class="modal-shade" @click.self="$emit('close')" @keydown.esc="$emit('close')"><section class="personal-profile operation-dialog" role="dialog" aria-modal="true" aria-label="个人资料"><div class="panel-title"><h2>个人资料</h2><button class="icon-btn" aria-label="关闭个人资料" @click="$emit('close')">×</button></div><div class="profile-identity"><span class="avatar">{{user.realName.slice(-1)}}</span><div><h3>{{user.realName}}</h3><p>{{user.role_name}} · {{user.dept_name}}</p></div><span class="subtle-tag">当前账号</span></div><dl class="record-fields"><dt>姓名</dt><dd>{{user.realName}}</dd><dt>登录账号</dt><dd>{{user.username}}</dd><dt>岗位身份</dt><dd>{{user.role_name}}</dd><dt>所属部门</dt><dd>{{user.dept_name}}</dd><dt>联系方式</dt><dd>{{contact||profile?.user?.mobile||'暂未登记'}}</dd><template v-if="profile"><dt>所在班级</dt><dd>{{profile.classInfo?.name||'暂未分班'}}</dd><dt>负责顾问</dt><dd>{{profile.advisor?.realName||'暂未分配'}}</dd><dt>城市</dt><dd>{{profile.city||'暂未登记'}}</dd><dt>学历</dt><dd>{{profile.education||'暂未登记'}}</dd></template></dl><p class="muted profile-help">如需更新姓名、联系方式或所属关系，请联系管理员核实后维护。</p><p v-if="error" class="error-text">{{error}}</p><div class="dialog-actions"><button class="btn outline" @click="$emit('close')">关闭</button><button class="btn primary" @click="$emit('password')">修改密码</button></div></section></div></template>

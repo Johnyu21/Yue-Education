@@ -1,115 +1,32 @@
-/**
- * 公共 HTTP 客户端（唯一的请求入口）
- *
- * ⚠️ 规范要求（02 文档）：全项目只有这一个 HTTP 客户端。
- *    处理：Bearer 令牌 / request_id / 统一错误 / 401 自动登出
- *
- * 用法：
- *   import { api } from '@/api/client'
- *   const data = await api.get('/crm/leads', { page: 1 })
- *   await api.post('/auth/login', { username, password })
- *
- * 对应后端（M1-03）：统一响应 { code, message, data, errors, request_id }
- */
-import axios, { AxiosError } from 'axios'
-
-/** 后端统一响应结构 */
-export interface ApiResponse<T = any> {
-  code: string
-  message: string
-  data: T
-  errors?: { field: string, reason: string }[]
-  request_id: string
-}
-
-/** 业务错误（code !== 'OK'） */
+import axios, { type AxiosError } from 'axios'
+export interface ApiResponse<T=unknown>{code:string;message:string;data:T;errors?:{field:string;reason:string}[];request_id:string}
 export class ApiError extends Error {
-  code: string
-  errors: { field: string, reason: string }[]
-  requestId: string
-  httpStatus: number
-
-  constructor(msg: string, code: string, requestId: string,
-              httpStatus: number, errors: { field: string, reason: string }[] = []) {
-    super(msg)
-    this.code = code
-    this.errors = errors
-    this.requestId = requestId
-    this.httpStatus = httpStatus
-  }
+ constructor(message:string,public code:string,public requestId='',public httpStatus=0,public errors:{field:string;reason:string}[]=[],public data:unknown=null){super(message);this.name='ApiError'}
 }
-
-const TOKEN_KEY = 'yue_access_token'
-
-export const tokenStore = {
-  get: () => localStorage.getItem(TOKEN_KEY),
-  set: (t: string) => localStorage.setItem(TOKEN_KEY, t),
-  clear: () => localStorage.removeItem(TOKEN_KEY),
-}
-
-const http = axios.create({
-  baseURL: '/api/v1',
-  timeout: 60000,   // AI 调用可能慢（后端预算 45 秒），给足余量
+const TOKEN_KEY='yue_access_token'
+export const tokenStore={get:()=>localStorage.getItem(TOKEN_KEY),set:(v:string)=>localStorage.setItem(TOKEN_KEY,v),clear:()=>{localStorage.removeItem(TOKEN_KEY);retries.clear()}}
+const http=axios.create({baseURL:import.meta.env.VITE_API_BASE_URL||'/api/v1',timeout:90000})
+const retries=new Map<string,string>()
+http.interceptors.request.use(c=>{const token=tokenStore.get();if(token)c.headers.Authorization='Bearer '+token;c.headers['X-Request-ID']=crypto.randomUUID();return c},undefined,{synchronous:true})
+http.interceptors.response.use(r=>r,async(err:AxiosError<ApiResponse>)=>{
+ let body:any=err.response?.data
+ if(body instanceof Blob){try{body=JSON.parse(await body.text())}catch{body=null}}
+ const status=err.response?.status||0
+ if(status===401&&!err.config?.url?.includes('/auth/login')&&err.config?.headers?.Authorization==='Bearer '+tokenStore.get()){tokenStore.clear();window.dispatchEvent(new Event('auth-expired'))}
+ throw new ApiError(body?.message||(status?'请求未完成':'无法连接服务，请检查后端是否启动'),body?.code||'NETWORK_ERROR',body?.request_id||'',status,body?.errors||[],body?.data)
 })
-
-// ---- 请求：自动带令牌 ----
-http.interceptors.request.use((config) => {
-  const token = tokenStore.get()
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
-
-// ---- 响应：统一处理 ----
-http.interceptors.response.use(
-  (resp) => resp,
-  (err: AxiosError<ApiResponse>) => {
-    const body = err.response?.data
-    const status = err.response?.status ?? 0
-
-    // 401：令牌失效 → 清理并回登录
-    if (status === 401) {
-      tokenStore.clear()
-      if (location.pathname !== '/login') location.href = '/login'
-      throw new ApiError('登录已过期，请重新登录', 'TOKEN_EXPIRED', '', 401)
-    }
-
-    // 其他错误：把后端的 code/message/errors/request_id 原样抛给调用方
-    if (body && typeof body.code === 'string') {
-      throw new ApiError(body.message, body.code, body.request_id ?? '',
-                         status, body.errors ?? [])
-    }
-
-    // 网络层错误（后端没起 / 超时）
-    throw new ApiError('网络异常，请稍后重试', 'NETWORK_ERROR', '', status)
-  },
-)
-
-/** 请求时带上 X-Request-ID，方便和后端日志对上 */
-function rid(): string {
-  return `fe-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+export async function request<T=any>(method:string,url:string,body?:any,params?:any):Promise<T>{
+ const r=await http.request<ApiResponse<T>>({method,url,data:body,params})
+ if(r.data.code!=='OK')throw new ApiError(r.data.message,r.data.code,r.data.request_id,r.status,r.data.errors,r.data.data)
+ return r.data.data
 }
-
-/** 拆出 data（统一响应里的 data 才是业务数据） */
-async function unwrap<T>(p: Promise<{ data: ApiResponse<T> }>): Promise<T> {
-  const resp = await p
-  return resp.data.data
+export const api={get:<T=any>(url:string,params?:any)=>request<T>('GET',url,undefined,params),post:<T=any>(url:string,data?:any)=>request<T>('POST',url,data),put:<T=any>(url:string,data?:any)=>request<T>('PUT',url,data),patch:<T=any>(url:string,data?:any)=>request<T>('PATCH',url,data)}
+export async function writeRequest(method:string,url:string,data:any){
+ const payload={...data};const fingerprint=method+url+JSON.stringify(payload)
+ if(!payload.request_key){if(!retries.has(fingerprint))retries.set(fingerprint,crypto.randomUUID());payload.request_key=retries.get(fingerprint)}
+ const result=await request(method,url,payload);retries.delete(fingerprint);return result
 }
-
-export const api = {
-  get: <T = any>(url: string, params?: any) =>
-    unwrap<T>(http.get(url, { params, headers: { 'X-Request-ID': rid() } })),
-
-  post: <T = any>(url: string, data?: any) =>
-    unwrap<T>(http.post(url, data, { headers: { 'X-Request-ID': rid() } })),
-
-  put: <T = any>(url: string, data?: any) =>
-    unwrap<T>(http.put(url, data, { headers: { 'X-Request-ID': rid() } })),
-
-  patch: <T = any>(url: string, data?: any) =>
-    unwrap<T>(http.patch(url, data, { headers: { 'X-Request-ID': rid() } })),
-
-  delete: <T = any>(url: string) =>
-    unwrap<T>(http.delete(url, { headers: { 'X-Request-ID': rid() } })),
-}
-
+export async function download(url:string,filename:string){const r=await http.get(url,{responseType:'blob'});const link=document.createElement('a');const href=URL.createObjectURL(r.data);link.href=href;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(href),1000)}
+export async function upload(file:File){const data=new FormData();data.append('file',file);return api.post('/files',data)}
+export function errorText(e:any){return [e.message,...(e.errors||[]).map((v:any)=>v.reason),e.requestId?'处理编号：'+e.requestId:''].filter(Boolean).join('；')}
 export default http

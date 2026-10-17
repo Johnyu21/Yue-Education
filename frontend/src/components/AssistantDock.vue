@@ -1,0 +1,34 @@
+<script setup lang="ts">
+import {computed,nextTick,onMounted,onUnmounted,ref,watch} from 'vue'
+import {useRoute,useRouter} from 'vue-router'
+import {MessageSquare,X,Send,Mic,Sparkles,LoaderCircle} from 'lucide-vue-next'
+import {api,errorText} from '../api/client'
+import {confirmProposal} from '../api/proposals'
+import RecordView from './RecordView.vue'
+const props=defineProps<{mode:'visitor'|'employee'|'student';user:any;reportVisible?:boolean}>()
+const emit=defineEmits(['error','changed','draft'])
+const route=useRoute(),router=useRouter(),open=ref(false),message=ref(''),messages=ref<any[]>([]),sending=ref(false),confirming=ref(false),error=ref(''),conversation=ref(crypto.randomUUID()),feed=ref<HTMLElement|null>(null),button=ref<HTMLElement|null>(null),audioBusy=ref(false),position=ref({x:window.innerWidth-100,y:window.innerHeight-105}),pending=ref<any>(null)
+const title=computed(()=>({visitor:'留学咨询助手',employee:'企业员工助手',student:'学生服务助手'})[props.mode])
+const label=computed(()=>({visitor:'在线咨询',employee:'员工助手',student:'学生助手'})[props.mode])
+const storageKey=computed(()=>'yue-assistant-position:'+props.mode+':'+(props.user?.id||'visitor'))
+let drag:any=null,moved=false
+function clamp(){position.value={x:Math.max(12,Math.min(innerWidth-80,position.value.x)),y:Math.max(12,Math.min(innerHeight-80,position.value.y))}}
+function down(e:PointerEvent){drag={x:e.clientX,y:e.clientY,bx:position.value.x,by:position.value.y};moved=false;button.value?.setPointerCapture(e.pointerId)}
+function move(e:PointerEvent){if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>5)moved=true;position.value={x:drag.bx+dx,y:drag.by+dy};clamp()}
+function up(){if(drag&&moved)localStorage.setItem(storageKey.value,JSON.stringify(position.value));drag=null}
+function toggle(){if(moved){moved=false;return}open.value=!open.value}
+async function scroll(){await nextTick();feed.value?.scrollTo({top:feed.value.scrollHeight,behavior:'smooth'})}
+async function send(){const text=message.value.trim();if(!text||sending.value)return;sending.value=true;error.value='';try{
+ if(!pending.value||pending.value.message!==text)pending.value={message_id:crypto.randomUUID(),conversation_id:conversation.value,message:text,input_kind:'CHAT',context:{page:route.path}}
+ const out=await api.post('/assistants/'+props.mode+'/messages',pending.value)
+ conversation.value=out.conversationId||conversation.value;messages.value.push({role:'user',content:text},{role:'assistant',...out});message.value='';pending.value=null;await scroll()
+ }catch(e){error.value=errorText(e)}finally{sending.value=false}}
+async function confirm(m:any){if(confirming.value||m.done)return;confirming.value=true;error.value='';try{m.receipt=await confirmProposal(m.proposal);m.done=true;emit('changed');await scroll()}catch(e){error.value=errorText(e)}finally{confirming.value=false}}
+function daily(m:any){router.push('/app/daily');const draft=m.proposal.preview?.draft;if(draft?.content)emit('draft',draft);open.value=false}
+function structured(text:string){try{if(text?.trim().startsWith('{')||text?.trim().startsWith('['))return JSON.parse(text)}catch{}return null}
+async function audio(e:Event){const file=(e.target as HTMLInputElement).files?.[0];if(!file)return;audioBusy.value=true;try{const f=new FormData();f.append('file',file);const r=await api.post('/transcriptions',f);message.value=r.text||'';error.value='请先核对转写内容，再点击发送。'}catch(e){error.value=errorText(e)}finally{audioBusy.value=false}}
+onMounted(()=>{try{const p=JSON.parse(localStorage.getItem(storageKey.value)||'null');if(p)position.value=p}catch{}clamp();window.addEventListener('resize',clamp)})
+onUnmounted(()=>window.removeEventListener('resize',clamp))
+watch(()=>[props.user?.id,props.user?.version,props.mode],()=>{open.value=false;message.value='';messages.value=[];pending.value=null;conversation.value=crypto.randomUUID()})
+</script>
+<template><button ref="button" class="assistant-launch general-assistant-launch" :class="mode" :style="{left:position.x+'px',top:position.y+'px'}" :aria-label="'打开'+title" @pointerdown="down" @pointermove="move" @pointerup="up" @pointercancel="up" @click="toggle"><MessageSquare :size="24"/><span>{{label}}</span></button><section v-if="open" class="assistant-panel general-assistant-panel" :class="{'paired-assistant':reportVisible}" role="dialog" :aria-label="title"><header><div class="assistant-avatar"><Sparkles :size="20"/></div><div><strong>{{title}}</strong><small>咨询与受控业务协助</small></div><button class="icon-btn" aria-label="关闭助手" @click="open=false"><X :size="20"/></button></header><div ref="feed" class="chat-feed"><div class="chat-welcome"><Sparkles :size="25"/><h3>{{mode==='visitor'?'您好，欢迎咨询留学项目':mode==='student'?'学习与服务，有问题可以告诉我':'查询资料、整理跟进，让工作更有序'}}</h3><p>如需办理业务，我会先提供建议，待您核对并确认。</p></div><div v-for="(m,i) in messages" :key="i" class="chat-line" :class="m.role"><div class="bubble"><RecordView v-if="structured(m.answer||m.content)" :value="structured(m.answer||m.content)"/><span v-else>{{m.answer||m.content}}</span><small v-if="m.aiStatus==='UNAVAILABLE'" class="ai-unavailable">AI服务暂不可用，可继续使用业务表单</small><small v-if="m.aiStatus==='MOCK'">模拟服务输出</small><p v-for="w in m.warnings||[]" :key="w" class="assistant-warning">{{w}}</p><ul v-if="m.sources?.length" class="assistant-sources"><li v-for="(s,j) in m.sources" :key="j">{{s.title}} {{s.section}}</li></ul><div v-if="m.proposal" class="proposal-card"><h4>请核对办理建议</h4><RecordView :value="m.proposal.preview"/><button v-if="m.proposal.operation==='DAILY_DRAFT'" class="btn outline" @click="daily(m)">到日报页面核对</button><template v-else><p v-if="m.missingFields?.length||m.proposal.preview?.missing_fields?.length" class="info-box">信息尚未齐全，请补充后重新生成确认卡。</p><p v-else-if="m.done" class="success-callout">已确认提交</p><button v-else class="btn primary" :disabled="confirming||!!m.missingFields?.length||!!m.proposal.preview?.missing_fields?.length" @click="confirm(m)">{{confirming?'正在提交…':'已核对，确认办理'}}</button><RecordView v-if="m.receipt" :value="m.receipt"/></template></div></div></div><div v-if="sending" class="chat-line assistant"><div class="bubble"><LoaderCircle class="spin" :size="16"/>正在处理…</div></div></div><p v-if="error" class="assistant-error" role="alert">{{error}}</p><form class="chat-compose" @submit.prevent="send"><textarea v-model="message" :aria-label="'给'+title+'发送消息'" placeholder="请输入您想咨询或办理的事项…" rows="2" @keydown.enter.exact.prevent="send"></textarea><button class="btn primary square" :disabled="sending||!message.trim()" aria-label="发送消息"><Send :size="18"/></button></form><div v-if="mode!=='visitor'" class="assistant-audio"><label><Mic :size="15"/>{{audioBusy?'正在转写…':'从录音填写草稿'}}<input type="file" accept="audio/*" :disabled="audioBusy" @change="audio"></label></div><p class="assistant-note">助手建议需本人确认，AI不可用时仍可通过表单办理。</p></section></template>
