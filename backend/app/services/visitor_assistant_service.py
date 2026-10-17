@@ -20,11 +20,13 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.errors import AIBadResponseError, AITimeoutError, AIUnavailableError
+from app.integrations.dify import ai_status
 from app.integrations.dify.visitor import run_visitor
 from app.models.event import EventLecture
 from app.schemas.assistant import AssistantRequest, AssistantResult, Proposal, SourceItem
-from app.services import m2_config, rate_limit, visitor_session
+from app.services import rate_limit, visitor_session
 
 logger = logging.getLogger(__name__)
 
@@ -135,12 +137,13 @@ def handle_visitor_message(db: Session, req: AssistantRequest, *,
     session_draft = visitor_session.get(conversation_id)
 
     payload = _build_payload(db, req, conversation_id)
-    payload["draft"] = session_draft
+    payload["draft"] = session_draft                       # 已收集的草稿（多轮续填）
+    payload["history"] = visitor_session.get_history(conversation_id)   # 最近对话（指代消解）
     db.rollback()
 
     try:
         raw = run_visitor(payload, user=conversation_id,
-                          timeout_s=m2_config.ai_timeout_visitor_seconds())
+                          timeout_s=settings.ai_timeout_visitor_seconds)
     except (AIUnavailableError, AITimeoutError) as exc:
         logger.info("访客客服 AI 不可用：%s", exc.__class__.__name__)
         return _degraded(req, conversation_id,
@@ -153,6 +156,7 @@ def handle_visitor_message(db: Session, req: AssistantRequest, *,
                          "AI 返回异常")
 
     intent = raw["intent"]
+    open_event_ids = {str(e["id"]) for e in payload["open_events"]}
 
     # 合并"会话里已有的草稿"与"本轮识别出的草稿"，避免多轮对话丢字段
     merged = dict(session_draft)
@@ -160,13 +164,27 @@ def handle_visitor_message(db: Session, req: AssistantRequest, *,
         merged = visitor_session.merge(
             conversation_id,
             {k: v for k, v in raw["draft"].items() if k != "event_id"},
-        )
-        if raw["draft"].get("event_id"):
-            merged = visitor_session.merge(conversation_id,
-                                           {"event_id": raw["draft"]["event_id"]})
+        ) or merged
+        # event_id 必须来自本次受控查询的开放活动，防模型编造或引用已下线活动
+        event_id = raw["draft"].get("event_id")
+        if event_id and str(event_id) in open_event_ids:
+            merged = visitor_session.merge(conversation_id, {"event_id": str(event_id)}) or merged
 
-    missing = [f for f in ("name", "mobile") if not merged.get(f)] \
-        if intent in _DRAFT_INTENTS else list(raw.get("missing_fields") or [])
+    if intent == "ACTIVITY_DRAFT" and str(merged.get("event_id") or "") not in open_event_ids:
+        merged.pop("event_id", None)                       # 旧草稿里的活动已不再开放
+
+    # 缺项由后端按意图确定的必填项计算，不采信模型自报的缺项
+    if intent == "ACTIVITY_DRAFT":
+        missing = [f for f in ("event_id", "name", "mobile") if not merged.get(f)]
+    elif intent == "LEAD_DRAFT":
+        missing = [f for f in ("name", "mobile") if not merged.get(f)]
+    else:
+        missing = list(raw.get("missing_fields") or [])
+
+    warnings = list(raw.get("warnings") or [])
+    if intent == "ACTIVITY_DRAFT" and not merged.get("event_id") \
+            and "EVENT_NOT_SPECIFIED" not in warnings:
+        warnings.append("EVENT_NOT_SPECIFIED")
 
     sources = [
         SourceItem(documentId=s.get("document_id"), title=s.get("title"),
@@ -182,6 +200,8 @@ def handle_visitor_message(db: Session, req: AssistantRequest, *,
         proposal = None
         missing = []
 
+    visitor_session.append_history(conversation_id, req.message, raw["answer"])
+
     logger.info("M2 访客客服 intent=%s 会话=%s", intent, conversation_id)
     return AssistantResult(
         conversationId=conversation_id,
@@ -190,6 +210,6 @@ def handle_visitor_message(db: Session, req: AssistantRequest, *,
         sources=sources,
         missingFields=missing,
         proposal=proposal,
-        aiStatus="MOCK" if m2_config.dify_mode()=="mock" else "LIVE",
-        warnings=list(raw.get("warnings") or []),
+        aiStatus=ai_status(),
+        warnings=warnings,
     )

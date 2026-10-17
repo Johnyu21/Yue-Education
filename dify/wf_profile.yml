@@ -1,12 +1,19 @@
 # =====================================================================
 # WF_ASSESSMENT —— 客户研判字段提取工作流（Dify 1.12.1）
 #
+# 节点：开始 → 解析入参(代码) → 字段提取(LLM) → 输出净化(代码) → 结束
+#
 # 导入说明：
 #   1. LLM 节点（id: llm）的 model.provider / model.name 已留空，导入后自行选择大模型。
 #   2. 本工作流**不需要知识库**：只做"从给定材料里提取字段 + 定位证据 + 指出缺项"。
 #      录取判定与打分由后端 Python 按 course_project.admission_rules（已审核）执行。
 #   3. 契约：Start 输入 payload_json（字符串 JSON），End 输出 output_json（字符串 JSON）。
-#   4. 导入时提示"DSL 版本差异"为正常警告，不影响使用。
+#   4. ⚠️ 两个代码节点不要删：
+#      - parse    ：拆出已核对事实 / 简历文本 / 规则快照 / 必填字段清单；
+#      - sanitize ：剥掉 ``` 与解释文字、丢弃 score/decision 等越权字段、
+#                   以"顾问已核对事实"为准覆盖模型结论、把 missing_fields 归一化到必填清单。
+#      缺项口径由 required_fields 决定，这样 live 与 mock 才可能一致。
+#   5. 导入时提示"DSL 版本差异"为正常警告，不影响使用。
 # =====================================================================
 app:
   description: 客户研判 WF_ASSESSMENT —— 简历/事实字段提取、证据定位与缺项（不做录取判定）
@@ -17,7 +24,7 @@ app:
   use_icon_as_answer_icon: false
 dependencies: []
 kind: app
-version: 0.1.3
+version: 0.1.4
 workflow:
   conversation_variables: []
   environment_variables: []
@@ -49,9 +56,21 @@ workflow:
           isInIteration: false
           isInLoop: false
           sourceType: start
-          targetType: llm
-        id: edge-start-llm
+          targetType: code
+        id: edge-start-parse
         source: start
+        sourceHandle: source
+        target: parse
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: llm
+        id: edge-parse-llm
+        source: parse
         sourceHandle: source
         target: llm
         targetHandle: target
@@ -61,9 +80,21 @@ workflow:
           isInIteration: false
           isInLoop: false
           sourceType: llm
-          targetType: end
-        id: edge-llm-end
+          targetType: code
+        id: edge-llm-sanitize
         source: llm
+        sourceHandle: source
+        target: sanitize
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: end
+        id: edge-sanitize-end
+        source: sanitize
         sourceHandle: source
         target: end
         targetHandle: target
@@ -96,6 +127,68 @@ workflow:
         type: custom
         width: 244
       - data:
+          code: |
+            import json
+
+
+            def main(payload_json: str) -> dict:
+                try:
+                    data = json.loads(payload_json or "{}")
+                except Exception:
+                    data = {}
+                if not isinstance(data, dict):
+                    data = {}
+
+                required = data.get("required_fields")
+                if not isinstance(required, list):
+                    required = []
+
+                return {
+                    "confirmed_facts_json": json.dumps(
+                        data.get("confirmed_facts") or {}, ensure_ascii=False),
+                    "resume_text": str(data.get("resume_text") or ""),
+                    "project_rules_json": json.dumps(
+                        data.get("project_rules") or [], ensure_ascii=False),
+                    "required_fields_json": json.dumps(required, ensure_ascii=False),
+                }
+          code_language: python3
+          desc: 拆出已核对事实 / 简历文本 / 规则快照 / 必填字段清单
+          outputs:
+            confirmed_facts_json:
+              children: null
+              type: string
+            resume_text:
+              children: null
+              type: string
+            project_rules_json:
+              children: null
+              type: string
+            required_fields_json:
+              children: null
+              type: string
+          selected: false
+          title: 解析入参
+          type: code
+          variables:
+            - value_selector:
+                - start
+                - payload_json
+              value_type: string
+              variable: payload_json
+        height: 160
+        id: parse
+        position:
+          x: 380
+          y: 282
+        positionAbsolute:
+          x: 380
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
           context:
             enabled: false
             variable_selector: []
@@ -103,6 +196,7 @@ workflow:
           model:
             completion_params:
               temperature: 0
+              max_tokens: 1500
             mode: chat
             name: ''
             provider: ''
@@ -111,11 +205,11 @@ workflow:
               role: system
               text: |
                 你是留学客户资料的**字段提取助手**。你不做任何录取判断，也不给分数。
-                输入 payload_json 是 JSON 字符串，包含：
-                { "lead_id": 客户ID, "request_id": 本次请求ID,
-                  "confirmed_facts": {顾问已核对的事实},
-                  "resume_text": "简历纯文本（可能为空或截断）",
-                  "project_rules": [{project_id, rules}] }
+
+                输入（后端已拆分好，全部是单客户的必要信息）：
+                - 顾问已核对的事实（**原样保留，不得改写或推翻**）：{{#parse.confirmed_facts_json#}}
+                - 必填字段清单（missing_fields **只能**从这里取）：{{#parse.required_fields_json#}}
+                - 项目规则快照（仅用于理解上下文，可能为 null；**不得据此推断门槛**）：{{#parse.project_rules_json#}}
 
                 请只输出**一个合法 JSON 对象**（不要解释、不要 markdown 代码块）：
                 {
@@ -128,19 +222,22 @@ workflow:
                 }
 
                 规则（必须遵守）：
-                1. confirmed_facts 是顾问已核对的事实，**原样保留**，不得改写或推翻。
-                2. 只能从 resume_text 中提取：education（学历）、language_level（语言水平）、
-                   date_of_birth（出生日期）、city（城市）、gender（性别）等个人事实；
+                1. 顾问已核对的事实必须出现在 facts 里，值保持一致。
+                2. 只能从简历原文提取事实：education（学历）、language_level（语言水平/成绩）、
+                   date_of_birth（出生日期）、city（城市）、gender（性别）等；
                    每个提取出的字段必须在 evidence 中给出 source_ref 与最小必要 snippet。
-                3. **严禁编造**：材料里没有的信息一律不写进 facts，而是放进 missing_fields。
+                3. **严禁编造**：材料里没有的信息一律不写进 facts，而是放进 missing_fields；
                    不得推断或添加年龄门槛、语言分数线、资金证明要求、录取结论。
-                4. 不得输出 score / 匹配结论（MATCH/NO_MATCH）——那是后端按已审核规则计算的职责。
-                5. resume_text 为空或无法识别时 → facts 只含 confirmed_facts，
-                   missing_fields 列出必填缺项，warnings 含 "NO_RESUME_TEXT"。
-                6. snippet 只保留最小必要片段，不要整段复制简历，不要包含身份证号、银行卡号等敏感号码。
+                4. 不得输出 score / decision / MATCH / NO_MATCH —— 那是后端按已审核规则计算的职责。
+                5. 简历文本为空或无法识别时 → facts 只含已核对事实，missing_fields 列全必填缺项，
+                   warnings 含 "NO_RESUME_TEXT"。
+                6. snippet 只保留最小必要片段（≤160 字），不要整段复制简历，
+                   不要包含身份证号、银行卡号等敏感号码。
             - id: user-prompt-assessment
               role: user
-              text: '{{#start.payload_json#}}'
+              text: |
+                简历原文如下（可能为空或被截断）：
+                {{#parse.resume_text#}}
           selected: false
           title: 字段提取
           type: llm
@@ -150,10 +247,136 @@ workflow:
         height: 98
         id: llm
         position:
-          x: 480
+          x: 680
           y: 282
         positionAbsolute:
-          x: 480
+          x: 680
+          y: 282
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+            import re
+
+            FORBIDDEN_KEYS = {"score", "decision", "match", "match_level", "match_result"}
+            SENSITIVE_RE = re.compile(r"\d{15,19}")
+            DEFAULT_REQUIRED = ["education", "language_level", "date_of_birth"]
+
+
+            def _load(value, expect):
+                try:
+                    parsed = json.loads(value or "null")
+                except Exception:
+                    return expect()
+                return parsed if isinstance(parsed, expect) else expect()
+
+
+            def main(raw: str, confirmed_facts_json: str,
+                     required_fields_json: str, resume_text: str) -> dict:
+                text = (raw or "").strip()
+                start = text.find("{")
+                end = text.rfind("}")
+                data = {}
+                if 0 <= start < end:
+                    parsed = _load(text[start:end + 1], dict)
+                    data = parsed
+
+                warnings = data.get("warnings")
+                warnings = [str(w) for w in warnings] if isinstance(warnings, list) else []
+                if not data:
+                    warnings.append("MODEL_OUTPUT_NOT_JSON")
+
+                required = _load(required_fields_json, list) or DEFAULT_REQUIRED
+                required = [str(f) for f in required if isinstance(f, str)]
+
+                facts = {}
+                raw_facts = data.get("facts")
+                if isinstance(raw_facts, dict):
+                    for key, value in raw_facts.items():
+                        if not isinstance(key, str) or key in FORBIDDEN_KEYS:
+                            continue
+                        if isinstance(value, (dict, list)) or value in (None, ""):
+                            continue
+                        facts[key] = str(value)[:200]
+
+                # 顾问已核对的事实优先，模型不得改写
+                for key, value in _load(confirmed_facts_json, dict).items():
+                    if isinstance(key, str) and value not in (None, ""):
+                        facts[key] = str(value)[:200]
+
+                evidence = []
+                raw_evidence = data.get("evidence")
+                if isinstance(raw_evidence, list):
+                    for item in raw_evidence:
+                        if not isinstance(item, dict):
+                            continue
+                        field = item.get("field")
+                        if not isinstance(field, str) or field in FORBIDDEN_KEYS:
+                            continue
+                        snippet = str(item.get("snippet") or "")[:160]
+                        snippet = SENSITIVE_RE.sub("[已脱敏]", snippet)
+                        evidence.append({
+                            "field": field,
+                            "source_ref": str(item.get("source_ref") or "resume:unknown")[:60],
+                            "snippet": snippet,
+                        })
+
+                missing = [f for f in required if not facts.get(f)]
+                if not (resume_text or "").strip() and "NO_RESUME_TEXT" not in warnings:
+                    warnings.append("NO_RESUME_TEXT")
+                if missing and "NEEDS_MANUAL_CONFIRMATION" not in warnings:
+                    warnings.append("NEEDS_MANUAL_CONFIRMATION")
+
+                out = {
+                    "schema_version": "1.0",
+                    "mode": "ASSESSMENT_EXTRACT",
+                    "facts": facts,
+                    "evidence": evidence,
+                    "missing_fields": missing,
+                    "warnings": warnings,
+                }
+                return {"output_json": json.dumps(out, ensure_ascii=False)}
+          code_language: python3
+          desc: 剥代码块、丢弃 score/decision、已核对事实优先、缺项归一化到必填清单
+          outputs:
+            output_json:
+              children: null
+              type: string
+          selected: false
+          title: 输出净化
+          type: code
+          variables:
+            - value_selector:
+                - llm
+                - text
+              value_type: string
+              variable: raw
+            - value_selector:
+                - parse
+                - confirmed_facts_json
+              value_type: string
+              variable: confirmed_facts_json
+            - value_selector:
+                - parse
+                - required_fields_json
+              value_type: string
+              variable: required_fields_json
+            - value_selector:
+                - parse
+                - resume_text
+              value_type: string
+              variable: resume_text
+        height: 260
+        id: sanitize
+        position:
+          x: 980
+          y: 282
+        positionAbsolute:
+          x: 980
           y: 282
         selected: false
         sourcePosition: right
@@ -164,8 +387,8 @@ workflow:
           desc: ''
           outputs:
             - value_selector:
-                - llm
-                - text
+                - sanitize
+                - output_json
               variable: output_json
           selected: false
           title: 结束
@@ -173,10 +396,10 @@ workflow:
         height: 90
         id: end
         position:
-          x: 780
+          x: 1280
           y: 282
         positionAbsolute:
-          x: 780
+          x: 1280
           y: 282
         selected: false
         sourcePosition: right

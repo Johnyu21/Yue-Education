@@ -19,6 +19,7 @@ from app.core import runtime_state
 from sqlalchemy.orm import Session
 
 from app.core.confirmation import CONFIRM_TTL_MINUTES, new_request_key, sign_confirmation
+from app.integrations.dify import ai_status as ai_status_fn
 from app.core.errors import (
     AIBadResponseError,
     AITimeoutError,
@@ -121,7 +122,7 @@ def _result(req: AssistantRequest, answer: str, *, proposal: Proposal | None = N
         sources=[SourceItem(documentId=s.get("document_id",s.get("documentId")),title=s.get("title"),section=s.get("section")) for s in (sources or []) if isinstance(s,dict)],
         missingFields=missing or [],
         proposal=proposal,
-        aiStatus="MOCK" if settings.dify_mode=="mock" and ai_status=="LIVE" else ai_status,
+        aiStatus=ai_status if ai_status == "UNAVAILABLE" else ai_status_fn(),
         warnings=warnings or [],
     )
 

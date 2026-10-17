@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import logging
 
+from app.core.config import settings
 from app.core.errors import AIBadResponseError
 from app.integrations.dify import mock_samples, run_workflow
-from app.services import m2_config
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +44,9 @@ def run_assessment(payload: dict, *, user: str = "assessment",
 
     payload 只含：lead_id / request_id / confirmed_facts / 可选 resume_text / project_rules。
     """
-    if m2_config.dify_mode() == "mock":
+    if settings.dify_mode == "mock":
         return _validate(mock_samples.assessment_extract(payload))
 
-    timeout = timeout_s or m2_config.ai_timeout_assessment_seconds()
+    timeout = timeout_s or settings.ai_timeout_assessment_seconds
     raw = run_workflow("assessment", payload, user, timeout=float(timeout))
     return _validate(raw)

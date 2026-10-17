@@ -46,10 +46,15 @@ def _extract_name(text: str) -> str | None:
 
 
 def visitor_answer(payload: dict) -> dict:
-    """确定性 VISITOR_ANSWER：公开问答 / 留资草稿 / 活动意向 / 越界拒绝。"""
+    """确定性 VISITOR_ANSWER：公开问答 / 留资草稿 / 活动意向 / 越界拒绝。
+
+    ⚠️ 与 live 提示词同口径：已有草稿（payload.draft）里的字段不重复追问。
+    """
     message = str(payload.get("message") or "")
     projects = payload.get("public_projects") or []
     events = payload.get("open_events") or []
+    previous = payload.get("draft") if isinstance(payload.get("draft"), dict) else {}
+    previous = {k: v for k, v in previous.items() if v not in (None, "")}
 
     # ① 越界请求（提示词注入/索取客户库）→ 明确拒绝，且不返回任何客户明细
     if _match_any(message, _OUT_OF_SCOPE_PATTERNS):
@@ -74,12 +79,14 @@ def visitor_answer(payload: dict) -> dict:
             if title and title in message:
                 hit = ev
                 break
-        draft = {"event_id": hit.get("id") if hit else None,
-                 "name": _extract_name(message),
-                 "mobile": mobile.group(0) if mobile else None}
-        missing = [f for f in ("name", "mobile") if not draft.get(f)]
+        draft = {
+            "event_id": hit.get("id") if hit else previous.get("event_id"),
+            "name": _extract_name(message) or previous.get("name"),
+            "mobile": (mobile.group(0) if mobile else None) or previous.get("mobile"),
+        }
+        missing = [f for f in ("event_id", "name", "mobile") if not draft.get(f)]
         if hit:
-            answer = f"已为您准备「{hit.get('title')}」的报名草稿，确认姓名与手机号后即可提交。"
+            answer = f"已为您准备「{hit.get('title')}」的报名草稿，确认后即可提交。"
         else:
             answer = "已为您准备活动报名草稿，请确认想参加的活动并填写姓名与手机号。"
         return {
@@ -90,14 +97,17 @@ def visitor_answer(payload: dict) -> dict:
             "draft": draft,
             "missing_fields": missing,
             "sources": [],
-            "warnings": [] if hit else ["EVENT_NOT_SPECIFIED"],
+            "warnings": [] if draft.get("event_id") else ["EVENT_NOT_SPECIFIED"],
         }
 
     # ③ 留资意向：命中留资关键词或直接给了手机号/姓名
     mobile = _MOBILE_RE.search(message)
     name = _extract_name(message)
     if mobile or name or _match_any(message, _LEAD_PATTERNS):
-        draft = {"name": name, "mobile": mobile.group(0) if mobile else None}
+        draft = {
+            "name": name or previous.get("name"),
+            "mobile": (mobile.group(0) if mobile else None) or previous.get("mobile"),
+        }
         missing = [f for f in ("name", "mobile") if not draft.get(f)]
         return {
             "schema_version": "1.0",
@@ -257,8 +267,16 @@ _LANGUAGE_KEYWORDS = ("雅思", "IELTS", "托福", "TOEFL", "德福", "TestDaF",
 _SCORE_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(分|分以上)?")
 _DATE_RE = re.compile(r"(19\d{2}|20\d{2})\s*[-/年]\s*(\d{1,2})\s*[-/月]\s*(\d{1,2})")
 
-# 提取时要求的必填画像字段（缺失即列入 missing_fields，由顾问补充核对）
+# payload 未给 required_fields 时的兜底必填画像字段
+# （正式口径由后端 assessment_service._required_fields 计算后随 payload 传入）
 _REQUIRED_PROFILE_FIELDS = ("education", "language_level", "date_of_birth")
+
+
+def _required(payload: dict) -> tuple[str, ...]:
+    """必填字段清单：优先用后端给的，缺省退回兜底三项。"""
+    provided = payload.get("required_fields")
+    fields = [str(f) for f in provided] if isinstance(provided, list) else []
+    return tuple(fields) or _REQUIRED_PROFILE_FIELDS
 
 
 def _evidence(field: str, line_no: int, line: str) -> dict:
@@ -274,7 +292,7 @@ def assessment_extract(payload: dict) -> dict:
 
     if not resume_text.strip():
         warnings.append("NO_RESUME_TEXT")
-        missing = [f for f in _REQUIRED_PROFILE_FIELDS if not facts.get(f)]
+        missing = [f for f in _required(payload) if not facts.get(f)]
         return {
             "schema_version": "1.0",
             "mode": "ASSESSMENT_EXTRACT",
@@ -316,7 +334,7 @@ def assessment_extract(payload: dict) -> dict:
                 evidence.append(_evidence("date_of_birth", idx, line))
                 break
 
-    missing = [f for f in _REQUIRED_PROFILE_FIELDS if not facts.get(f)]
+    missing = [f for f in _required(payload) if not facts.get(f)]
     if missing:
         warnings.append("NEEDS_MANUAL_CONFIRMATION")
 

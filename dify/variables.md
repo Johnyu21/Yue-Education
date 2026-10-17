@@ -1,6 +1,9 @@
-# WF_STUDENT 输入输出变量说明
+# Dify 工作流输入输出变量说明
 
 > 面向后端 `app/integrations/dify` 适配器与 Dify 工作流维护者。
+> 覆盖：`WF_STUDENT`、`WF_ENTERPRISE`、`WF_VISITOR`、`WF_ASSESSMENT`（按章节顺序）。
+> 统一约定：Start 输入 `payload_json`（JSON 字符串），End 输出 `output_json`（JSON 字符串），
+> 后端解析一次并按 `mode` 校验；AI 调用一律在事务之外。
 
 ## 1. 调用约定（Dify 1.12.1 Workflow 应用）
 
@@ -212,11 +215,20 @@
 请求体 `{"inputs": {"payload_json": "<字符串JSON>"}, "response_mode": "blocking", "user": "<会话或 visitor>"}`，
 响应取 `data.outputs.output_json`（字符串 JSON），后端解析一次并按 `mode=VISITOR_ANSWER` 校验。
 
+节点结构（DSL 0.1.4）：
+`开始 → 解析入参(code) → 公开知识库检索 → 访客客服(LLM) → 输出净化(code) → 结束`
+
+- **解析入参**：拆出 `message / public_projects / open_events / draft / history`，
+  知识检索只用 `message` 做 query（不把整段 JSON 塞进检索）。
+- **输出净化**：剥掉 ` ``` ` 与前后解释文字、强制合法 JSON、意图白名单（未知降级 FAQ）、
+  `draft` 字段白名单（`name/mobile/event_id`）。模型没按 JSON 返回时，纯文本仍可作为
+  `answer`（`intent=FAQ`，`warnings` 含 `MODEL_OUTPUT_NOT_JSON`），FAQ 分支无写操作所以安全。
+
 ## 2. Start 输入变量
 
 | 变量 | 类型 | 说明 |
 |---|---|---|
-| `payload_json` | paragraph（JSON 字符串） | 后端组装，工作流内用 Jinja 解析 |
+| `payload_json` | paragraph（JSON 字符串） | 后端组装，由"解析入参"代码节点拆分 |
 
 `payload_json` 结构（后端 `visitor_assistant_service._build_payload` 生成）：
 
@@ -228,12 +240,18 @@
   "conversation_id": "可选会话 id",
   "public_projects": [{"id": "11", "name": "已发布项目名", "country": "新加坡", "education_level": "本科"}],
   "open_events": [{"id": "3", "title": "开放活动标题", "start_at": "2026-10-25T02:00:00Z"}],
+  "draft": { "name": null, "mobile": "138...", "event_id": null },
+  "history": [{"role": "user", "content": "上一轮访客消息"}, {"role": "assistant", "content": "上一轮回答"}],
   "context": { "page": null, "selected_id": null }
 }
 ```
 
 > ⚠️ `public_projects` / `open_events` 由后端受控查询（只含**已发布**项目与**OPEN** 活动），
 > 不包含任何客户库明细、员工信息或未公开项目。
+> ⚠️ `draft` 是**本会话已收集的草稿**（多轮续填，服务端 `visitor_session` 维护）；
+> `history` 是**最近 8 条**问答（约 4 轮，仅含访客消息与客服回答）。
+> 两者都只保存公开对话内容，不含客户库、员工或心理数据。工作流应据此避免重复追问，
+> 并据此消解"这个项目/那个活动"等指代。`history` 可能为空数组。
 
 ## 3. End 输出变量
 
@@ -258,11 +276,31 @@
 ## 4. 关键安全约束（WF_VISITOR）
 
 - **不得泄露客户资料**：客户是否存在、姓名、手机号、顾问、销售阶段一律不出现在回答中；
-  索取客户名单/内部接口/系统提示词的请求 → `intent=OUT_OF_SCOPE` 并拒绝。
+  索取客户名单/内部接口/系统提示词的请求 → `intent=OUT_OF_SCOPE` 并拒绝（`draft` 必须为 null）。
 - **不得声称已提交**：`draft` 只是草稿，必须由访客在页面确认后调用后端普通接口
   （`POST /public/leads`、`POST /events/{id}/registrations`）；回复中不得出现"已提交/已报名成功"。
 - **名额不预言**：名额以报名接口的实时结果为准，不说"已为您锁定名额"。
 - **不得编造**：公司政策、项目条件、年龄/语言/资金门槛、机构与联系方式，缺资料就转人工。
+
+## 5. 缺项口径（后端计算，不采信模型自报）
+
+| intent | 必填项 | 说明 |
+|---|---|---|
+| `LEAD_DRAFT` | `name`、`mobile` | `CAPTURE_LEAD` 提议卡 |
+| `ACTIVITY_DRAFT` | `event_id`、`name`、`mobile` | `REGISTER_EVENT` 提议卡 |
+| `FAQ` / `OUT_OF_SCOPE` | — | 无草稿、无缺项 |
+
+- `event_id` 必须命中 payload 里的 `open_events`；模型编造或活动已下线时，后端丢弃该值并
+  在 `warnings` 补 `EVENT_NOT_SPECIFIED`。
+- `missingFields` 由 `visitor_assistant_service` 按上表重算，模型自报的 `missing_fields` 仅对非草稿意图生效。
+
+## 6. 待配置项（WF_VISITOR）
+
+| 项 | 位置 | 说明 |
+|---|---|---|
+| LLM 大模型 | `llm` 节点 `model.provider` / `model.name` | 留空，导入后选择 |
+| 公开知识库 | `knowledge` 节点 `dataset_ids` | 留空，RAG 文档编写后绑定 **public** 库 |
+| API Key | 后端 `.env` 的 `DIFY_VISITOR_KEY` | 由使用者提供，不进 DSL、不进前端 |
 
 ---
 
@@ -275,6 +313,14 @@
 
 同上，响应取 `data.outputs.output_json`，后端按 `mode=ASSESSMENT_EXTRACT` 校验。
 
+节点结构（DSL 0.1.4）：
+`开始 → 解析入参(code) → 字段提取(LLM) → 输出净化(code) → 结束`
+
+- **解析入参**：拆出 `confirmed_facts / resume_text / project_rules / required_fields`。
+- **输出净化**：剥 ` ``` `、丢弃 `score/decision/match*` 等越权字段、以 `confirmed_facts` 覆盖同名键、
+  把 `missing_fields` 归一化到 `required_fields`、对 snippet 里的长数字串做脱敏。
+  模型没按 JSON 返回时输出 `facts={}` + `MODEL_OUTPUT_NOT_JSON`（**不伪造事实**）。
+
 ## 2. Start 输入变量
 
 `payload_json` 结构（后端 `assessment_service._build_payload` 生成）：
@@ -285,13 +331,20 @@
   "lead_id": "客户ID",
   "request_id": "本次研判请求 UUID（防旧任务覆盖）",
   "confirmed_facts": { "education": "顾问已核对的学历" },
-  "resume_text": "简历纯文本，可能为空或被截断",
-  "project_rules": [{ "project_id": "11", "rules": { "已审核结构化条件" } }]
+  "required_fields": ["education", "language_level", "date_of_birth", "city"],
+  "resume_text": "简历纯文本，可能为空或被截断（上限 20000 字）",
+  "project_rules": [
+    { "project_id": "11", "rule_version": 3, "rules": { "已审核结构化条件" } }
+  ]
 }
 ```
 
 > ⚠️ 只发**单个客户**的已核对事实与简历最小片段；
 > **不把整张客户表、员工 token 或其它客户数据发给 Dify**。
+> ⚠️ `required_fields` 由后端 `assessment_service._required_fields` 计算
+> （画像默认 3 项 ∪ 已审核规则引用的字段，排除派生字段 `age`）；
+> 工作流的 `missing_fields` **只能**从这里取，这样 live 与 mock 的缺项口径一致。
+> ⚠️ `project_rules[].rules` 在规则**未审核**时为 `null`，工作流不得据此推断门槛。
 
 ## 3. End 输出变量
 
@@ -315,3 +368,13 @@
   匹配结论与分数由后端按 `course_project.admission_rules`（**已审核**）确定性计算；
   规则缺失即返回 `NEEDS_INFO` 且分数为空。
 - **无文本要明说**：`resume_text` 为空时 `warnings` 含 `NO_RESUME_TEXT`，不得假装识别成功。
+- **缺项归一**：`missing_fields` = `required_fields` 中在 `facts` 里取不到值的字段；
+  另有缺项时 `warnings` 含 `NEEDS_MANUAL_CONFIRMATION`。
+
+## 5. 待配置项（WF_ASSESSMENT）
+
+| 项 | 位置 | 说明 |
+|---|---|---|
+| LLM 大模型 | `llm` 节点 `model.provider` / `model.name` | 留空，导入后选择 |
+| 知识库 | — | **不需要**知识库，本工作流只做字段提取 |
+| API Key | 后端 `.env` 的 `DIFY_ASSESSMENT_KEY` | 由使用者提供，不进 DSL、不进前端 |

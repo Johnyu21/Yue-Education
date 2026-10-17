@@ -69,6 +69,15 @@ def call_student_workflow(payload: dict, user_id: int, timeout: float = 45.0) ->
     return run_workflow("student", payload, str(user_id), timeout=timeout)
 
 
+def ai_status() -> str:
+    """AI 结果来源标识：mock 必须标 MOCK，真实调用标 LIVE。
+
+    ⚠️ 各助手的 aiStatus 统一从这里取，避免"某人写 settings、某人写桥接层"两套口径。
+    disabled 模式不会走到这里（run_workflow 先抛 AIUnavailableError → 上层降级 UNAVAILABLE）。
+    """
+    return "MOCK" if settings.dify_mode == "mock" else "LIVE"
+
+
 # =============================================================
 # M2 追加：访客客服（WF_VISITOR）与客户研判（WF_ASSESSMENT）入口
 #

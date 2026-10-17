@@ -23,17 +23,19 @@ from datetime import date, datetime, timezone
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.errors import (AIBadResponseError, AITimeoutError, AIUnavailableError,
                              NotFoundError, ValidationError, VersionConflictError)
 from app.core.storage import resolve_path
 from app.core.transaction import with_business_transaction
+from app.integrations.dify import ai_status
 from app.integrations.dify.assessment import run_assessment
 from app.models.course_project import CourseProject
 from app.models.lead import CrmLead
 from app.models.user import SysUser
 from app.repositories import project as project_repo
 from app.schemas.lead import AssessmentIn, ResumeExtractionIn
-from app.services import assessment_rules, m2_config
+from app.services import assessment_rules
 from app.services.m2_errors import AssessmentRunningError
 
 logger = logging.getLogger(__name__)
@@ -44,6 +46,14 @@ _drafts: dict[str, tuple[dict, float]] = {}
 
 # 参与判定的客户事实字段
 _LEAD_FACT_FIELDS = ("gender", "city", "education", "date_of_birth")
+
+# 画像必填字段（WF_ASSESSMENT 的 required_fields 默认口径，与 mock 共用）
+_REQUIRED_PROFILE_FIELDS = ("education", "language_level", "date_of_birth")
+
+# 由其它字段派生、不需要 AI 直接提取的字段
+_DERIVED_FIELDS = {"age"}
+
+_MAX_REQUIRED_FIELDS = 12
 
 _MAX_PROJECTS = 20
 
@@ -104,17 +114,55 @@ def _load_projects(db: Session, project_ids: list[int]) -> list[CourseProject]:
     return projects
 
 
+def _rule_fields(node) -> list[str]:
+    """收集规则里引用到的字段名（支持 all_of/any_of 嵌套）。"""
+    if isinstance(node, dict):
+        fields = [node["field"]] if isinstance(node.get("field"), str) else []
+        for key in ("all_of", "any_of"):
+            for child in node.get(key) or []:
+                fields.extend(_rule_fields(child))
+        return fields
+    if isinstance(node, list):
+        fields: list[str] = []
+        for item in node:
+            fields.extend(_rule_fields(item))
+        return fields
+    return []
+
+
+def _required_fields(projects: list[CourseProject]) -> list[str]:
+    """送进工作流的必填字段清单：画像默认项 ∪ 已审核规则引用的字段。
+
+    ⚠️ "必填"只在这里定义一次：工作流的 missing_fields 归一到本清单，
+       mock 样本也读同一个 payload 字段，live 与 mock 的缺项口径才不会各说一套。
+    """
+    fields = list(_REQUIRED_PROFILE_FIELDS)
+    for project in projects:
+        if project.rule_approved_at is None:
+            continue
+        rules = project.admission_rules if isinstance(project.admission_rules, dict) else None
+        if not rules:
+            continue
+        for field in _rule_fields(rules.get("criteria")):
+            if field in _DERIVED_FIELDS or field in fields:
+                continue
+            fields.append(field)
+    return fields[:_MAX_REQUIRED_FIELDS]
+
+
 def _build_payload(lead: CrmLead, request_id, judgement_facts: dict,
                    resume_text: str | None, projects: list[CourseProject]) -> dict:
-    """发送给 Dify 的最小载荷：单个客户的已确认事实 + 简历片段 + 项目规则。
+    """发送给 Dify 的最小载荷：单个客户的已确认事实 + 简历片段 + 项目规则 + 必填字段。
 
     ⚠️ 不发整张客户表、不发员工 token、不发其它客户数据。
+    ⚠️ project_rules[].rules 在规则未审核时为 null —— 工作流不得据此推断门槛。
     """
     return {
         "schema_version": "1.0",
         "lead_id": str(lead.id),
         "request_id": str(request_id),
         "confirmed_facts": judgement_facts,
+        "required_fields": _required_fields(projects),
         "resume_text": resume_text or "",
         "project_rules": [
             {
@@ -151,7 +199,7 @@ def assess_lead(db: Session, user: SysUser, lead_id: int, data: AssessmentIn) ->
 
         if lead.assessment_status == "RUNNING" and lead.assessment_started_at is not None:
             elapsed = (now - lead.assessment_started_at).total_seconds()
-            if elapsed < m2_config.assessment_reclaim_after_seconds():
+            if elapsed < settings.assessment_reclaim_after_seconds:
                 raise AssessmentRunningError("该客户已有研判正在进行中")
             logger.warning("接管超时的研判任务 lead=%s", lead_id)
 
@@ -181,7 +229,7 @@ def assess_lead(db: Session, user: SysUser, lead_id: int, data: AssessmentIn) ->
         extraction = run_assessment(
             _build_payload(lead_snapshot, request_id, judgement_facts, resume_text, projects),
             user=str(actor_id),
-            timeout_s=m2_config.ai_timeout_assessment_seconds(),
+            timeout_s=settings.ai_timeout_assessment_seconds,
         )
     except Exception as exc:                          # noqa: BLE001 —— 需分类落库后再抛
         code = _symbol_error_code(exc)
@@ -321,11 +369,12 @@ def extract_resume_draft(db: Session, user: SysUser, lead_id: int,
             "lead_id": str(captured_lead_id),
             "request_id": str(data.request_key),
             "confirmed_facts": captured_facts,
+            "required_fields": _required_fields([]),   # 无项目上下文 → 画像默认必填项
             "resume_text": resume_text,
             "project_rules": [],
         },
         user=str(actor_id),
-        timeout_s=m2_config.ai_timeout_assessment_seconds(),
+        timeout_s=settings.ai_timeout_assessment_seconds,
     )
 
     user=db.get(SysUser,actor_id,populate_existing=True)
@@ -347,7 +396,7 @@ def extract_resume_draft(db: Session, user: SysUser, lead_id: int,
         "evidence": extraction.get("evidence", []),
         "missingFields": extraction.get("missing_fields", []),
         "expiresAt": datetime.fromtimestamp(expires_at, tz=timezone.utc),
-        "aiStatus": "MOCK" if m2_config.dify_mode()=="mock" else "LIVE",
+        "aiStatus": ai_status(),
         "warnings": extraction.get("warnings", []),
     }
 
