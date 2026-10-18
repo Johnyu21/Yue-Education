@@ -61,6 +61,77 @@ class SetupTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'frontend_dev_runner.cjs'):
             setup.check_files()
 
+    def test_first_password_prompt_is_private_and_preserves_other_config(self):
+        setup.ensure_env()
+        path = self.backend / '.env'
+        before = path.read_text(encoding='utf-8')
+        secret = 'fixture # password with "quotes" and \\slash'
+        captured = io.StringIO()
+        with patch.object(setup.sys.stdin, 'isatty', return_value=True), \
+             patch.object(setup.getpass, 'getpass', return_value=secret) as prompt, \
+             contextlib.redirect_stdout(captured):
+            self.assertTrue(setup.ensure_database_password())
+        prompt.assert_called_once()
+        self.assertNotIn(secret, captured.getvalue())
+        from dotenv import dotenv_values
+        parsed = dotenv_values(path)
+        self.assertEqual(secret, parsed['POSTGRES_PASSWORD'])
+        for line in before.splitlines():
+            if not line.startswith('POSTGRES_PASSWORD='):
+                self.assertIn(line, path.read_text(encoding='utf-8'))
+        with patch.object(setup.getpass, 'getpass') as prompt:
+            self.assertFalse(setup.ensure_database_password())
+        prompt.assert_not_called()
+
+    def test_noninteractive_start_does_not_echo_or_prompt_for_password(self):
+        setup.ensure_env()
+        with patch.object(setup.sys.stdin, 'isatty', return_value=False), \
+             patch.object(setup.getpass, 'getpass') as prompt:
+            self.assertFalse(setup.ensure_database_password())
+        prompt.assert_not_called()
+        self.assertIn('请填写 POSTGRES_PASSWORD', setup.config_problems())
+
+    def test_only_unused_legacy_template_is_upgraded(self):
+        setup.ensure_env()
+        template = self.backend / '.env.example'
+        template.write_text(template.read_text(encoding='utf-8').replace('POSTGRES_HOST=localhost', 'POSTGRES_HOST=8.138.150.132')
+                            .replace('POSTGRES_PORT=5432', 'POSTGRES_PORT=5433')
+                            .replace('POSTGRES_DB=education', 'POSTGRES_DB=yue_education')
+                            .replace('POSTGRES_USER=education', 'POSTGRES_USER=postgres'), encoding='utf-8')
+        before_secret = setup.env_values()['JWT_SECRET']
+        self.assertTrue(setup.upgrade_unconfigured_database())
+        self.assertEqual(setup.env_values()['POSTGRES_PORT'], '5433')
+        self.assertEqual(setup.env_values()['POSTGRES_DB'], 'yue_education')
+        self.assertEqual(setup.env_values()['JWT_SECRET'], before_secret)
+        self.assertFalse(setup.upgrade_unconfigured_database())
+        self.configure()
+        before = (self.backend / '.env').read_text(encoding='utf-8')
+        self.assertFalse(setup.upgrade_unconfigured_database())
+        self.assertEqual(before, (self.backend / '.env').read_text(encoding='utf-8'))
+
+    def test_legacy_template_with_process_override_is_not_upgraded(self):
+        setup.ensure_env()
+        with patch.dict(os.environ, {'POSTGRES_HOST': 'custom-db.invalid'}):
+            self.assertFalse(setup.upgrade_unconfigured_database())
+
+    def test_password_process_override_is_not_copied_to_file(self):
+        setup.ensure_env()
+        before = (self.backend / '.env').read_text(encoding='utf-8')
+        with patch.dict(os.environ, {'POSTGRES_PASSWORD': 'fixture-process-password'}), \
+             patch.object(setup.getpass, 'getpass') as prompt:
+            self.assertFalse(setup.ensure_database_password())
+        prompt.assert_not_called()
+        self.assertEqual(before, (self.backend / '.env').read_text(encoding='utf-8'))
+
+    def test_reserved_database_and_invalid_port_are_reported_before_start(self):
+        self.configure()
+        path = self.backend / '.env'
+        path.write_text(path.read_text(encoding='utf-8').replace('POSTGRES_DB=education', 'POSTGRES_DB=dify')
+                        .replace('POSTGRES_PORT=5432', 'POSTGRES_PORT=99999'), encoding='utf-8')
+        problems = setup.config_problems()
+        self.assertTrue(any('yue_education' in p for p in problems))
+        self.assertTrue(any('5433' in p for p in problems))
+
     def test_check_is_read_only_on_fresh_checkout(self):
         with patch.object(setup, 'node_commands', return_value=('node', 'npm')):
             with self.assertRaisesRegex(RuntimeError, '.venv'):

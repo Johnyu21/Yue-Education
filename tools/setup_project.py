@@ -6,10 +6,12 @@ and account creation remain explicit operations, never part of daily startup.
 import argparse
 from contextlib import contextmanager
 import hashlib
+import getpass
 import json
 import os
 from pathlib import Path
 import secrets
+import re
 import shutil
 import subprocess
 import sys
@@ -106,14 +108,14 @@ def ensure_env():
     # Exclusive creation prevents replacing a teammate's existing configuration.
     with target.open('x', encoding='utf-8', newline='\n') as output:
         output.write(source)
-    print('已生成 backend/.env（不会提交到 Git）；请填写数据库连接信息。', flush=True)
+    print('已生成 backend/.env（不会提交到 Git），使用模板中的小组云端业务库配置。', flush=True)
     return True
 
 
-def config_problems():
-    target = BACKEND / '.env'
+def env_values(target=None):
+    target = target or BACKEND / '.env'
     if not target.is_file():
-        return ['缺少 backend/.env']
+        return {}
     values = {}
     for line in target.read_text(encoding='utf-8-sig').splitlines():
         line = line.strip()
@@ -121,11 +123,84 @@ def config_problems():
             continue
         key, value = line.split('=', 1)
         values[key.strip()] = value.strip().strip('"').strip("'")
+    return values
+
+
+def missing_value(value):
+    return not value or value.lower().startswith(('replace-', 'your_', 'changeme', '填入', '<'))
+
+
+def write_env_values(values):
+    target = BACKEND / '.env'
+    source = target.read_text(encoding='utf-8-sig')
+    for key, value in values.items():
+        line = key + '=' + json.dumps(value, ensure_ascii=False)
+        pattern = r'^' + re.escape(key) + r'\s*=.*$'
+        if re.search(pattern, source, re.MULTILINE):
+            source = re.sub(pattern, lambda _: line, source, flags=re.MULTILINE)
+        else:
+            source = source.rstrip() + '\n' + line + '\n'
+    temporary = target.with_name('.env.tmp')
+    temporary.write_text(source, encoding='utf-8')
+    temporary.replace(target)
+
+
+def upgrade_unconfigured_database():
+    """Migrate only the exact old, unused localhost template; never real connections."""
+    values = env_values()
+    keys = ('POSTGRES_HOST', 'POSTGRES_PORT', 'POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD')
+    if any(key in os.environ for key in keys):
+        return False
+    legacy = (values.get('POSTGRES_HOST') in {'127.0.0.1', 'localhost'}
+              and values.get('POSTGRES_PORT') == '5432'
+              and values.get('POSTGRES_DB') == 'education'
+              and values.get('POSTGRES_USER') == 'education'
+              and missing_value(values.get('POSTGRES_PASSWORD', '')))
+    if not legacy:
+        return False
+    template = env_values(BACKEND / '.env.example')
+    updates = {key: template[key] for key in keys[:-1] if key in template}
+    if len(updates) != 4:
+        return False
+    write_env_values(updates)
+    print('检测到未填写密码的旧本机数据库模板，已按新模板更新连接地址、端口、库名和账号。', flush=True)
+    return True
+
+
+def ensure_database_password():
+    """Only fill a missing local secret; existing values and process overrides win."""
+    values = env_values()
+    if not missing_value(os.environ.get('POSTGRES_PASSWORD', values.get('POSTGRES_PASSWORD', ''))):
+        return False
+    if not sys.stdin.isatty():
+        return False
+    print('连接目标：' + values.get('POSTGRES_HOST', '') + ':' + values.get('POSTGRES_PORT', '')
+          + '/' + values.get('POSTGRES_DB', '') + '，账号：' + values.get('POSTGRES_USER', ''), flush=True)
+    print('首次配置：请输入小组提供的 PostgreSQL 数据库密码（不是 Dify 网站登录密码）。', flush=True)
+    print('输入时不显示字符；仅保存到本机 backend/.env，以后启动无需重复输入。', flush=True)
+    password = getpass.getpass('PostgreSQL 密码：')
+    if missing_value(password.strip()) or '\n' in password or '\r' in password:
+        raise RuntimeError('未填写有效数据库密码，请重新运行一键启动或编辑 backend/.env。')
+    write_env_values({'POSTGRES_PASSWORD': password})
+    print('数据库密码已保存到本机配置（未显示密码）。', flush=True)
+    return True
+
+
+def config_problems():
+    if not (BACKEND / '.env').is_file():
+        return ['缺少 backend/.env']
+    values = env_values()
     problems = []
     for key in ('POSTGRES_HOST', 'POSTGRES_PORT', 'POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD', 'JWT_SECRET'):
         value = os.environ.get(key, values.get(key, ''))
-        if not value or value.lower().startswith(('replace-', 'your_', '填入', '<')):
+        if missing_value(value):
             problems.append('请填写 ' + key)
+    database = os.environ.get('POSTGRES_DB', values.get('POSTGRES_DB', '')).lower()
+    if database in {'dify', 'dify_plugin', 'postgres', 'template0', 'template1'}:
+        problems.append('POSTGRES_DB 不能使用 Dify/系统库；小组业务库请填 yue_education')
+    port = os.environ.get('POSTGRES_PORT', values.get('POSTGRES_PORT', ''))
+    if port and (not port.isdecimal() or not 1 <= int(port) <= 65535):
+        problems.append('POSTGRES_PORT 必须为 1 到 65535 的整数；小组云端使用 5433')
     return problems
 
 
@@ -156,6 +231,8 @@ def prepare(repair=False):
     if not (3, 12) <= sys.version_info[:2] < (3, 14):
         raise RuntimeError('请安装 Python 3.12 或 3.13，并重新打开脚本。')
     ensure_env()
+    upgrade_unconfigured_database()
+    ensure_database_password()
     if not python_ready():
         if VENV.exists():
             raise RuntimeError('backend/.venv 无法使用或来自旧位置。请将该目录移到项目外备份后重试；不要复制别人的虚拟环境。')

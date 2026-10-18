@@ -1,0 +1,31 @@
+{
+  "checked_at": "2026-10-18T05:01:40.750942+00:00",
+  "data_kind": "synthetic_only",
+  "mode": "DIFY",
+  "runs": [
+    {
+      "task": "DAILY_COLLECT",
+      "workflow_run_id": "b27ffdf8-8093-4ce0-8d82-c9fd10907c4d",
+      "status": "failed",
+      "failed_node": "validate",
+      "error_kind": "JSONDecodeError",
+      "local_new_dsl_replay": "PASS"
+    },
+    {
+      "task": "QUERY",
+      "workflow_run_id": "ed438739-33af-486c-93a0-61319302b2a1",
+      "status": "failed",
+      "failed_node": "validate",
+      "error_kind": "JSONDecodeError",
+      "local_new_dsl_replay": "PASS"
+    },
+    {
+      "task": "REPORT_GENERATE",
+      "workflow_run_id": "0b34e03f-6498-45ba-ba8b-e482d40f9a4f",
+      "status": "failed",
+      "failed_node": "validate",
+      "error_kind": "JSONDecodeError",
+      "local_new_dsl_replay": "PASS"
+    }
+  ]
+}
