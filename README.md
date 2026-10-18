@@ -1,31 +1,23 @@
 # 粤教留学服务平台
 
 > 面向粤教服务的**智能教育服务管理平台**：访客获客 → 客户研判 → 学生服务 → 智能报告。
-> 技术栈：Python/FastAPI + PostgreSQL + Dify + Vue（前端后置）
+> 技术栈：Python/FastAPI + PostgreSQL + Dify + Vue 3 / TypeScript / Vite
 
 ---
 
-## 快速开始（本地）
+## 快速开始（Windows）
 
-```bash
-# 1. 起数据库（建好 19 张表）
-cd deploy && docker compose up -d
+1. 安装 Python 3.12（或 3.13）和 Node.js 22 / 24，重新打开启动脚本。
+2. 双击根目录 **一键启动.cmd**：自动创建 Python 虚拟环境并安装前后端锁定依赖。
+3. 首次会生成 **backend/.env**；按提示填写小组数据库连接。已有业务库无需重复迁移、初始化账号。
+4. 再次双击 **一键启动.cmd**，就绪后自动打开 http://127.0.0.1:5173/#/。
+5. 使用完双击 **一键停止.cmd**。
 
-# 2. 配后端
-cd ../backend
-cp .env.example .env
+首次环境准备、新空库建表与管理员创建、故障处理及需要提交的文件，见 **[一键运行与首次拉取说明](docs/一键运行说明.md)**。
 
-# 3. 装依赖并启动
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+每个组员本机的 .env、.venv 和 node_modules 不上传 Git，由脚本生成或安装。数据库密码和 Dify KEY 需各自配置，账号资料来自数据库。
 
-# 4. 验证
-curl http://localhost:8000/api/v1/health/ready
-# 返回 database:true 就说明通了
-```
-
-数据库连接：`localhost:5432` / 用户 `postgres` / 库 `education` / 密码见 `deploy/docker-compose.yml`
+Linux / 容器及数据库运维见 [后端交付与运行手册](docs/后端交付与运行手册.md)。
 
 ---
 
@@ -33,6 +25,8 @@ curl http://localhost:8000/api/v1/health/ready
 
 ```
 backend/     后端代码（Python + FastAPI）
+frontend/    前端页面（Vue 3 + TypeScript + Vite）
+tools/       首次环境准备、启动停止、启动工具测试
 deploy/      部署物料（建表脚本、docker-compose）
 docs/        文档（模块说明、公共契约、协作规范）
 ```
