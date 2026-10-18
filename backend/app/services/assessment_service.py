@@ -44,8 +44,8 @@ logger = logging.getLogger(__name__)
 _DRAFT_TTL_MINUTES = 60
 _drafts: dict[str, tuple[dict, float]] = {}
 
-# 参与判定的客户事实字段
-_LEAD_FACT_FIELDS = ("gender", "city", "education", "date_of_birth")
+# 参与判定的客户事实字段（主档字段）
+_LEAD_FACT_FIELDS = ("name", "gender", "city", "education", "date_of_birth", "study_purpose", "mobile")
 
 # 画像**无条件必填**字段（WF_ASSESSMENT 的 required_fields 默认口径，与 mock 共用）
 #
@@ -58,8 +58,8 @@ _LEAD_FACT_FIELDS = ("gender", "city", "education", "date_of_birth")
 #     这时它就是该项目的硬条件，缺失即 NEEDS_INFO。
 _REQUIRED_PROFILE_FIELDS = ("education",)
 
-# 由其它字段派生、不需要 AI 直接提取的字段
-_DERIVED_FIELDS = {"age"}
+# 由其它字段派生、不需要 AI 直接提取的字段（age 已改为直接提取，这里留空兜底）
+_DERIVED_FIELDS = set()
 
 _MAX_REQUIRED_FIELDS = 12
 
@@ -70,13 +70,18 @@ _MAX_PROJECTS = 20
 # 校验工具
 # ============================================================
 def _lead_facts(lead: CrmLead) -> dict:
-    """客户主档里已经确认过的事实（留资/顾问核对所得）。"""
+    """客户主档里已经确认过的事实（留资/顾问核对所得），并合并 profile_summary 已核对事实。"""
     facts: dict = {}
     for field in _LEAD_FACT_FIELDS:
         value = getattr(lead, field, None)
         if value in (None, ""):
             continue
         facts[field] = value.isoformat() if isinstance(value, date) else value
+    summary = lead.profile_summary if isinstance(lead.profile_summary, dict) else None
+    if summary:
+        for key, value in summary.items():
+            if value not in (None, "") and key not in facts:
+                facts[key] = value
     return facts
 
 

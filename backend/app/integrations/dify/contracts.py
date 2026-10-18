@@ -352,6 +352,28 @@ def validate_visitor(value, payload=None):
     return out
 
 
+# 研判字段契约（16 字段）：value 为枚举元组，None 表示自由文本/数字。
+# 硬信息字段（无“未提及”）抽不到进 missing_fields；态度/能力字段可用“未提及”作为事实值。
+ASSESSMENT_FIELDS = {
+    "name": ("姓名", None),
+    "gender": ("性别", ("男", "女")),
+    "age": ("年龄", None),
+    "mobile": ("手机号", None),
+    "education": ("学历", ("初中", "高中", "中职", "职高", "中专", "技校", "专科", "本科")),
+    "education_status": ("学历状态", ("在读", "已毕业")),
+    "grade": ("年级", ("初二", "初三", "高一", "高二", "高三")),
+    "intent_country": ("意向国家", ("新加坡", "德国", "其他", "未提及")),
+    "study_purpose": ("留学目的", ("升学", "就业", "移民", "未提及")),
+    "family_economy": ("家庭经济", ("富裕", "中等", "一般", "困难", "未提及")),
+    "english_level": ("英语水平", ("好", "一般", "弱", "未提及")),
+    "policy_awareness": ("政策关注", ("关注", "未关注", "未提及")),
+    "handson_ability": ("动手能力", ("强", "中", "弱", "未提及")),
+    "logic_thinking": ("逻辑思维", ("强", "中", "弱", "未提及")),
+    "german_potential": ("德语能力", ("有基础", "可学", "无", "未提及")),
+    "criminal_record": ("犯罪记录", ("有", "无", "未提及")),
+}
+
+
 def validate_assessment(value, payload):
     if value.get("schema_version") != "1.0" or value.get("mode") != "ASSESSMENT_EXTRACT":
         raise ValueError("Invalid assessment schema")
@@ -361,7 +383,8 @@ def validate_assessment(value, payload):
     resume = payload.get("resume_text", "")
     string(resume, 100000)  # Validate without changing evidence line numbers.
     required = strings(payload.get("required_fields", ["education"]))
-    allowed = {"education", "language_level", "date_of_birth", "city", "gender", "study_purpose"} | set(required)
+    # 兼容历史字段（规则/旧数据仍可能引用 language_level/date_of_birth/city）
+    allowed = set(ASSESSMENT_FIELDS) | {"language_level", "date_of_birth", "city"} | set(required)
     forbidden = {"score", "decision", "match", "match_level", "match_result"}
     facts = {key: val for key, val in confirmed.items() if key not in forbidden and not absent(val)}
     evidence = []
@@ -380,6 +403,10 @@ def validate_assessment(value, payload):
         fact = value["facts"].get(field)
         if absent(fact) or isinstance(fact, (dict, list, bool)):
             continue
+        enum = (ASSESSMENT_FIELDS.get(field) or ("", None))[1]
+        if enum is not None and str(fact) not in enum:
+            warnings.append("INVALID_ENUM:" + field)
+            continue
         if field in facts:
             if str(facts[field]) != str(fact):
                 warnings.append("CONFIRMED_FACT_CONFLICT:" + field)
@@ -387,6 +414,10 @@ def validate_assessment(value, payload):
         facts[field] = string(str(fact), 200)
         evidence.append({"field": field, "source_ref": ref, "snippet": snippet})
     missing = [field for field in required if absent(facts.get(field))]
+    # 态度/能力字段的“未提及”作为负向事实（无原文可引），供规则引擎区分“未提及”与“缺失”。
+    for field, (_, enum) in ASSESSMENT_FIELDS.items():
+        if enum and "未提及" in enum and field not in facts and value.get("facts", {}).get(field) == "未提及":
+            facts[field] = "未提及"
     if not resume:
         warnings.append("NO_RESUME_TEXT")
     if missing:
