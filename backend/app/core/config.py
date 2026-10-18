@@ -6,12 +6,12 @@
 
 用法：
     from app.core.config import settings
-    print(settings.database_url)
+    # database_url 含密码，不要直接打印或写入日志。
 """
 from functools import lru_cache
 from pathlib import Path
 from sqlalchemy.engine import URL
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -29,12 +29,13 @@ class Settings(BaseSettings):
     environment: str = "dev"          # dev / prod
     debug: bool = True
 
-    # ---- 数据库（对应 docker-compose.yml）----
+    # ---- 小组云端业务库；本机/容器部署可用 .env 或进程环境覆盖 ----
+    # 同一服务器的 dify 库属于 Dify，教育业务必须使用独立业务库。
     postgres_user: str = "postgres"
-    postgres_password: str = "edu_dev_2026"
-    postgres_db: str = "education"
-    postgres_host: str = "localhost"
-    postgres_port: int = 5432
+    postgres_password: str = ""  # 只从本机 .env/环境变量读取，不把密码写进代码。
+    postgres_db: str = "yue_education"
+    postgres_host: str = "8.138.150.132"
+    postgres_port: int = Field(default=5433, ge=1, le=65535)
 
     # ---- 安全（JWT）----
     # ⚠️ 生产环境必须换成随机长串（≥32 位），不能留默认值
@@ -91,7 +92,9 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_environment(self):
         if self.postgres_db.lower() in {"dify", "dify_plugin", "postgres", "template0", "template1"}:
-            raise ValueError("教育业务不能使用 Dify 或 PostgreSQL 系统数据库")
+            raise ValueError("教育业务不能使用 Dify 或 PostgreSQL 系统数据库；小组业务库为 yue_education")
+        if not self.postgres_password.strip() or self.postgres_password.lower().startswith(("replace-", "your_", "changeme")):
+            raise ValueError("请在 backend/.env 设置 POSTGRES_PASSWORD，或通过一键启动首次输入数据库密码")
         if self.dify_mode not in {"disabled", "mock", "live"}:
             raise ValueError("DIFY_MODE must be disabled, mock or live")
         if self.environment not in {"dev","test","prod"}:raise ValueError("ENVIRONMENT must be dev,test or prod")

@@ -37,7 +37,7 @@ def test_m5_reads_shared_env_settings(monkeypatch):
     from app.services import m5_report_config
     from app.core.config import Settings
     monkeypatch.delenv('M5_AI_MODE',raising=False)
-    shared=Settings(_env_file=None,m5_ai_mode='DIFY',m5_dify_assistant_key='synthetic-key',m5_ai_timeout=12)
+    shared=Settings(_env_file=None,postgres_password='synthetic-database-password',m5_ai_mode='DIFY',m5_dify_assistant_key='synthetic-key',m5_ai_timeout=12)
     monkeypatch.setattr(m5_report_config,'shared',shared)
     configured=m5_report_config.get_m5_settings()
     assert configured.ai_mode=='DIFY' and configured.assistant_key=='synthetic-key' and configured.ai_timeout==12

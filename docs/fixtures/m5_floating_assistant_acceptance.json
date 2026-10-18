@@ -1,0 +1,46 @@
+{
+  "checked_at": "2026-10-18T05:16:58.649Z",
+  "credentials": "redacted; configured only in ignored backend/.env",
+  "daily": {
+    "id": "4d9f1cf0-08c9-42a7-9adc-0dcda0ea3bae",
+    "status": "APPROVED",
+    "work_count": 2,
+    "difficulties": "无",
+    "next_plan_preserved": true,
+    "approved_version": 2
+  },
+  "report": {
+    "id": "5fed86d1-50b9-4ff6-9a6d-6ca33fb7a308",
+    "snapshot_id": "88f2606b-8506-4e66-aaa3-fed5c1a6e797",
+    "status": "SUBMITTED",
+    "ai_status": "LIVE",
+    "approved_daily": 1,
+    "version": 2
+  },
+  "exports": [
+    {
+      "format": "docx",
+      "bytes": 38203
+    },
+    {
+      "format": "pdf",
+      "bytes": 6399
+    }
+  ],
+  "permission_check": {
+    "advisor_manager_report_http": 403
+  },
+  "ui_checks": {
+    "multiturn_collection": "PASS",
+    "draft_to_form": "PASS",
+    "submit_and_approve": "PASS",
+    "query": "PASS",
+    "proposal_to_report_center": "PASS",
+    "saved_report_reopen": "PASS",
+    "word_download": "PASS",
+    "pdf_download": "PASS",
+    "manager_submit_readonly": "PASS",
+    "floating_button_drag": "PASS"
+  },
+  "known_ui_limitation": "On narrow screens, floating launcher may overlap list actions; drag it away."
+}

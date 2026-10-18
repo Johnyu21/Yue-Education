@@ -1,0 +1,53 @@
+{
+  "checked_at": "2026-10-18T05:13:02.346Z",
+  "scope": "existing synthetic QA department",
+  "results": [
+    {
+      "type": "CUSTOMER_OPERATION",
+      "http": 200,
+      "ai_status": "LIVE",
+      "narrative_nonempty": true,
+      "snapshot_bound": true
+    },
+    {
+      "type": "DAILY_DAY",
+      "http": 200,
+      "ai_status": "LIVE",
+      "narrative_nonempty": true,
+      "snapshot_bound": true,
+      "approved_daily": 1
+    },
+    {
+      "type": "DAILY_WEEK",
+      "http": 200,
+      "ai_status": "LIVE",
+      "narrative_nonempty": true,
+      "snapshot_bound": true,
+      "approved_daily": 1
+    },
+    {
+      "type": "PSYCH_WEEK",
+      "http": 200,
+      "ai_status": "LIVE",
+      "narrative_nonempty": true,
+      "snapshot_bound": true,
+      "approved_daily": 1
+    },
+    {
+      "type": "COMPLAINT_WEEK",
+      "http": 200,
+      "ai_status": "LIVE",
+      "narrative_nonempty": true,
+      "snapshot_bound": true,
+      "approved_daily": 1
+    },
+    {
+      "type": "MANAGER_WEEK",
+      "http": 200,
+      "ai_status": "LIVE",
+      "narrative_nonempty": true,
+      "snapshot_bound": true,
+      "approved_daily": 1
+    }
+  ]
+}
