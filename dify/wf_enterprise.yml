@@ -226,6 +226,18 @@ workflow:
                             "FEEDBACK_OPEN_COUNT": {"category"}, "APPLICATION_STAGE_COUNT": {"item_type"},
                             "PSYCH_ALERT_COUNT": {"severity"}}
 
+          # 员工可见的缺项中文名（missing_fields 仍为机器字段键）。
+          ENTERPRISE_FIELD_LABELS = {
+              "lead_id": "客户编号或姓名", "keyword": "客户姓名", "status": "状态", "view": "查看范围",
+              "name": "客户姓名", "mobile": "手机号", "content": "跟进内容", "next_follow_up_at": "下次跟进时间",
+              "target_status": "目标状态", "reason": "原因",
+              "service_id": "申请编号", "decision": "审批意见", "note": "审批说明",
+              "ticket_id": "工单编号", "action": "办理方式", "resolution": "处理结果", "assignee_user_id": "处理人",
+              "alert_id": "关怀事项编号", "student_name": "学生姓名", "case_no": "申请事项编号",
+              "event_kind": "操作类型", "stage": "阶段", "detail": "进度说明", "original_text": "工作内容",
+              "metric": "指标", "time_range": "时间范围",
+          }
+
 
           def validate_enterprise(value, payload=None):
               value = merge_pending(value, payload)
@@ -253,8 +265,10 @@ workflow:
                   enum(params, "decision", {"APPROVE", "REJECT"})
                   missing += require(["service_id", "decision", "note"], params)
               if intent == "FEEDBACK_HANDLE":
-                  enum(params, "action", {"NOTE", "RESOLVE", "ASSIGN"})
-                  missing += require(["ticket_id", "action", "note"], params)
+                  enum(params, "action", {"NOTE", "RESOLVE", "ASSIGN", "CLAIM"})
+                  missing += require(["ticket_id", "action"], params)
+                  if params.get("action") in {"NOTE", "RESOLVE", "ASSIGN"}:
+                      missing += require(["note"], params)
                   if params.get("action") == "RESOLVE":
                       missing += require(["resolution"], params)
                   if params.get("action") == "ASSIGN":
@@ -291,14 +305,23 @@ workflow:
               out.update(params=params, draft=draft or None, action=("query" if intent in READ_FIELDS else
                          "execute" if intent in WRITE_FIELDS else None), missing_fields=list(dict.fromkeys(missing)))
               if intent in READ_FIELDS or intent in WRITE_FIELDS:
-                  out["answer"] = "请补充：" + "、".join(out["missing_fields"]) if missing else "已整理业务请求，待后端核验。"
+                  out["answer"] = ("请补充：" + "、".join(ENTERPRISE_FIELD_LABELS.get(k, k) for k in out["missing_fields"])
+                                   if missing else "已整理业务请求，待后端核验。")
               else:
                   out["answer"] = "请说明需要咨询的制度或办理的业务。" if intent == "OTHER" else "资料不足，暂无法核实该问题。"
               return out
 
 
           STUDENT_INTENTS = {"PROFILE_QUERY", "SCORE_QUERY", "SCHEDULE_QUERY", "CASE_QUERY", "ASSESSMENT_QUERY",
-                             "FAQ", "SERVICE_DRAFT", "FEEDBACK_DRAFT", "UPGRADE_INTEREST", "OTHER"}
+                             "FEEDBACK_QUERY", "FAQ", "SERVICE_DRAFT", "FEEDBACK_DRAFT", "UPGRADE_INTEREST", "OTHER"}
+
+          # 学生可见的缺项中文名（missing_fields 仍为机器字段键，answer 面向学生显示）。
+          STUDENT_FIELD_LABELS = {
+              "service_type": "服务类型", "title": "标题", "description": "描述",
+              "start_at": "开始时间", "end_at": "结束时间", "change_request": "需更正资料的新旧值",
+              "category": "反馈类型", "subject": "主题", "teacher_name": "老师姓名",
+              "project_category": "项目类型", "course_project_id": "项目编号",
+          }
 
 
           def aware_datetime(value):
@@ -341,9 +364,24 @@ workflow:
                   missing = require(["course_project_id"], draft)
               out.update(draft=draft or None, missing_fields=list(dict.fromkeys(missing)))
               if fields:
-                  out["answer"] = "请补充：" + "、".join(out["missing_fields"]) if missing else "已整理草稿，请等待后端核验并核对确认卡。"
+                  if missing:
+                      out["answer"] = "请补充：" + "、".join(
+                          STUDENT_FIELD_LABELS.get(key, key) for key in out["missing_fields"])
+                  else:
+                      out["answer"] = "已整理草稿，请等待后端核验并核对确认卡。"
+              elif intent == "OTHER":
+                  # 日常情绪/闲聊保留模型共情回复；越界与分流提示保持固定话术，不采信模型自拟边界。
+                  model_answer = string(value.get("answer", ""), 2000)
+                  if "OUT_OF_SCOPE" in out["warnings"]:
+                      out["answer"] = "学生助手不提供员工内部资料，请咨询学生服务或办理本人业务。"
+                  elif "ADMIN_SERVICE_PAGE" in out["warnings"]:
+                      out["answer"] = "请到行政服务页面查看本人请假、考务或资料更正申请的处理结果。"
+                  elif model_answer:
+                      out["answer"] = model_answer
+                  else:
+                      out["answer"] = "请说明需要查询或办理的业务。"
               else:
-                  out["answer"] = "资料不足，暂无法核实该问题。" if intent == "FAQ" else "请说明需要查询或办理的业务。"
+                  out["answer"] = "资料不足，暂无法核实该问题。"
               if payload.get("observe_emotion") is True and value.get("observation") is not None:
                   observation = pick(value["observation"], ["emotion_state", "confidence", "direct_signal"])
                   enum(observation, "emotion_state", {"HEALTHY", "NEGATIVE", "VERY_NEGATIVE", "UNKNOWN"})
@@ -436,7 +474,7 @@ workflow:
               fields = {"message", "message_id", "conversation_id", "context", "history", "draft", "pending",
                         "business_now", "business_timezone", "candidates"}
               fields |= {"visitor": {"public_projects", "open_events"}, "enterprise": {"actor"},
-                         "student": {"input_kind", "observe_emotion"},
+                         "student": {"input_kind", "observe_emotion", "open_projects"},
                          "assessment": {"confirmed_facts", "resume_text", "project_rules", "required_fields"}}[kind]
               out = {key: value for key, value in payload.items() if key in fields}
               out["schema_version"] = "1.0"
@@ -522,7 +560,7 @@ workflow:
             SERVICE_LIST params{status}；LEAVE_DECIDE params{service_id,decision,note}，全部必填；decision仅APPROVE/REJECT。不能把“处理”猜为批准。
             涉及身份资料修改的批准须在业务页面核验身份，不能生成identity_verification或替员工声称已核验。
             FEEDBACK_LIST params{status,assignee}；FEEDBACK_HANDLE params{ticket_id,action,note,resolution,assignee_user_id}。
-            工单ticket_id/action/note必填，action仅NOTE/RESOLVE/ASSIGN；RESOLVE另需resolution，ASSIGN另需assignee_user_id；不补“已跟进”。
+            action仅NOTE/RESOLVE/ASSIGN/CLAIM；ticket_id/action必填，NOTE/RESOLVE/ASSIGN另需note，RESOLVE另需resolution，ASSIGN另需assignee_user_id；CLAIM表示“认领到本人名下”，只需ticket_id，不补note/处理结果，不补“已跟进”。
             PSYCH_LIST params{status,severity}；PSYCH_NOTE params{alert_id,note}，两项必填，只记说明，不改变风险，不复制情绪原话、不作诊断。
             APPLICATION_SEARCH params{student_name}；APPLICATION_UPDATE params{case_no,event_kind,stage,detail,assignee_user_id}。
             case_no/event_kind/detail必填，event_kind仅STAGE/DETAIL/ASSIGNMENT；STAGE另需PROCESSING/COMPLETED的stage；ASSIGNMENT另需assignee_user_id。
@@ -533,7 +571,7 @@ workflow:
             time_range仅TODAY、THIS_WEEK、THIS_MONTH、LAST_MONTH、THIS_YEAR、ALL；不支持的自定义区间请引导报表页面，不擅自改为本月。
             group_by允许：LEAD_COUNT=STATUS/OWNER/DEPT；SIGNED_COUNT=OWNER/DEPT；FOLLOWUP_COUNT=OWNER；FOLLOWUP_DUE_COUNT不能分组；
             SERVICE_PENDING_COUNT=TYPE/DEPT；FEEDBACK_OPEN_COUNT=STATUS/PRIORITY/DEPT；APPLICATION_STAGE_COUNT=STAGE/ITEM_TYPE；PSYCH_ALERT_COUNT=SEVERITY。
-            员工制度/流程解释为KNOWLEDGE，params{} draft=null，仅后续员工知识库可回答；其他不支持请求为OTHER。
+            员工制度/流程解释为KNOWLEDGE，params{} draft=null，仅后续员工知识库可回答；公司信息、业务范围、入职指引等任何咨询类问题（即使表述宽泛如"企业信息"）也输出KNOWLEDGE交由知识库回答。仅当既非业务操作、也非任何可检索咨询时才输出OTHER，不要在warnings里输出AMBIGUOUS_QUERY等自造判断码。
             查询真实客户、待办、审批、工单、心理事项、进度和指标，不能选KNOWLEDGE绕过后端鉴权。
         - id: llm-user
           role: user
@@ -708,6 +746,18 @@ workflow:
                             "FEEDBACK_OPEN_COUNT": {"category"}, "APPLICATION_STAGE_COUNT": {"item_type"},
                             "PSYCH_ALERT_COUNT": {"severity"}}
 
+          # 员工可见的缺项中文名（missing_fields 仍为机器字段键）。
+          ENTERPRISE_FIELD_LABELS = {
+              "lead_id": "客户编号或姓名", "keyword": "客户姓名", "status": "状态", "view": "查看范围",
+              "name": "客户姓名", "mobile": "手机号", "content": "跟进内容", "next_follow_up_at": "下次跟进时间",
+              "target_status": "目标状态", "reason": "原因",
+              "service_id": "申请编号", "decision": "审批意见", "note": "审批说明",
+              "ticket_id": "工单编号", "action": "办理方式", "resolution": "处理结果", "assignee_user_id": "处理人",
+              "alert_id": "关怀事项编号", "student_name": "学生姓名", "case_no": "申请事项编号",
+              "event_kind": "操作类型", "stage": "阶段", "detail": "进度说明", "original_text": "工作内容",
+              "metric": "指标", "time_range": "时间范围",
+          }
+
 
           def validate_enterprise(value, payload=None):
               value = merge_pending(value, payload)
@@ -735,8 +785,10 @@ workflow:
                   enum(params, "decision", {"APPROVE", "REJECT"})
                   missing += require(["service_id", "decision", "note"], params)
               if intent == "FEEDBACK_HANDLE":
-                  enum(params, "action", {"NOTE", "RESOLVE", "ASSIGN"})
-                  missing += require(["ticket_id", "action", "note"], params)
+                  enum(params, "action", {"NOTE", "RESOLVE", "ASSIGN", "CLAIM"})
+                  missing += require(["ticket_id", "action"], params)
+                  if params.get("action") in {"NOTE", "RESOLVE", "ASSIGN"}:
+                      missing += require(["note"], params)
                   if params.get("action") == "RESOLVE":
                       missing += require(["resolution"], params)
                   if params.get("action") == "ASSIGN":
@@ -773,14 +825,23 @@ workflow:
               out.update(params=params, draft=draft or None, action=("query" if intent in READ_FIELDS else
                          "execute" if intent in WRITE_FIELDS else None), missing_fields=list(dict.fromkeys(missing)))
               if intent in READ_FIELDS or intent in WRITE_FIELDS:
-                  out["answer"] = "请补充：" + "、".join(out["missing_fields"]) if missing else "已整理业务请求，待后端核验。"
+                  out["answer"] = ("请补充：" + "、".join(ENTERPRISE_FIELD_LABELS.get(k, k) for k in out["missing_fields"])
+                                   if missing else "已整理业务请求，待后端核验。")
               else:
                   out["answer"] = "请说明需要咨询的制度或办理的业务。" if intent == "OTHER" else "资料不足，暂无法核实该问题。"
               return out
 
 
           STUDENT_INTENTS = {"PROFILE_QUERY", "SCORE_QUERY", "SCHEDULE_QUERY", "CASE_QUERY", "ASSESSMENT_QUERY",
-                             "FAQ", "SERVICE_DRAFT", "FEEDBACK_DRAFT", "UPGRADE_INTEREST", "OTHER"}
+                             "FEEDBACK_QUERY", "FAQ", "SERVICE_DRAFT", "FEEDBACK_DRAFT", "UPGRADE_INTEREST", "OTHER"}
+
+          # 学生可见的缺项中文名（missing_fields 仍为机器字段键，answer 面向学生显示）。
+          STUDENT_FIELD_LABELS = {
+              "service_type": "服务类型", "title": "标题", "description": "描述",
+              "start_at": "开始时间", "end_at": "结束时间", "change_request": "需更正资料的新旧值",
+              "category": "反馈类型", "subject": "主题", "teacher_name": "老师姓名",
+              "project_category": "项目类型", "course_project_id": "项目编号",
+          }
 
 
           def aware_datetime(value):
@@ -823,9 +884,24 @@ workflow:
                   missing = require(["course_project_id"], draft)
               out.update(draft=draft or None, missing_fields=list(dict.fromkeys(missing)))
               if fields:
-                  out["answer"] = "请补充：" + "、".join(out["missing_fields"]) if missing else "已整理草稿，请等待后端核验并核对确认卡。"
+                  if missing:
+                      out["answer"] = "请补充：" + "、".join(
+                          STUDENT_FIELD_LABELS.get(key, key) for key in out["missing_fields"])
+                  else:
+                      out["answer"] = "已整理草稿，请等待后端核验并核对确认卡。"
+              elif intent == "OTHER":
+                  # 日常情绪/闲聊保留模型共情回复；越界与分流提示保持固定话术，不采信模型自拟边界。
+                  model_answer = string(value.get("answer", ""), 2000)
+                  if "OUT_OF_SCOPE" in out["warnings"]:
+                      out["answer"] = "学生助手不提供员工内部资料，请咨询学生服务或办理本人业务。"
+                  elif "ADMIN_SERVICE_PAGE" in out["warnings"]:
+                      out["answer"] = "请到行政服务页面查看本人请假、考务或资料更正申请的处理结果。"
+                  elif model_answer:
+                      out["answer"] = model_answer
+                  else:
+                      out["answer"] = "请说明需要查询或办理的业务。"
               else:
-                  out["answer"] = "资料不足，暂无法核实该问题。" if intent == "FAQ" else "请说明需要查询或办理的业务。"
+                  out["answer"] = "资料不足，暂无法核实该问题。"
               if payload.get("observe_emotion") is True and value.get("observation") is not None:
                   observation = pick(value["observation"], ["emotion_state", "confidence", "direct_signal"])
                   enum(observation, "emotion_state", {"HEALTHY", "NEGATIVE", "VERY_NEGATIVE", "UNKNOWN"})
@@ -918,7 +994,7 @@ workflow:
               fields = {"message", "message_id", "conversation_id", "context", "history", "draft", "pending",
                         "business_now", "business_timezone", "candidates"}
               fields |= {"visitor": {"public_projects", "open_events"}, "enterprise": {"actor"},
-                         "student": {"input_kind", "observe_emotion"},
+                         "student": {"input_kind", "observe_emotion", "open_projects"},
                          "assessment": {"confirmed_facts", "resume_text", "project_rules", "required_fields"}}[kind]
               out = {key: value for key, value in payload.items() if key in fields}
               out["schema_version"] = "1.0"
@@ -1218,6 +1294,18 @@ workflow:
                             "FEEDBACK_OPEN_COUNT": {"category"}, "APPLICATION_STAGE_COUNT": {"item_type"},
                             "PSYCH_ALERT_COUNT": {"severity"}}
 
+          # 员工可见的缺项中文名（missing_fields 仍为机器字段键）。
+          ENTERPRISE_FIELD_LABELS = {
+              "lead_id": "客户编号或姓名", "keyword": "客户姓名", "status": "状态", "view": "查看范围",
+              "name": "客户姓名", "mobile": "手机号", "content": "跟进内容", "next_follow_up_at": "下次跟进时间",
+              "target_status": "目标状态", "reason": "原因",
+              "service_id": "申请编号", "decision": "审批意见", "note": "审批说明",
+              "ticket_id": "工单编号", "action": "办理方式", "resolution": "处理结果", "assignee_user_id": "处理人",
+              "alert_id": "关怀事项编号", "student_name": "学生姓名", "case_no": "申请事项编号",
+              "event_kind": "操作类型", "stage": "阶段", "detail": "进度说明", "original_text": "工作内容",
+              "metric": "指标", "time_range": "时间范围",
+          }
+
 
           def validate_enterprise(value, payload=None):
               value = merge_pending(value, payload)
@@ -1245,8 +1333,10 @@ workflow:
                   enum(params, "decision", {"APPROVE", "REJECT"})
                   missing += require(["service_id", "decision", "note"], params)
               if intent == "FEEDBACK_HANDLE":
-                  enum(params, "action", {"NOTE", "RESOLVE", "ASSIGN"})
-                  missing += require(["ticket_id", "action", "note"], params)
+                  enum(params, "action", {"NOTE", "RESOLVE", "ASSIGN", "CLAIM"})
+                  missing += require(["ticket_id", "action"], params)
+                  if params.get("action") in {"NOTE", "RESOLVE", "ASSIGN"}:
+                      missing += require(["note"], params)
                   if params.get("action") == "RESOLVE":
                       missing += require(["resolution"], params)
                   if params.get("action") == "ASSIGN":
@@ -1283,14 +1373,23 @@ workflow:
               out.update(params=params, draft=draft or None, action=("query" if intent in READ_FIELDS else
                          "execute" if intent in WRITE_FIELDS else None), missing_fields=list(dict.fromkeys(missing)))
               if intent in READ_FIELDS or intent in WRITE_FIELDS:
-                  out["answer"] = "请补充：" + "、".join(out["missing_fields"]) if missing else "已整理业务请求，待后端核验。"
+                  out["answer"] = ("请补充：" + "、".join(ENTERPRISE_FIELD_LABELS.get(k, k) for k in out["missing_fields"])
+                                   if missing else "已整理业务请求，待后端核验。")
               else:
                   out["answer"] = "请说明需要咨询的制度或办理的业务。" if intent == "OTHER" else "资料不足，暂无法核实该问题。"
               return out
 
 
           STUDENT_INTENTS = {"PROFILE_QUERY", "SCORE_QUERY", "SCHEDULE_QUERY", "CASE_QUERY", "ASSESSMENT_QUERY",
-                             "FAQ", "SERVICE_DRAFT", "FEEDBACK_DRAFT", "UPGRADE_INTEREST", "OTHER"}
+                             "FEEDBACK_QUERY", "FAQ", "SERVICE_DRAFT", "FEEDBACK_DRAFT", "UPGRADE_INTEREST", "OTHER"}
+
+          # 学生可见的缺项中文名（missing_fields 仍为机器字段键，answer 面向学生显示）。
+          STUDENT_FIELD_LABELS = {
+              "service_type": "服务类型", "title": "标题", "description": "描述",
+              "start_at": "开始时间", "end_at": "结束时间", "change_request": "需更正资料的新旧值",
+              "category": "反馈类型", "subject": "主题", "teacher_name": "老师姓名",
+              "project_category": "项目类型", "course_project_id": "项目编号",
+          }
 
 
           def aware_datetime(value):
@@ -1333,9 +1432,24 @@ workflow:
                   missing = require(["course_project_id"], draft)
               out.update(draft=draft or None, missing_fields=list(dict.fromkeys(missing)))
               if fields:
-                  out["answer"] = "请补充：" + "、".join(out["missing_fields"]) if missing else "已整理草稿，请等待后端核验并核对确认卡。"
+                  if missing:
+                      out["answer"] = "请补充：" + "、".join(
+                          STUDENT_FIELD_LABELS.get(key, key) for key in out["missing_fields"])
+                  else:
+                      out["answer"] = "已整理草稿，请等待后端核验并核对确认卡。"
+              elif intent == "OTHER":
+                  # 日常情绪/闲聊保留模型共情回复；越界与分流提示保持固定话术，不采信模型自拟边界。
+                  model_answer = string(value.get("answer", ""), 2000)
+                  if "OUT_OF_SCOPE" in out["warnings"]:
+                      out["answer"] = "学生助手不提供员工内部资料，请咨询学生服务或办理本人业务。"
+                  elif "ADMIN_SERVICE_PAGE" in out["warnings"]:
+                      out["answer"] = "请到行政服务页面查看本人请假、考务或资料更正申请的处理结果。"
+                  elif model_answer:
+                      out["answer"] = model_answer
+                  else:
+                      out["answer"] = "请说明需要查询或办理的业务。"
               else:
-                  out["answer"] = "资料不足，暂无法核实该问题。" if intent == "FAQ" else "请说明需要查询或办理的业务。"
+                  out["answer"] = "资料不足，暂无法核实该问题。"
               if payload.get("observe_emotion") is True and value.get("observation") is not None:
                   observation = pick(value["observation"], ["emotion_state", "confidence", "direct_signal"])
                   enum(observation, "emotion_state", {"HEALTHY", "NEGATIVE", "VERY_NEGATIVE", "UNKNOWN"})
@@ -1428,7 +1542,7 @@ workflow:
               fields = {"message", "message_id", "conversation_id", "context", "history", "draft", "pending",
                         "business_now", "business_timezone", "candidates"}
               fields |= {"visitor": {"public_projects", "open_events"}, "enterprise": {"actor"},
-                         "student": {"input_kind", "observe_emotion"},
+                         "student": {"input_kind", "observe_emotion", "open_projects"},
                          "assessment": {"confirmed_facts", "resume_text", "project_rules", "required_fields"}}[kind]
               out = {key: value for key, value in payload.items() if key in fields}
               out["schema_version"] = "1.0"
@@ -1690,6 +1804,18 @@ workflow:
                             "FEEDBACK_OPEN_COUNT": {"category"}, "APPLICATION_STAGE_COUNT": {"item_type"},
                             "PSYCH_ALERT_COUNT": {"severity"}}
 
+          # 员工可见的缺项中文名（missing_fields 仍为机器字段键）。
+          ENTERPRISE_FIELD_LABELS = {
+              "lead_id": "客户编号或姓名", "keyword": "客户姓名", "status": "状态", "view": "查看范围",
+              "name": "客户姓名", "mobile": "手机号", "content": "跟进内容", "next_follow_up_at": "下次跟进时间",
+              "target_status": "目标状态", "reason": "原因",
+              "service_id": "申请编号", "decision": "审批意见", "note": "审批说明",
+              "ticket_id": "工单编号", "action": "办理方式", "resolution": "处理结果", "assignee_user_id": "处理人",
+              "alert_id": "关怀事项编号", "student_name": "学生姓名", "case_no": "申请事项编号",
+              "event_kind": "操作类型", "stage": "阶段", "detail": "进度说明", "original_text": "工作内容",
+              "metric": "指标", "time_range": "时间范围",
+          }
+
 
           def validate_enterprise(value, payload=None):
               value = merge_pending(value, payload)
@@ -1717,8 +1843,10 @@ workflow:
                   enum(params, "decision", {"APPROVE", "REJECT"})
                   missing += require(["service_id", "decision", "note"], params)
               if intent == "FEEDBACK_HANDLE":
-                  enum(params, "action", {"NOTE", "RESOLVE", "ASSIGN"})
-                  missing += require(["ticket_id", "action", "note"], params)
+                  enum(params, "action", {"NOTE", "RESOLVE", "ASSIGN", "CLAIM"})
+                  missing += require(["ticket_id", "action"], params)
+                  if params.get("action") in {"NOTE", "RESOLVE", "ASSIGN"}:
+                      missing += require(["note"], params)
                   if params.get("action") == "RESOLVE":
                       missing += require(["resolution"], params)
                   if params.get("action") == "ASSIGN":
@@ -1755,14 +1883,23 @@ workflow:
               out.update(params=params, draft=draft or None, action=("query" if intent in READ_FIELDS else
                          "execute" if intent in WRITE_FIELDS else None), missing_fields=list(dict.fromkeys(missing)))
               if intent in READ_FIELDS or intent in WRITE_FIELDS:
-                  out["answer"] = "请补充：" + "、".join(out["missing_fields"]) if missing else "已整理业务请求，待后端核验。"
+                  out["answer"] = ("请补充：" + "、".join(ENTERPRISE_FIELD_LABELS.get(k, k) for k in out["missing_fields"])
+                                   if missing else "已整理业务请求，待后端核验。")
               else:
                   out["answer"] = "请说明需要咨询的制度或办理的业务。" if intent == "OTHER" else "资料不足，暂无法核实该问题。"
               return out
 
 
           STUDENT_INTENTS = {"PROFILE_QUERY", "SCORE_QUERY", "SCHEDULE_QUERY", "CASE_QUERY", "ASSESSMENT_QUERY",
-                             "FAQ", "SERVICE_DRAFT", "FEEDBACK_DRAFT", "UPGRADE_INTEREST", "OTHER"}
+                             "FEEDBACK_QUERY", "FAQ", "SERVICE_DRAFT", "FEEDBACK_DRAFT", "UPGRADE_INTEREST", "OTHER"}
+
+          # 学生可见的缺项中文名（missing_fields 仍为机器字段键，answer 面向学生显示）。
+          STUDENT_FIELD_LABELS = {
+              "service_type": "服务类型", "title": "标题", "description": "描述",
+              "start_at": "开始时间", "end_at": "结束时间", "change_request": "需更正资料的新旧值",
+              "category": "反馈类型", "subject": "主题", "teacher_name": "老师姓名",
+              "project_category": "项目类型", "course_project_id": "项目编号",
+          }
 
 
           def aware_datetime(value):
@@ -1805,9 +1942,24 @@ workflow:
                   missing = require(["course_project_id"], draft)
               out.update(draft=draft or None, missing_fields=list(dict.fromkeys(missing)))
               if fields:
-                  out["answer"] = "请补充：" + "、".join(out["missing_fields"]) if missing else "已整理草稿，请等待后端核验并核对确认卡。"
+                  if missing:
+                      out["answer"] = "请补充：" + "、".join(
+                          STUDENT_FIELD_LABELS.get(key, key) for key in out["missing_fields"])
+                  else:
+                      out["answer"] = "已整理草稿，请等待后端核验并核对确认卡。"
+              elif intent == "OTHER":
+                  # 日常情绪/闲聊保留模型共情回复；越界与分流提示保持固定话术，不采信模型自拟边界。
+                  model_answer = string(value.get("answer", ""), 2000)
+                  if "OUT_OF_SCOPE" in out["warnings"]:
+                      out["answer"] = "学生助手不提供员工内部资料，请咨询学生服务或办理本人业务。"
+                  elif "ADMIN_SERVICE_PAGE" in out["warnings"]:
+                      out["answer"] = "请到行政服务页面查看本人请假、考务或资料更正申请的处理结果。"
+                  elif model_answer:
+                      out["answer"] = model_answer
+                  else:
+                      out["answer"] = "请说明需要查询或办理的业务。"
               else:
-                  out["answer"] = "资料不足，暂无法核实该问题。" if intent == "FAQ" else "请说明需要查询或办理的业务。"
+                  out["answer"] = "资料不足，暂无法核实该问题。"
               if payload.get("observe_emotion") is True and value.get("observation") is not None:
                   observation = pick(value["observation"], ["emotion_state", "confidence", "direct_signal"])
                   enum(observation, "emotion_state", {"HEALTHY", "NEGATIVE", "VERY_NEGATIVE", "UNKNOWN"})
@@ -1900,7 +2052,7 @@ workflow:
               fields = {"message", "message_id", "conversation_id", "context", "history", "draft", "pending",
                         "business_now", "business_timezone", "candidates"}
               fields |= {"visitor": {"public_projects", "open_events"}, "enterprise": {"actor"},
-                         "student": {"input_kind", "observe_emotion"},
+                         "student": {"input_kind", "observe_emotion", "open_projects"},
                          "assessment": {"confirmed_facts", "resume_text", "project_rules", "required_fields"}}[kind]
               out = {key: value for key, value in payload.items() if key in fields}
               out["schema_version"] = "1.0"

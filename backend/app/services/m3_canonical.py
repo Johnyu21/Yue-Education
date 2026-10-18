@@ -56,6 +56,10 @@ def feedback_handling_payload(data: FeedbackHandlingRequest) -> dict:
     }
 
 
+def feedback_claim_payload() -> dict:
+    return {"action": "CLAIM"}
+
+
 def psych_note_payload(data: PsychActionRequest) -> dict:
     return {"action": data.action, "note": data.note}
 

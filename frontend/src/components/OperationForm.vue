@@ -4,7 +4,7 @@ import SchemaField from './SchemaField.vue'
 import RecordView from './RecordView.vue'
 import {bodySchema,operation,invoke,resolveSchema,systemFields,camel,fieldLabel} from '../api/contract'
 import {errorText} from '../api/client'
-const props=defineProps<{path:string;method:string;title:string;params?:Record<string,any>;record?:any;choices?:Record<string,any[]>;preset?:any;hideLoginAccount?:boolean}>()
+const props=defineProps<{path:string;method:string;title:string;params?:Record<string,any>;record?:any;choices?:Record<string,any[]>;preset?:any;hideLoginAccount?:boolean;omitFields?:string[]}>()
 const emit=defineEmits(['close','saved'])
 const schema=computed(()=>bodySchema(props.path,props.method)),values=ref<any>({}),initial=ref<any>({}),busy=ref(false),error=ref(''),result=ref<any>(undefined),confirmed=ref(false)
 const pathFields=computed(()=>(operation(props.path,props.method).parameters||[]).filter((p:any)=>p.in==='path'&&props.params?.[p.name]==null))
@@ -23,7 +23,7 @@ for(const [k,s0] of Object.entries(schema.value.properties||{})){
  if(v!==undefined)values.value[k]=v
 }
 initial.value=JSON.parse(JSON.stringify(values.value))
-const fields=computed(()=>Object.entries(schema.value.properties||{}).filter(([k])=>!systemFields.has(k)&&k!=='confirmed'&&!(props.hideLoginAccount&&k==='username')).map(([k,s])=>[k,k==='action'&&props.preset?.action?{...resolveSchema(s),const:props.preset.action}:s] as [string,any]))
+const fields=computed(()=>Object.entries(schema.value.properties||{}).filter(([k])=>!systemFields.has(k)&&k!=='confirmed'&&!(props.hideLoginAccount&&k==='username')&&!(props.omitFields||[]).includes(k)&&!(k==='change_request'&&values.value.service_type&&values.value.service_type!=='INFO_CHANGE')).map(([k,s])=>[k,k==='action'&&props.preset?.action?{...resolveSchema(s),const:props.preset.action}:s] as [string,any]))
 async function submit(){
  if(busy.value||!confirmed.value)return
  busy.value=true;error.value=''

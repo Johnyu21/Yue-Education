@@ -94,6 +94,7 @@ def get_self_overview(db: Session, user: SysUser) -> StudentSelfDTO:
         dateOfBirth=profile.date_of_birth,
         enrollmentDate=profile.enrollment_date,
         status=profile.status,
+        psychConsentStatus=profile.psych_consent_status,
         classInfo=StudentClassBrief(
             id=str(cls.id), code=cls.code, name=cls.name, courseType=cls.course_type,
             deptId=str(cls.dept_id),

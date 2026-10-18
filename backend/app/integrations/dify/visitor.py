@@ -15,7 +15,7 @@ from app.integrations.dify import mock_samples, run_workflow
 
 logger = logging.getLogger(__name__)
 
-ALLOWED_INTENTS = {"FAQ", "LEAD_DRAFT", "ACTIVITY_DRAFT", "OUT_OF_SCOPE"}
+ALLOWED_INTENTS = {"FAQ", "LEAD_DRAFT", "ACTIVITY_DRAFT", "CASUAL", "PROJECT_RECOMMEND", "OUT_OF_SCOPE"}
 
 
 def _validate(data: object) -> dict:

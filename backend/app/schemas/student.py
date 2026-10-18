@@ -68,6 +68,7 @@ class StudentSelfDTO(BaseModel):
     dateOfBirth: date | None = None
     enrollmentDate: date | None = None
     status: str
+    psychConsentStatus: str | None = None          # 心理关怀授权状态（GRANTED/DENIED/...）
     classInfo: StudentClassBrief | None = None   # 04 文档的 class 字段（保留字，用 classInfo）
     advisor: StudentAdvisorBrief | None = None
     enrollments: list[StudentEnrollmentItem] = []

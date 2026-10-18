@@ -66,6 +66,15 @@ _CACHE_TTL = timedelta(minutes=15)
 
 _KNOWLEDGE_REPLY = "该问题需要员工知识库支持，目前资料不足，请联系行政或查看制度文件。"
 
+# 员工列表中文渲染
+_STATUS_CN = {"PENDING": "待处理", "APPROVED": "已通过", "REJECTED": "已驳回", "CANCELLED": "已取消",
+              "PROCESSING": "处理中", "RESOLVED": "已解决", "CLOSED": "已关闭",
+              "NEW": "新客户", "FOLLOWING": "跟进中", "SIGNED": "已签约", "LOST": "已流失",
+              "PENDING_REVIEW": "待复核"}
+_TYPE_CN = {"LEAVE": "请假", "EXAM": "考务", "INFO_CHANGE": "资料变更", "OTHER": "其他",
+            "COMPLAINT": "投诉", "SUGGESTION": "建议", "CONSULTATION": "咨询"}
+_LEVEL_CN = {"HIGH": "高", "MEDIUM": "中", "LOW": "低"}
+
 
 # =============================================================
 # 工具
@@ -136,7 +145,7 @@ def _render_lead_list(items, total: int) -> str:
     lines = [f"找到 {total} 个客户："]
     for idx, item in enumerate(items[:10], start=1):
         owner = item.ownerDisplayName or "未分配"
-        lines.append(f"{idx}. {item.name or '未命名'}｜{item.status}｜负责人：{owner}｜{item.mobileMasked}")
+        lines.append(f"{idx}. {item.name or '未命名'}｜{_STATUS_CN.get(item.status, item.status)}｜负责人：{owner}｜{item.mobileMasked}")
     if total > 10:
         lines.append(f"（仅显示前 10 条，共 {total} 条）")
     lines.append("回复编号可查看详情。")
@@ -180,7 +189,8 @@ def _render_services(items, total: int) -> str:
         return "当前没有待处理申请。"
     lines = [f"共 {total} 条申请："]
     for item in items[:10]:
-        lines.append(f"- #{item.id}｜{item.title}｜{item.status}｜处理人：{item.assigneeDisplayName or '未指派'}")
+        lines.append(f"- #{item.id}｜{item.title}｜{_TYPE_CN.get(item.serviceType, item.serviceType)}"
+                     f"｜{_STATUS_CN.get(item.status, item.status)}｜处理人：{item.assigneeDisplayName or '未指派'}")
     return "\n".join(lines)
 
 
@@ -189,8 +199,10 @@ def _render_tickets(items, total: int) -> str:
         return "售后池暂无待受理工单。"
     lines = [f"共 {total} 条售后工单："]
     for item in items[:10]:
-        lines.append(f"- #{item['id']}｜{item['category']}｜{item['status']}｜优先级：{item['priority']}")
-    lines.append("要处理请说“解决编号 X 的工单”。")
+        lines.append(f"- #{item['id']}｜{item['subject']}｜{_TYPE_CN.get(item['category'], item['category'])}"
+                     f"｜{_STATUS_CN.get(item['status'], item['status'])}｜学生：{item.get('studentDisplayName') or '—'}"
+                     f"｜优先级：{_LEVEL_CN.get(item['priority'], item['priority'])}")
+    lines.append("回复工单编号即可办理：先说“认领编号 X”，受理后再说“解决编号 X，处理说明…，处理结果…”。")
     return "\n".join(lines)
 
 
@@ -199,8 +211,8 @@ def _render_alerts(items, total: int) -> str:
         return "当前没有待复核的关怀事项。"
     lines = [f"共 {total} 条待复核关怀事项："]
     for item in items[:10]:
-        lines.append(f"- #{item.id}｜{item.studentDisplayName}｜{item.severity}｜{item.status}")
-    lines.append("可记录跟进说明，但内容仅对有权限人员可见。")
+        lines.append(f"- #{item.id}｜{item.studentDisplayName}｜关注等级：{_LEVEL_CN.get(item.severity, item.severity)}｜{_STATUS_CN.get(item.status, item.status)}")
+    lines.append("回复事项编号和跟进说明即可记录，例如：跟进编号3，说明：已电话关怀。")
     return "\n".join(lines)
 
 
@@ -479,7 +491,9 @@ def _handle_write(db: Session, actor: SysUser, req: AssistantRequest,
                 db, actor, status="PENDING", page=1, page_size=10)
             if total == 0:
                 return _result(req, "当前没有待你审批的申请。")
-            return _result(req, _render_services(items, total), missing=["service_id"])
+            return _result(req, _render_services(items, total)
+                           + "\n回复申请编号并说明批准或驳回与审批意见即可，例如：批准编号8，说明：情况属实。",
+                           missing=["service_id"])
         dto = student_service.get_service(db, actor, int(service_id))
         decision = str(params.get("decision") or draft.get("decision") or "").upper()
         if decision not in ("APPROVE", "REJECT"):
@@ -509,6 +523,14 @@ def _handle_write(db: Session, actor: SysUser, req: AssistantRequest,
             return _result(req, _render_tickets(items, total), missing=["ticket_id"])
         ticket = staff_feedback_service.get_staff_ticket(db, actor, int(ticket_id))
         action = str(params.get("action") or "").upper()
+        if action == "CLAIM":
+            proposal, answer = _proposal(
+                actor, "CLAIM_FEEDBACK", entity_id=int(ticket_id),
+                payload=m3_canonical.feedback_claim_payload(),
+                expected_version=ticket["version"],
+                preview={"ticketId": str(ticket_id), "subject": ticket.get("subject")},
+                answer=f"将认领工单 #{ticket_id} 到本人名下。请确认。")
+            return _result(req, answer, proposal=proposal)
         note = str(params.get("note") or draft.get("note") or "").strip()
         resolution = params.get("resolution") or draft.get("resolution")
         if action == "RESOLVE" and not resolution:
@@ -655,13 +677,17 @@ def _handle_enterprise_message(db: Session, actor: SysUser,
 
     try:
         if wf.missing_fields and wf.intent in READ_INTENTS | WRITE_INTENTS:
-            return _result(req, wf.answer or "请补全业务信息。", missing=wf.missing_fields, warnings=wf.warnings)
+            entity_key = {"LEAVE_DECIDE": "service_id", "FEEDBACK_HANDLE": "ticket_id",
+                          "PSYCH_NOTE": "alert_id"}.get(wf.intent)
+            if entity_key and not (wf.params or {}).get(entity_key):
+                # 缺对象编号时让写意图内部列出待办供选择，而不是干巴巴地追问
+                return _handle_write(db, actor, req, wf)
+            return _result(req, wf.answer or "请补全业务信息。", missing=wf.missing_fields)
         if wf.intent in WRITE_INTENTS:
             return _handle_write(db, actor, req, wf)
         if wf.intent in READ_INTENTS:
             return _handle_read(db, actor, req, wf, state)
-        return _result(req, wf.answer or _KNOWLEDGE_REPLY,
-                       sources=wf.sources, warnings=wf.warnings)
+        return _result(req, wf.answer or _KNOWLEDGE_REPLY, sources=wf.sources)
     except AppError as exc:
         return _result(req, exc.message, warnings=[exc.code])
 

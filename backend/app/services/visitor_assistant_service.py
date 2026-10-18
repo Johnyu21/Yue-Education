@@ -215,5 +215,5 @@ def handle_visitor_message(db: Session, req: AssistantRequest, *,
         missingFields=missing,
         proposal=proposal,
         aiStatus=ai_status(),
-        warnings=warnings,
+        warnings=[],
     )

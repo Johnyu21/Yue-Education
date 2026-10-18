@@ -361,7 +361,9 @@ class BackendOrchestration(unittest.TestCase):
         actor = SimpleNamespace(id=8, is_student=True)
         profile = SimpleNamespace(psych_consent_status="DENIED")
         value = output("SERVICE_DRAFT", draft={"service_type": "LEAVE", "title": "合成请假", "description": "个人事务"})
-        with patch.object(student.student_repo, "get_profile_by_user", return_value=profile), patch.object(student, "call_student_workflow", return_value=value):
+        with patch.object(student.student_repo, "get_profile_by_user", return_value=profile), \
+             patch.object(student, "call_student_workflow", return_value=value), \
+             patch.object(student, "_open_projects", return_value=[]):
             result = student.handle_student_message(Mock(), actor, self.req())
         self.assertIsNone(result.proposal)
         self.assertEqual(set(result.missingFields), {"start_at", "end_at"})
@@ -371,7 +373,9 @@ class BackendOrchestration(unittest.TestCase):
         profile = SimpleNamespace(psych_consent_status="DENIED")
         responses = [output("SERVICE_DRAFT", draft={"service_type": "LEAVE", "title": "合成请假", "description": "个人事务"}),
                      output("SERVICE_DRAFT", draft={"start_at": "2026-10-20T09:00:00+08:00", "end_at": "2026-10-20T12:00:00+08:00"})]
-        with patch.object(student.student_repo, "get_profile_by_user", return_value=profile), patch.object(student, "call_student_workflow", side_effect=responses):
+        with patch.object(student.student_repo, "get_profile_by_user", return_value=profile), \
+             patch.object(student, "call_student_workflow", side_effect=responses), \
+             patch.object(student, "_open_projects", return_value=[]):
             student.handle_student_message(Mock(), actor, self.req("请假"))
             result = student.handle_student_message(Mock(), actor, self.req("20号9点至12点"))
         self.assertEqual(result.proposal.operation, "SUBMIT_SERVICE")

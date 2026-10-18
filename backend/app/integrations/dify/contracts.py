@@ -145,6 +145,18 @@ METRIC_FILTERS = {"LEAD_COUNT": {"status"}, "SERVICE_PENDING_COUNT": {"service_t
                   "FEEDBACK_OPEN_COUNT": {"category"}, "APPLICATION_STAGE_COUNT": {"item_type"},
                   "PSYCH_ALERT_COUNT": {"severity"}}
 
+# 员工可见的缺项中文名（missing_fields 仍为机器字段键）。
+ENTERPRISE_FIELD_LABELS = {
+    "lead_id": "客户编号或姓名", "keyword": "客户姓名", "status": "状态", "view": "查看范围",
+    "name": "客户姓名", "mobile": "手机号", "content": "跟进内容", "next_follow_up_at": "下次跟进时间",
+    "target_status": "目标状态", "reason": "原因",
+    "service_id": "申请编号", "decision": "审批意见", "note": "审批说明",
+    "ticket_id": "工单编号", "action": "办理方式", "resolution": "处理结果", "assignee_user_id": "处理人",
+    "alert_id": "关怀事项编号", "student_name": "学生姓名", "case_no": "申请事项编号",
+    "event_kind": "操作类型", "stage": "阶段", "detail": "进度说明", "original_text": "工作内容",
+    "metric": "指标", "time_range": "时间范围",
+}
+
 
 def validate_enterprise(value, payload=None):
     value = merge_pending(value, payload)
@@ -172,8 +184,10 @@ def validate_enterprise(value, payload=None):
         enum(params, "decision", {"APPROVE", "REJECT"})
         missing += require(["service_id", "decision", "note"], params)
     if intent == "FEEDBACK_HANDLE":
-        enum(params, "action", {"NOTE", "RESOLVE", "ASSIGN"})
-        missing += require(["ticket_id", "action", "note"], params)
+        enum(params, "action", {"NOTE", "RESOLVE", "ASSIGN", "CLAIM"})
+        missing += require(["ticket_id", "action"], params)
+        if params.get("action") in {"NOTE", "RESOLVE", "ASSIGN"}:
+            missing += require(["note"], params)
         if params.get("action") == "RESOLVE":
             missing += require(["resolution"], params)
         if params.get("action") == "ASSIGN":
@@ -210,14 +224,23 @@ def validate_enterprise(value, payload=None):
     out.update(params=params, draft=draft or None, action=("query" if intent in READ_FIELDS else
                "execute" if intent in WRITE_FIELDS else None), missing_fields=list(dict.fromkeys(missing)))
     if intent in READ_FIELDS or intent in WRITE_FIELDS:
-        out["answer"] = "请补充：" + "、".join(out["missing_fields"]) if missing else "已整理业务请求，待后端核验。"
+        out["answer"] = ("请补充：" + "、".join(ENTERPRISE_FIELD_LABELS.get(k, k) for k in out["missing_fields"])
+                         if missing else "已整理业务请求，待后端核验。")
     else:
         out["answer"] = "请说明需要咨询的制度或办理的业务。" if intent == "OTHER" else "资料不足，暂无法核实该问题。"
     return out
 
 
 STUDENT_INTENTS = {"PROFILE_QUERY", "SCORE_QUERY", "SCHEDULE_QUERY", "CASE_QUERY", "ASSESSMENT_QUERY",
-                   "FAQ", "SERVICE_DRAFT", "FEEDBACK_DRAFT", "UPGRADE_INTEREST", "OTHER"}
+                   "FEEDBACK_QUERY", "FAQ", "SERVICE_DRAFT", "FEEDBACK_DRAFT", "UPGRADE_INTEREST", "OTHER"}
+
+# 学生可见的缺项中文名（missing_fields 仍为机器字段键，answer 面向学生显示）。
+STUDENT_FIELD_LABELS = {
+    "service_type": "服务类型", "title": "标题", "description": "描述",
+    "start_at": "开始时间", "end_at": "结束时间", "change_request": "需更正资料的新旧值",
+    "category": "反馈类型", "subject": "主题", "teacher_name": "老师姓名",
+    "project_category": "项目类型", "course_project_id": "项目编号",
+}
 
 
 def aware_datetime(value):
@@ -260,13 +283,24 @@ def validate_student(value, payload=None):
         missing = require(["course_project_id"], draft)
     out.update(draft=draft or None, missing_fields=list(dict.fromkeys(missing)))
     if fields:
-        out["answer"] = "请补充：" + "、".join(out["missing_fields"]) if missing else "已整理草稿，请等待后端核验并核对确认卡。"
-    else:
-        out["answer"] = "资料不足，暂无法核实该问题。" if intent == "FAQ" else "请说明需要查询或办理的业务。"
-        if intent == "OTHER" and "OUT_OF_SCOPE" in out["warnings"]:
+        if missing:
+            out["answer"] = "请补充：" + "、".join(
+                STUDENT_FIELD_LABELS.get(key, key) for key in out["missing_fields"])
+        else:
+            out["answer"] = "已整理草稿，请等待后端核验并核对确认卡。"
+    elif intent == "OTHER":
+        # 日常情绪/闲聊保留模型共情回复；越界与分流提示保持固定话术，不采信模型自拟边界。
+        model_answer = string(value.get("answer", ""), 2000)
+        if "OUT_OF_SCOPE" in out["warnings"]:
             out["answer"] = "学生助手不提供员工内部资料，请咨询学生服务或办理本人业务。"
-        elif intent == "OTHER" and "ADMIN_SERVICE_PAGE" in out["warnings"]:
+        elif "ADMIN_SERVICE_PAGE" in out["warnings"]:
             out["answer"] = "请到行政服务页面查看本人请假、考务或资料更正申请的处理结果。"
+        elif model_answer:
+            out["answer"] = model_answer
+        else:
+            out["answer"] = "请说明需要查询或办理的业务。"
+    else:
+        out["answer"] = "资料不足，暂无法核实该问题。"
     if payload.get("observe_emotion") is True and value.get("observation") is not None:
         observation = pick(value["observation"], ["emotion_state", "confidence", "direct_signal"])
         enum(observation, "emotion_state", {"HEALTHY", "NEGATIVE", "VERY_NEGATIVE", "UNKNOWN"})
@@ -283,7 +317,7 @@ def validate_visitor(value, payload=None):
     value = dict(value)
     if value.pop("mode", "VISITOR_ANSWER") != "VISITOR_ANSWER":
         raise ValueError("Invalid visitor mode")
-    out = envelope(value, {"FAQ", "LEAD_DRAFT", "ACTIVITY_DRAFT", "OUT_OF_SCOPE"})
+    out = envelope(value, {"FAQ", "LEAD_DRAFT", "ACTIVITY_DRAFT", "CASUAL", "PROJECT_RECOMMEND", "OUT_OF_SCOPE"})
     out["mode"] = "VISITOR_ANSWER"
     intent = out["intent"]
     fields = {"LEAD_DRAFT": ["name", "mobile"], "ACTIVITY_DRAFT": ["name", "mobile", "event_id"]}.get(intent, [])
@@ -302,10 +336,19 @@ def validate_visitor(value, payload=None):
             draft.pop("event_id")
             missing.append("event_id")
     out.update(draft=draft or None, missing_fields=list(dict.fromkeys(missing)))
+    _vlabels = {"name": "姓名", "mobile": "手机号", "event_id": "活动"}
     if fields:
-        out["answer"] = "请补充：" + "、".join(out["missing_fields"]) if missing else "请核对咨询或活动意向，确认后由系统办理。活动资格及余位以系统核验为准。"
+        if missing:
+            out["answer"] = "请补充：" + "、".join(_vlabels.get(k, k) for k in out["missing_fields"])
+        else:
+            out["answer"] = "请核对咨询或活动意向，确认后由系统办理。活动资格及余位以系统核验为准。"
+    elif intent == "OUT_OF_SCOPE":
+        out["answer"] = "仅支持公开咨询、留资和活动意向登记，无法访问内部业务资料。"
+    elif intent in {"CASUAL", "PROJECT_RECOMMEND"}:
+        model_answer = string(value.get("answer", ""), 2000)
+        out["answer"] = model_answer or "你好呀，有什么想了解的留学项目或问题吗？"
     else:
-        out["answer"] = "仅支持公开咨询、留资和活动意向登记，无法访问内部业务资料。" if intent == "OUT_OF_SCOPE" else "公开知识库尚未提供可核实的资料，可先说明咨询意向或登记联系信息。"
+        out["answer"] = "公开知识库尚未提供可核实的资料，可先说明咨询意向或登记联系信息。"
     return out
 
 
@@ -359,7 +402,7 @@ def prepare_payload(payload, kind):
     fields = {"message", "message_id", "conversation_id", "context", "history", "draft", "pending",
               "business_now", "business_timezone", "candidates"}
     fields |= {"visitor": {"public_projects", "open_events"}, "enterprise": {"actor"},
-               "student": {"input_kind", "observe_emotion"},
+               "student": {"input_kind", "observe_emotion", "open_projects"},
                "assessment": {"confirmed_facts", "resume_text", "project_rules", "required_fields"}}[kind]
     out = {key: value for key, value in payload.items() if key in fields}
     out["schema_version"] = "1.0"

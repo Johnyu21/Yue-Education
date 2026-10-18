@@ -11,6 +11,7 @@ export function proposalRequest(p:Proposal){
  case 'TRANSITION_LEAD':path='/employees/leads/'+entity+'/status';data={target_status:v.targetStatus,reason:v.reason};break
  case 'DECIDE_SERVICE':path='/services/'+entity+'/decision';data={decision:v.decision,note:v.note};break
  case 'HANDLE_FEEDBACK':path='/employees/feedback-tickets/'+entity+'/handling';data={action:v.action,note:v.note,resolution:v.resolution,assignee_user_id:v.assigneeUserId??null};break
+ case 'CLAIM_FEEDBACK':path='/employees/feedback-tickets/'+entity+'/claim';data={};break
  case 'PSYCH_ALERT_NOTE':path='/employees/psych-alerts/'+entity+'/actions';data={action:'NOTE',note:v.note};break
  case 'ADVANCE_APPLICATION':
   if(v.expectedSequence==null||!v.occurredAt||!Object.prototype.hasOwnProperty.call(v,'assigneeUserId'))throw new Error('确认卡资料不全，请重新向助手生成建议')

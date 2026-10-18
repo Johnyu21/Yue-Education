@@ -28,5 +28,5 @@ export async function writeRequest(method:string,url:string,data:any){
 }
 export async function download(url:string,filename:string){const r=await http.get(url,{responseType:'blob'});const link=document.createElement('a');const href=URL.createObjectURL(r.data);link.href=href;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(href),1000)}
 export async function upload(file:File){const data=new FormData();data.append('file',file);return api.post('/files',data)}
-export function errorText(e:any){return [e.message,...(e.errors||[]).map((v:any)=>v.reason),e.requestId?'处理编号：'+e.requestId:''].filter(Boolean).join('；')}
+export function errorText(e:any){return [e.message,...(e.errors||[]).map((v:any)=>v.reason)].filter(Boolean).join('；')}
 export default http

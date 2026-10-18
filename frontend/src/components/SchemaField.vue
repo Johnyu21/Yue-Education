@@ -18,6 +18,11 @@ function changeItem(i:number,v:any){const a=[...(props.modelValue||[])];a[i]=v;s
 async function file(e:Event){const f=(e.target as HTMLInputElement).files?.[0];if(!f)return;uploading.value=true;error.value='';try{const r=await upload(f);set(r.objectKey||r.object_key)}catch(e){error.value=errorText(e)}finally{uploading.value=false}}
 const jsonText=ref('')
 function jsonInput(e:Event){jsonText.value=(e.target as HTMLTextAreaElement).value;try{set(JSON.parse(jsonText.value));error.value=''}catch{error.value='请检查资料格式，内容须为有效的 JSON 对象'}}
+const CHANGE_FIELDS=[{key:'gender',label:'性别'},{key:'city',label:'所在城市'},{key:'education',label:'学历'},{key:'date_of_birth',label:'出生日期',date:true},{key:'real_name',label:'姓名'},{key:'mobile',label:'联系电话'}]
+const isChangeRequest=computed(()=>props.name==='change_request')
+function crEnabled(key:string){return props.modelValue?.new_values?.[key]!==undefined}
+function crToggle(key:string){const cur=props.modelValue||{};const oldv={...(cur.old_values||{})},newv={...(cur.new_values||{})};if(newv[key]!==undefined){delete oldv[key];delete newv[key]}else{oldv[key]='';newv[key]=''};set({old_values:oldv,new_values:newv})}
+function crSet(side:string,key:string,v:string){const cur=props.modelValue||{};const obj={...(cur[side]||{})};obj[key]=v;set({...cur,[side]:obj})}
 </script>
 <template>
  <div class="schema-field" :class="{'wide-field':s.type==='object'||s.type==='array'||s.maxLength>500}">
@@ -27,6 +32,7 @@ function jsonInput(e:Event){jsonText.value=(e.target as HTMLTextAreaElement).val
   <template v-else-if="s.enum"><select :id="inputId" :value="modelValue??''" :required="required" @change="input"><option value="">请选择</option><option v-for="v in s.enum" :key="v" :value="v">{{displayValue(v)}}</option></select></template>
   <template v-else-if="isFile"><input :id="inputId" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg" :disabled="uploading" @change="file"><small>{{uploading?'正在上传…':modelValue?'附件已上传':'支持规定格式，最大10MB'}}</small><button v-if="modelValue" type="button" class="text-link" @click="download('/files/'+encodeURIComponent(modelValue),'附件')">下载已上传附件</button></template>
   <template v-else-if="isArray"><div class="array-fields"><div v-for="(v,i) in modelValue||[]" :key="i" class="array-field-row"><SchemaField :schema="s.items" :model-value="v" :name="name.replace(/_ids$/,'_id')" :choices="choices" @update:model-value="changeItem(i,$event)"/><button type="button" class="text-link" @click="set(modelValue.filter((_:any,j:number)=>i!==j))">移除</button></div><button type="button" class="text-link" @click="set([...(modelValue||[]),resolveSchema(s.items).type==='object'?{}:''])">＋ 添加{{fieldLabel(name)}}</button></div></template>
+  <template v-else-if="isChangeRequest"><div class="cr-editor"><p class="muted">勾选要修改的资料项，分别填写原值和新值（未勾选不提交）；姓名、电话属身份信息，提交后需老师人工核验。</p><div v-for="f in CHANGE_FIELDS" :key="f.key" class="cr-row"><label class="check-label"><input type="checkbox" :checked="crEnabled(f.key)" @change="crToggle(f.key)">{{f.label}}</label><template v-if="crEnabled(f.key)"><label class="cr-field">原值<input :type="f.date?'date':'text'" :value="modelValue?.old_values?.[f.key]" @input="crSet('old_values',f.key,($event.target as HTMLInputElement).value)"></label><label class="cr-field">新值<input :type="f.date?'date':'text'" :value="modelValue?.new_values?.[f.key]" @input="crSet('new_values',f.key,($event.target as HTMLInputElement).value)"></label></template></div></div></template>
   <template v-else-if="s.type==='object'&&s.properties"><fieldset class="nested-fields"><SchemaField v-for="(v,k) in s.properties" :key="k" :schema="v" :name="String(k)" :required="s.required?.includes(k)" :model-value="modelValue?.[k]" :choices="choices" @update:model-value="setChild(String(k),$event)"/></fieldset></template>
   <template v-else-if="s.type==='object'"><textarea :id="inputId" :value="jsonText||(modelValue?JSON.stringify(modelValue,null,2):'')" rows="5" placeholder="按业务规则填写结构化资料" @input="jsonInput"></textarea></template>
   <template v-else-if="options.length"><select :id="inputId" :value="modelValue??''" :required="required" @change="input"><option value="">请选择{{fieldLabel(name)}}</option><option v-for="o in options" :key="o.id" :value="o.id">{{o.realName||o.name||o.title||o.code}} · {{o.id}}</option></select></template>
@@ -36,3 +42,10 @@ function jsonInput(e:Event){jsonText.value=(e.target as HTMLTextAreaElement).val
   <p v-if="error" class="error-text">{{error}}</p>
  </div>
 </template>
+<style scoped>
+.cr-editor{display:flex;flex-direction:column;gap:8px;padding:10px;border:1px dashed var(--line,#d8dee6);border-radius:8px}
+.cr-editor .muted{color:#68707c;font-size:12px;margin:0}
+.cr-row{display:flex;align-items:center;flex-wrap:wrap;gap:12px}
+.cr-field{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.cr-field input{padding:6px 8px;border:1px solid var(--line,#d8dee6);border-radius:6px}
+</style>

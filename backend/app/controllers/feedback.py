@@ -114,6 +114,11 @@ def claim_feedback_ticket(ticket_id: int, data: VersionRequest,
                           user: SysUser = Depends(require_password_changed),
                           db: Session = Depends(get_db)):
     """API061 售后认领（M3 调 M4 业务函数）"""
+    if data.confirmation_token:
+        verify_confirmation(user, data.confirmation_token, operation="CLAIM_FEEDBACK",
+                            entity_id=ticket_id,
+                            payload=m3_canonical.feedback_claim_payload(),
+                            expected_version=data.expected_version, request_key=data.request_key)
     with with_business_transaction(db):
         dto = feedback_service.claim_feedback(
             db, user, ticket_id, expected_version=data.expected_version,
