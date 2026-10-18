@@ -1,0 +1,538 @@
+{
+  "checked_at": "2026-10-18T18:00:16.096147+08:00",
+  "results": [
+    {
+      "case": "visitor_lead",
+      "audience": "visitor",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "caa92942-1d48-4c90-bbf9-ef2a4a9cea7c",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "LEAD_DRAFT",
+        "answer": "请核对咨询或活动意向，确认后由系统办理。活动资格及余位以系统核验为准。",
+        "draft": {
+          "name": "联调测试访客",
+          "mobile": "13912345678"
+        },
+        "missing_fields": [],
+        "sources": [],
+        "warnings": [],
+        "mode": "VISITOR_ANSWER"
+      },
+      "elapsed_seconds": 2.38,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "model_text": "{\"schema_version\":\"1.0\",\"mode\":\"VISITOR_ANSWER\",\"intent\":\"LEAD_DRAFT\",\"answer\":\"已记录您的联系意向，请核对姓名“联调测试访客”和手机号13912345678是否正确；确认后顾问将与您联系。\",\"draft\":{\"name\":\"联调测试访客\",\"mobile\":\"13912345678\"},\"missing_fields\":[],\"sources\":[],\"warnings\":[]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅问答且知识库已启用",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "student_faq",
+      "audience": "student",
+      "data_kind": "synthetic",
+      "passed": false,
+      "workflow_run_id": "92d7dd62-d3c6-4bb1-89d2-ba1c20ff6d7c",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "FAQ",
+        "answer": "资料不足，暂无法核实该问题。",
+        "draft": null,
+        "missing_fields": [],
+        "sources": [],
+        "warnings": [
+          "INSUFFICIENT_SOURCE",
+          "KB_NOT_CONFIGURED"
+        ]
+      },
+      "error": "ValueError: Expected a supported knowledge answer with actual sources",
+      "elapsed_seconds": 2.47,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "model_text": "{\"schema_version\":\"1.0\",\"intent\":\"FAQ\",\"answer\":\"该问题涉及德国留学住址登记流程，需依据学生知识库中的资料核实后回答；当前上下文未提供可核实的资料，暂无法给出材料清单及来源。\",\"draft\":null,\"missing_fields\":[],\"sources\":[],\"warnings\":[\"INSUFFICIENT_SOURCE\"]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅问答且知识库已启用",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "visitor_faq",
+      "audience": "visitor",
+      "data_kind": "synthetic",
+      "passed": false,
+      "workflow_run_id": "3f6645d5-b354-4825-a1d3-cbce2d5d93d9",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "FAQ",
+        "answer": "公开知识库尚未提供可核实的资料，可先说明咨询意向或登记联系信息。",
+        "draft": null,
+        "missing_fields": [],
+        "sources": [],
+        "warnings": [
+          "PUBLIC_KNOWLEDGE_PENDING",
+          "KB_NOT_CONFIGURED"
+        ],
+        "mode": "VISITOR_ANSWER"
+      },
+      "error": "ValueError: Expected a supported knowledge answer with actual sources",
+      "elapsed_seconds": 3.59,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "model_text": "{\"schema_version\":\"1.0\",\"mode\":\"VISITOR_ANSWER\",\"intent\":\"FAQ\",\"answer\":\"这是公开咨询。德国留学常见申请手续包括：APS审核、准备语言成绩、选择院校与专业、通过uni-assist或学校系统申请、办理护照与签证、准备资金证明和保险、获得录取后注册入学等。具体要求和来源请以使领馆、APS及目标高校官网公布的信息为准。\",\"draft\":null,\"missing_fields\":[],\"sources\":[],\"warnings\":[\"PUBLIC_KNOWLEDGE_PENDING\"]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅问答且知识库已启用",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "enterprise_faq",
+      "audience": "enterprise",
+      "data_kind": "synthetic",
+      "passed": false,
+      "workflow_run_id": "edc16b1b-c250-4e6e-a479-42a281d8ceaf",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "KNOWLEDGE",
+        "answer": "资料不足，暂无法核实该问题。",
+        "draft": null,
+        "missing_fields": [],
+        "sources": [],
+        "warnings": [
+          "KB_NOT_CONFIGURED"
+        ],
+        "params": {},
+        "action": null
+      },
+      "error": "ValueError: Expected a supported knowledge answer with actual sources",
+      "elapsed_seconds": 2.27,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "model_text": "{\"schema_version\":\"1.0\",\"intent\":\"KNOWLEDGE\",\"action\":null,\"params\":{},\"draft\":null,\"answer\":\"该问题属于员工制度与流程说明，将交由员工知识库检索并给出制度来源。\",\"missing_fields\":[],\"sources\":[],\"warnings\":[]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅问答且知识库已启用",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "enterprise_todo",
+      "audience": "enterprise",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "411a33bd-c6af-4f4c-8b61-4bbd4f00d078",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "TODO_LIST",
+        "answer": "已整理业务请求，待后端核验。",
+        "draft": null,
+        "missing_fields": [],
+        "sources": [],
+        "warnings": [],
+        "params": {},
+        "action": "query"
+      },
+      "elapsed_seconds": 1.38,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "model_text": "{\"schema_version\":\"1.0\",\"intent\":\"TODO_LIST\",\"action\":null,\"params\":{},\"draft\":null,\"answer\":\"\",\"missing_fields\":[],\"sources\":[],\"warnings\":[]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅问答且知识库已启用",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "student_leave",
+      "audience": "student",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "ba03b926-d120-4b22-9025-07b02dcca370",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "SERVICE_DRAFT",
+        "answer": "请补充：service_type、title、description",
+        "draft": null,
+        "missing_fields": [
+          "service_type",
+          "title",
+          "description"
+        ],
+        "sources": [],
+        "warnings": []
+      },
+      "elapsed_seconds": 4.14,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "model_text": "{\"schema_version\":\"1.0\",\"intent\":\"SERVICE_DRAFT\",\"answer\":\"请补充请假的开始时间和结束时间（具体到日期和时刻），以及请假申请的标题；当前仅记录原因为个人事务，时间未确定，暂不能生成完整请假草稿。\",\"draft\":null,\"missing_fields\":[\"title\",\"start_at\",\"end_at\"],\"sources\":[],\"warnings\":[]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅问答且知识库已启用",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "daily",
+      "audience": "report_assistant",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "e63e7f08-0f37-4324-b020-252a19a32646",
+      "workflow_status": "succeeded",
+      "output": {
+        "answer": "请补充今日工作（仅普通工作）。心理与投诉明细请在专项模块记录。",
+        "content": {
+          "work_summary": "",
+          "difficulties": "无",
+          "next_plan": "",
+          "items": [
+            {
+              "category": "OTHER",
+              "description": "整理公开活动资料",
+              "count": 2,
+              "student_ids": [],
+              "source_event_id": null,
+              "result": ""
+            }
+          ]
+        },
+        "missing_fields": [
+          "work_summary"
+        ]
+      },
+      "elapsed_seconds": 2.88,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "接收后端核验数据",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核对业务入参与字段白名单",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "整理普通日报",
+          "status": "succeeded",
+          "model_text": "{\"answer\":\"请核对以下日报草稿。\",\"content\":{\"work_summary\":\"\",\"items\":[{\"category\":\"OTHER\",\"description\":\"整理公开活动资料\",\"count\":2,\"student_ids\":[],\"source_event_id\":null,\"result\":\"\"}],\"difficulties\":\"无\",\"next_plan\":\"\"}}"
+        },
+        {
+          "id": "validate",
+          "type": "code",
+          "title": "核验业务契约并净化输出",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "返回后端继续校验",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "assessment",
+      "audience": "assessment",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "08b1a11a-b3f3-4dc7-abeb-a1fded712215",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "mode": "ASSESSMENT_EXTRACT",
+        "facts": {
+          "education": "本科",
+          "city": "广州"
+        },
+        "evidence": [
+          {
+            "field": "city",
+            "source_ref": "resume:p2",
+            "snippet": "居住城市广州"
+          }
+        ],
+        "missing_fields": [],
+        "warnings": []
+      },
+      "elapsed_seconds": 3.2,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取简历事实与原文证据",
+          "status": "succeeded",
+          "model_text": "{\"schema_version\":\"1.0\",\"mode\":\"ASSESSMENT_EXTRACT\",\"facts\":{\"education\":\"本科\",\"city\":\"广州\"},\"evidence\":[{\"field\":\"city\",\"source_ref\":\"resume:p2\",\"snippet\":\"居住城市广州\"}],\"missing_fields\":[],\"warnings\":[]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "report",
+      "audience": "report_generation",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "2f4d6841-4e95-4f14-8138-9f7b42274cb8",
+      "workflow_status": "succeeded",
+      "output": {
+        "narrative": "日报日汇总\n统计期间：2026-10-18 至 2026-10-18\n统计范围：合成联调范围\n\n一、后端核定指标\n普通工作次数：2次\n统计口径：合成验收资料\n\n二、数据说明\n仅合成验收资料\n\n三、工作情况与待跟进事项\n一、普通工作\n\n2026年10月18日，在合成联调范围内，已审核日报记录普通工作2次（普通工作次数指标为2次）。据日报记载，工作内容为整理公开活动资料2次。\n\n二、困难与支持\n\n日报记载没有困难，未提出需要协调或支持的事项。\n\n三、未完成或待核对事项\n\n本次提供的日报事实中未记载未完成事项或待核对事项，暂无记录。\n\n四、明日计划\n\n本次输入未提供明日计划，暂不列示。\n\n五、说明\n\n本期为合成验收资料，仅用于联调核对。以上内容仅依据已审核日报事实整理，未对指标进行重算或推断。"
+      },
+      "elapsed_seconds": 1.72,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "接收后端核验数据",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核对业务入参与字段白名单",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "整理六类报告正文",
+          "status": "succeeded",
+          "model_text": "{\"narrative\":\"一、普通工作\\n\\n2026年10月18日，在合成联调范围内，已审核日报记录普通工作2次（普通工作次数指标为2次）。据日报记载，工作内容为整理公开活动资料2次。\\n\\n二、困难与支持\\n\\n日报记载没有困难，未提出需要协调或支持的事项。\\n\\n三、未完成或待核对事项\\n\\n本次提供的日报事实中未记载未完成事项或待核对事项，暂无记录。\\n\\n四、明日计划\\n\\n本次输入未提供明日计划，暂不列示。\\n\\n五、说明\\n\\n本期为合成验收资料，仅用于联调核对。以上内容仅依据已审核日报事实整理，未对指标进行重算或推断。\"}"
+        },
+        {
+          "id": "validate",
+          "type": "code",
+          "title": "核验业务契约并净化输出",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "返回后端继续校验",
+          "status": "succeeded"
+        }
+      ]
+    }
+  ]
+}

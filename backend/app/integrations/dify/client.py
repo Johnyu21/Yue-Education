@@ -63,7 +63,7 @@ class DifyClient:
             logger.warning("Dify 工作流执行失败")
             raise AIBadResponseError("AI 工作流执行失败")
 
-        if run.get("status") not in (None,"succeeded"):raise AIBadResponseError("AI工作流未完成")
+        if run.get("status") != "succeeded":raise AIBadResponseError("AI工作流未完成")
         outputs=run.get("outputs")
         if not isinstance(outputs,dict):raise AIBadResponseError("AI输出结构异常")
         return outputs

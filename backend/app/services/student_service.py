@@ -204,25 +204,10 @@ def submit_service(db: Session, user: SysUser, req: ServiceCreateRequest) -> dic
 
     profile = db.get(StudentProfile, profile.id, with_for_update=True, populate_existing=True)
     # 校验
+    validate_service_content(req)
     if req.service_type == "LEAVE":
-        if not req.start_at or not req.end_at or req.end_at <= req.start_at:
-            raise InvalidRequestError("请假必须填写开始与结束时间，且结束晚于开始")
         _check_leave_overlap(db, profile.id, req.start_at, req.end_at)
-    if req.service_type == "INFO_CHANGE" and not req.change_request:
-        raise InvalidRequestError("信息修改必须提供新旧值")
 
-    if req.service_type=="INFO_CHANGE":
-        change=req.change_request
-        allowed=_INFO_CHANGE_STUDENT_FIELDS | _IDENTITY_FIELDS
-        if not change.new_values or not set(change.new_values)<=allowed or set(change.old_values)!=set(change.new_values):raise InvalidRequestError("新旧字段必须一致，且仅能修改允许的资料字段")
-        for field,value in change.new_values.items():
-            if field=="date_of_birth":
-                try:
-                    if value is not None and date.fromisoformat(value)>date.today():raise ValueError()
-                except (ValueError,TypeError):raise InvalidRequestError("出生日期必须为有效的YYYY-MM-DD且不晚于今天")
-            elif value is not None and (not isinstance(value,str) or not value.strip() or len(value)>160):raise InvalidRequestError("资料字段必须为有效文本")
-            if field in _IDENTITY_FIELDS and (not isinstance(value,str) or not value.strip()):raise InvalidRequestError("身份字段不能为空")
-            if field=="mobile" and normalize_mobile(value)!=value:raise InvalidRequestError("手机号须为规范格式")
     # 锁定学生主行（重叠检测 + 并发）
 
     assignee = _resolve_assignee(db, profile, req.service_type)
@@ -336,7 +321,7 @@ def decide_service(db: Session, actor: SysUser, service_id: int,
     if req.confirmation_token:
         verify_confirmation(actor, req.confirmation_token, operation="DECIDE_SERVICE",
                             entity_id=service_id,
-                            payload=m3_canonical.decide_service_payload(req.decision,req.note,req.identity_verification),
+                            payload=m3_canonical.decide_service_payload(req.decision, req.note),
                             expected_version=req.expected_version, request_key=req.request_key)
 
     now = datetime.now(timezone.utc)
@@ -431,3 +416,25 @@ def assign_service(db: Session, actor: SysUser, service_id: int, *,
            content=f"一条申请转派给您处理", related_type="admin_service", related_id=svc.id)
 
     return _service_to_dto(db, svc)
+
+
+def validate_service_content(req: ServiceCreateRequest) -> None:
+    """Shared cross-field checks for previews and actual submissions."""
+    if req.service_type == "LEAVE":
+        if not req.start_at or not req.end_at or req.end_at <= req.start_at:
+            raise InvalidRequestError("请假必须填写开始与结束时间，且结束晚于开始")
+    if req.service_type == "INFO_CHANGE" and not req.change_request:
+        raise InvalidRequestError("信息修改必须提供新旧值")
+
+    if req.service_type=="INFO_CHANGE":
+        change=req.change_request
+        allowed=_INFO_CHANGE_STUDENT_FIELDS | _IDENTITY_FIELDS
+        if not change.new_values or not set(change.new_values)<=allowed or set(change.old_values)!=set(change.new_values):raise InvalidRequestError("新旧字段必须一致，且仅能修改允许的资料字段")
+        for field,value in change.new_values.items():
+            if field=="date_of_birth":
+                try:
+                    if value is not None and date.fromisoformat(value)>date.today():raise ValueError()
+                except (ValueError,TypeError):raise InvalidRequestError("出生日期必须为有效的YYYY-MM-DD且不晚于今天")
+            elif value is not None and (not isinstance(value,str) or not value.strip() or len(value)>160):raise InvalidRequestError("资料字段必须为有效文本")
+            if field in _IDENTITY_FIELDS and (not isinstance(value,str) or not value.strip()):raise InvalidRequestError("身份字段不能为空")
+            if field=="mobile" and normalize_mobile(value)!=value:raise InvalidRequestError("手机号须为规范格式")

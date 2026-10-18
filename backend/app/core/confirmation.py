@@ -148,6 +148,14 @@ def verify_confirmation(
     if request_key is not None and claims["rk"] != str(request_key):
         raise InvalidRequestError("确认信息与请求键不符")
 
+    # Assistant cards are invalidated when the user changes/cancels the draft.
+    # Ordinary form tokens have no draft binding and retain their existing flow.
+    if claims.get("draft_key"):
+        from app.core import runtime_state
+        draft_state = runtime_state.get(claims["draft_key"])
+        if not draft_state or draft_state.get("revision") != claims.get("draft_revision"):
+            raise InvalidRequestError("助手草稿已变更或取消，请核对最新确认卡")
+
     return claims
 
 

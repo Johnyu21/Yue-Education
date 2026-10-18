@@ -184,6 +184,8 @@ def metrics_for(db,user,body):
                 visible=[i for i in all_items if not (i["category"]=="PSYCH" and not user["psych_access_enabled"]) and not (i["category"]=="COMPLAINT" and not user["can_handle_feedback"])]
                 summary="；".join(i["description"] for i in visible) if len(visible)!=len(all_items) else approved.get("work_summary","")
                 facts.append({"section":user["_names"].get(d.user_id,"未知员工")+" "+d.report_date.isoformat(),"text":summary or "无可展示工作明细"})
+                if len(visible)==len(all_items) and approved.get("next_plan", "").strip():
+                    facts.append({"section":"明日计划", "text":user["_names"].get(d.user_id,"未知员工")+"："+approved["next_plan"]})
             facts.extend([{"section":"未完成事项","text":"请根据实际工作补充，系统不自动推断完成情况"},
                           {"section":"困难与支持","text":"；".join(dict.fromkeys(d.approved_snapshot.get("difficulties","") for d in records if not (any((i["category"]=="PSYCH" and not user["psych_access_enabled"]) or (i["category"]=="COMPLAINT" and not user["can_handle_feedback"]) for i in d.approved_snapshot.get("items",[]))))) or "暂无可展示的困难记录"}])
             if body.type=="MANAGER_WEEK":

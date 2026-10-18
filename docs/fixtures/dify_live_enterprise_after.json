@@ -1,0 +1,99 @@
+{
+  "checked_at": "2026-10-18T18:18:42.611093+08:00",
+  "results": [
+    {
+      "case": "enterprise_faq",
+      "audience": "enterprise",
+      "data_kind": "synthetic",
+      "passed": false,
+      "workflow_run_id": "279c3ade-9a32-4fc3-a80c-65dbea3a03d2",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "KNOWLEDGE",
+        "answer": "当前知识库资料不足，暂无法核实该问题，请联系相应业务人员。",
+        "draft": null,
+        "missing_fields": [],
+        "sources": [],
+        "warnings": [
+          "KB_NO_SUPPORTED_ANSWER"
+        ],
+        "params": {},
+        "action": null
+      },
+      "error": "ValueError: Expected a supported knowledge answer with actual sources",
+      "elapsed_seconds": 5.17,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"schema_version\":\"1.0\",\"intent\":\"KNOWLEDGE\",\"action\":null,\"params\":{},\"draft\":null,\"answer\":\"\",\"missing_fields\":[],\"sources\":[],\"warnings\":[]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅知识问答进入检索",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge",
+          "type": "knowledge-retrieval",
+          "title": "在工作室选择对应知识库",
+          "status": "succeeded",
+          "retrieved_count": 2,
+          "source_titles": [
+            "02_公司新人指南.md",
+            "02_公司新人指南.md"
+          ]
+        },
+        {
+          "id": "knowledge_context",
+          "type": "code",
+          "title": "核验实际检索来源",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_llm",
+          "type": "llm",
+          "title": "依据已核验资料回答",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"answer\":\"资料不足：本次提供的员工制度片段仅包含新人指南的说明和新人融入计划，未涉及客户登记或跟进记录的具体流程，无法据此说明操作步骤。\",\"citation_ids\":[]}"
+        },
+        {
+          "id": "knowledge_validate",
+          "type": "code",
+          "title": "引用白名单及无依据兜底",
+          "status": "succeeded"
+        },
+        {
+          "id": "end_knowledge",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    }
+  ]
+}

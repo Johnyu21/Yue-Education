@@ -1,5 +1,7 @@
 """M5 report routes only. No lab auth, fixtures or frontend mounts."""
 import hashlib
+import logging
+import re
 from copy import deepcopy
 from datetime import date, timedelta
 from uuid import uuid4
@@ -24,6 +26,7 @@ from app.services.m5_report_service import (daily_dto,scoped_daily_query,validat
 from app.services.m5_report_transactions import m5_database
 from app.services.m5_report_exports import export_docx,export_pdf
 from app.integrations.dify import m5_report_ai as ai
+logger=logging.getLogger(__name__)
 PREFIX='/api/v1/m5'
 
 def auth_signature(user):
@@ -83,7 +86,8 @@ def create_m5_router(config=None):
                 candidate=result.get("narrative")
                 if not isinstance(candidate,str) or not candidate.strip():raise ValueError("Empty narrative")
                 narrative=candidate;state="LIVE"
-            except (httpx.HTTPError,ValueError,KeyError,TypeError):
+            except (httpx.HTTPError,ValueError,KeyError,TypeError) as exc:
+                logger.warning("M5_REPORT_AI_FALLBACK type=%s exception=%s", body.type, type(exc).__name__)
                 state="UNAVAILABLE";warnings.append("Dify不可用，已保留确定性指标和事实文本")
         else:warnings.append("当前未调用Dify，保留确定性事实文本")
         fresh=context(db,db.get(SysUser,user["id"],populate_existing=True),business=False)
@@ -199,18 +203,26 @@ def create_m5_router(config=None):
         history=deepcopy(c.messages)
         conversation_version=c.version
         db.rollback()  # Do not hold a database transaction while waiting for Dify.
-        query=any(k in text for k in ["新增客户","意向学生","有多少","多少人"])
-        report_request=any(k in text for k in ["生成周报","生成报告","生成心理周报","生成投诉周报","生成客户经营报告","生成日汇总"])
-        if query:
+        from app.services.m5_assistant_routing import classify, period
+        route=classify(text)
+        period_error=None
+        try:
+            requested_start,requested_end=period(text,today(),weekly=route=="REPORT") if route in {"QUERY","REPORT"} else (today(),today())
+        except ValueError as exc:
+            period_error=str(exc)
+        if period_error:
+            result={"answer":period_error,"draft":state,"missing_fields":["date_range"],"ai_status":"DETERMINISTIC","warnings":["DATE_RANGE_NEEDS_CLARIFICATION"]}
+        elif route=="QUERY":
             allowed=[l for l in user["_leads"] if (user["is_admin"] or l["dept_id"] in user["dept_ids"]) and (user["is_dept_head"] or l["owner_id"]==user["id"])]
             if "新增客户" in text:
-                period_start=today()-timedelta(days=today().weekday()) if "本周" in text else today()-timedelta(days=1) if "昨天" in text else today()
-                period_end=today()-timedelta(days=1) if "昨天" in text else today()
+                period_start,period_end=requested_start,requested_end
                 subset=[l for l in allowed if period_start.isoformat()<=l["created_date"]<=period_end.isoformat()]
                 answer=period_start.isoformat()+" 至 "+period_end.isoformat()+"新增客户："+("、".join(l["name"] for l in subset) or "无")+"，共"+str(len(subset))+"人。"
             else:
                 subset=[l for l in allowed if l["interest"] and not l["enrolled"]]
                 answer="截至今天，当前未签约意向客户共"+str(len(subset))+"人："+("、".join(l["name"] for l in subset) or "无")+"。"
+                if requested_start!=today() or requested_end!=today():
+                    answer="当前意向客户只支持截至今天的状态查询，不支持还原历史状态，请到客户经营报告查看已有历史指标。"
             result={"answer":answer+" 查询范围："+("本部门" if user["is_dept_head"] else "本人")+"；来源：正式业务数据。","draft":state,"missing_fields":[],"ai_status":"DETERMINISTIC","warnings":[]}
             if config.ai_mode=="DIFY":
                 try:
@@ -218,11 +230,13 @@ def create_m5_router(config=None):
                     result["answer"]=answer+" 来源：正式业务数据。";result["ai_status"]="LIVE"
                 except (httpx.HTTPError,ValueError,KeyError,TypeError):
                     result["warnings"]=["Dify不可用，显示后端核实结果"];result["ai_status"]="UNAVAILABLE"
-        elif report_request:
+        elif route=="REPORT":
             kind="PSYCH_WEEK" if "心理" in text else "COMPLAINT_WEEK" if "投诉" in text else "CUSTOMER_OPERATION" if "客户" in text else "DAILY_DAY" if "日汇总" in text else "MANAGER_WEEK" if user["is_dept_head"] else "DAILY_WEEK"
             report_access(user,kind)
-            d=today();start=d-timedelta(days=d.weekday())
-            if kind=="DAILY_DAY":start=d
+            start,d=requested_start,requested_end
+            if kind=="DAILY_DAY":
+                if start!=d and not any(k in text for k in ("本周","这周","上周","本月","上月","上个月","这个月")) and not re.search(r"\d{4}-\d{2}-\d{2}",text):start=d
+                if start!=d:raise ValidationError("日报日汇总只能选择一天，请到报告中心核对日期")
             result={"answer":"已准备"+REPORT_NAMES[kind]+"的生成条件。请点击下方按钮，到报告中心核对时间范围并生成。","draft":state,
                 "proposal":{"type":kind,"start_date":start.isoformat(),"end_date":d.isoformat()},"missing_fields":[],"ai_status":"DETERMINISTIC","warnings":[]}
         elif user["is_dept_head"]:

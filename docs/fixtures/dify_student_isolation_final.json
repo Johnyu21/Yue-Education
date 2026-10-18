@@ -1,0 +1,286 @@
+{
+  "checked_at": "2026-10-18T19:01:48.191847+08:00",
+  "results": [
+    {
+      "case": "student_leave",
+      "audience": "student",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "85993d07-ae42-4bce-9d3d-e63583979a02",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "SERVICE_DRAFT",
+        "answer": "请补充：start_at、end_at",
+        "draft": {
+          "service_type": "LEAVE",
+          "title": "个人事务请假",
+          "description": "个人事务"
+        },
+        "missing_fields": [
+          "start_at",
+          "end_at"
+        ],
+        "sources": [],
+        "warnings": []
+      },
+      "elapsed_seconds": 1.69,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "has_reasoning_prefix": false,
+          "model_text": "{\"schema_version\":\"1.0\",\"intent\":\"SERVICE_DRAFT\",\"answer\":\"已记录你的请假事由。请补充请假的开始时间和结束时间（具体到日期和时刻），以便继续办理。\",\"draft\":{\"service_type\":\"LEAVE\",\"title\":\"个人事务请假\",\"description\":\"个人事务\"},\"missing_fields\":[\"start_at\",\"end_at\"],\"sources\":[],\"warnings\":[]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅知识问答进入检索",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "student_staff_boundary",
+      "audience": "student",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "2d87368d-618c-4af9-95aa-b653818c653a",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "OTHER",
+        "answer": "学生助手不提供员工内部资料，请咨询学生服务或办理本人业务。",
+        "draft": null,
+        "missing_fields": [],
+        "sources": [],
+        "warnings": [
+          "OUT_OF_SCOPE"
+        ]
+      },
+      "elapsed_seconds": 1.77,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"schema_version\":\"1.0\",\"intent\":\"OTHER\",\"answer\":\"你请求的公司新人指南和员工绩效薪酬制度属于员工专用资料，不在学生助手的服务范围内。我可以帮你查询学生相关的服务规则、成绩、日程、申请进度或研判摘要。\",\"draft\":null,\"missing_fields\":[],\"sources\":[],\"warnings\":[\"OUT_OF_SCOPE\"]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅知识问答进入检索",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "student_admin_route",
+      "audience": "student",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "33b7a9ff-54b8-48d7-9465-b4b4d35f1852",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "OTHER",
+        "answer": "请到行政服务页面查看本人请假、考务或资料更正申请的处理结果。",
+        "draft": null,
+        "missing_fields": [],
+        "sources": [],
+        "warnings": [
+          "ADMIN_SERVICE_PAGE"
+        ]
+      },
+      "elapsed_seconds": 1.48,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"schema_version\":\"1.0\",\"intent\":\"OTHER\",\"answer\":\"请假申请属于行政服务事项，我无法查询审批结果。请前往行政服务页面查看已批准的请假申请。\",\"draft\":null,\"missing_fields\":[],\"sources\":[],\"warnings\":[\"ADMIN_SERVICE_PAGE\"]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅知识问答进入检索",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "student_faq",
+      "audience": "student",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "0ea10b90-70c6-4bcc-b431-af23176173b5",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "FAQ",
+        "answer": "根据资料，学生签证入境后应在2周内前往当地居民登记处（Bürgeramt）完成住址登记。来源：《06_德国留学政策指南.md》。",
+        "draft": null,
+        "missing_fields": [],
+        "sources": [
+          {
+            "document_id": "17051457-a38a-40b1-92b8-77671266a9ca",
+            "title": "06_德国留学政策指南.md",
+            "section": "a50d5573-b977-4778-8173-b9731374a99c"
+          }
+        ],
+        "warnings": []
+      },
+      "elapsed_seconds": 5.73,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"schema_version\":\"1.0\",\"intent\":\"FAQ\",\"answer\":\"\",\"draft\":null,\"missing_fields\":[],\"sources\":[],\"warnings\":[]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅知识问答进入检索",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge",
+          "type": "knowledge-retrieval",
+          "title": "在工作室选择对应知识库",
+          "status": "succeeded",
+          "retrieved_count": 3,
+          "source_titles": [
+            "06_德国留学政策指南.md",
+            "06_德国留学政策指南.md",
+            "04_中德精英人才共建计划.md"
+          ]
+        },
+        {
+          "id": "knowledge_context",
+          "type": "code",
+          "title": "核验实际检索来源",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_llm",
+          "type": "llm",
+          "title": "依据已核验资料回答",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"answer\":\"根据资料，学生签证入境后应在2周内前往当地居民登记处（Bürgeramt）完成住址登记。来源：《06_德国留学政策指南.md》。\",\"citation_ids\":[\"1\"]}"
+        },
+        {
+          "id": "knowledge_validate",
+          "type": "code",
+          "title": "引用白名单及无依据兜底",
+          "status": "succeeded"
+        },
+        {
+          "id": "end_knowledge",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    }
+  ]
+}

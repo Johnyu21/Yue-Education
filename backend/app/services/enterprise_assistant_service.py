@@ -16,6 +16,8 @@ from sqlalchemy import select
 from pydantic import ValidationError as SchemaValidationError
 from app.core.config import settings
 from app.core import runtime_state
+from app.services import assistant_session
+from app.integrations.dify.contracts import validate_enterprise
 from sqlalchemy.orm import Session
 
 from app.core.confirmation import CONFIRM_TTL_MINUTES, new_request_key, sign_confirmation
@@ -76,10 +78,10 @@ def _iso(value) -> str | None:
     return value.isoformat() if value else None
 
 
-def _cache_put(conversation_id: str | None, kind: str, ids: list[int]) -> None:
+def _cache_put(conversation_id: str | None, kind: str, ids: list[int], pending: dict | None = None) -> None:
     if not conversation_id:
         return
-    runtime_state.put("employee:"+conversation_id,{"kind":kind,"ids":ids},900)
+    runtime_state.put("employee:"+conversation_id,{"kind":kind,"ids":ids,"pending":pending},900)
 
 
 def _cache_get(conversation_id: str | None) -> dict | None:
@@ -233,6 +235,8 @@ def _search_leads(db: Session, actor: SysUser, params: dict):
 def _resolve_lead_id(db: Session, actor: SysUser, params: dict) -> int | None:
     if params.get("lead_id"):
         return int(params["lead_id"])
+    if not (params.get("keyword") or params.get("lead_name") or params.get("name")):
+        return None
     items, total = _search_leads(db, actor, params)
     if total == 1:
         return int(items[0].id)
@@ -266,7 +270,7 @@ def _latest_case_event(db: Session, case_no: str) -> StudentApplicationProgress 
 # 读意图
 # =============================================================
 def _handle_read(db: Session, actor: SysUser, req: AssistantRequest,
-                 wf: WfEnterpriseOutput) -> AssistantResult:
+                 wf: WfEnterpriseOutput, session: dict | None = None) -> AssistantResult:
     params = wf.params or {}
     intent = wf.intent
 
@@ -286,11 +290,16 @@ def _handle_read(db: Session, actor: SysUser, req: AssistantRequest,
 
     try:
         if intent in ("LEAD_SEARCH", "LEAD_DETAIL"):
+            if intent == "LEAD_DETAIL" and params.get("lead_id"):
+                dto = crm_service.get_lead(db, actor, int(params["lead_id"]))
+                if session is not None:session["selected_lead_id"]=int(params["lead_id"])
+                return _result(req, _render_lead_detail(dto))
             items, total = _search_leads(db, actor, params)
             if total == 0:
                 return _result(req, "未找到符合条件的客户。")
             if total == 1:
                 dto = crm_service.get_lead(db, actor, int(items[0].id))
+                if session is not None:session["selected_lead_id"]=int(items[0].id)
                 return _result(req, _render_lead_detail(dto))
             _cache_put((str(actor.id)+":"+req.conversation_id) if req.conversation_id else None, "lead", [int(i.id) for i in items])
             return _result(req, _render_lead_list(items, total),
@@ -299,6 +308,11 @@ def _handle_read(db: Session, actor: SysUser, req: AssistantRequest,
         if intent == "FOLLOWUP_LIST":
             lead_id = _resolve_lead_id(db, actor, params)
             if lead_id is None:
+                if params.get("keyword"):
+                    items, total = _search_leads(db, actor, params)
+                    if total > 1:
+                        _cache_put(str(actor.id)+":"+req.conversation_id, "lead", [int(i.id) for i in items], wf.model_dump())
+                        return _result(req, _render_lead_list(items, total).replace("回复编号可查看详情。", "回复列表序号后继续本次操作。"), missing=["selection"])
                 return _result(req, "请提供客户姓名或编号，我帮你查跟进记录。",
                                missing=["lead_id"])
             items, total = crm_service.list_follow_ups(db, actor, lead_id, page_size=10)
@@ -414,8 +428,8 @@ def _handle_write(db: Session, actor: SysUser, req: AssistantRequest,
         if lead_id is None:
             items, total = _search_leads(db, actor, params)
             if total > 1:
-                _cache_put((str(actor.id)+":"+req.conversation_id) if req.conversation_id else None, "lead", [int(i.id) for i in items])
-                return _result(req, _render_lead_list(items, total), missing=["selection"])
+                _cache_put((str(actor.id)+":"+req.conversation_id) if req.conversation_id else None, "lead", [int(i.id) for i in items], wf.model_dump())
+                return _result(req, _render_lead_list(items, total).replace("回复编号可查看详情。", "回复列表序号后继续本次操作。"), missing=["selection"])
             return _result(req, "请提供客户姓名或编号。", missing=["lead_id"])
         lead = crm_service.get_lead(db, actor, lead_id)
 
@@ -440,7 +454,7 @@ def _handle_write(db: Session, actor: SysUser, req: AssistantRequest,
 
         target = str(params.get("target_status") or draft.get("target_status") or "").upper()
         if target not in ("FOLLOWING", "LOST"):
-            target = "LOST" if "流失" in req.message else "FOLLOWING"
+            return _result(req, "请明确目标状态。", missing=["target_status"])
         reason = str(draft.get("reason") or params.get("reason") or "").strip()
         if not reason:
             return _result(req, "请说明变更原因。", missing=["reason"])
@@ -467,11 +481,15 @@ def _handle_write(db: Session, actor: SysUser, req: AssistantRequest,
                 return _result(req, "当前没有待你审批的申请。")
             return _result(req, _render_services(items, total), missing=["service_id"])
         dto = student_service.get_service(db, actor, int(service_id))
-        decision = str(params.get("decision") or draft.get("decision") or "APPROVE").upper()
+        decision = str(params.get("decision") or draft.get("decision") or "").upper()
         if decision not in ("APPROVE", "REJECT"):
-            decision = "APPROVE"
+            return _result(req, "请明确批准还是驳回。", missing=["decision"])
+        if decision == "APPROVE" and dto.serviceType == "INFO_CHANGE":
+            return _result(req, "信息修改批准需要核验资料，请到申请详情页面办理。", warnings=["IDENTITY_VERIFICATION_REQUIRED"])
         note = str(params.get("note") or draft.get("note") or
-                   ("同意" if decision == "APPROVE" else "驳回")).strip()
+                   "").strip()
+        if not note:
+            return _result(req, "请填写审批说明。", missing=["note"])
         payload = m3_canonical.decide_service_payload(decision, note)
         proposal, answer = _proposal(
             actor, "DECIDE_SERVICE", entity_id=int(service_id),
@@ -490,8 +508,8 @@ def _handle_write(db: Session, actor: SysUser, req: AssistantRequest,
                 return _result(req, "售后池当前没有待受理工单。")
             return _result(req, _render_tickets(items, total), missing=["ticket_id"])
         ticket = staff_feedback_service.get_staff_ticket(db, actor, int(ticket_id))
-        action = str(params.get("action") or ("RESOLVE" if "解决" in req.message else "NOTE")).upper()
-        note = str(params.get("note") or draft.get("note") or "已跟进").strip()
+        action = str(params.get("action") or "").upper()
+        note = str(params.get("note") or draft.get("note") or "").strip()
         resolution = params.get("resolution") or draft.get("resolution")
         if action == "RESOLVE" and not resolution:
             return _result(req, "解决工单需要填写处理结果。", missing=["resolution"])
@@ -541,6 +559,7 @@ def _handle_write(db: Session, actor: SysUser, req: AssistantRequest,
         case_no = str(params.get("case_no") or draft.get("case_no") or "").strip()
         if not case_no:
             return _result(req, "请提供申请事项编号（case_no）。", missing=["case_no"])
+        academic_service.case_timeline(db, actor, case_no, page=1, page_size=1)
         latest = _latest_case_event(db, case_no)
         if latest is None:
             return _result(req, "未找到该申请事项。", missing=["case_no"])
@@ -551,7 +570,7 @@ def _handle_write(db: Session, actor: SysUser, req: AssistantRequest,
         stage = params.get("stage") or draft.get("stage")
         try:
             data = ApplicationAdvanceIn(
-                expected_sequence=int(params.get("expected_sequence") or latest.sequence_no),
+                expected_sequence=latest.sequence_no,
                 request_key=UUID(new_request_key()), event_kind=event_kind,
                 stage=stage, detail=detail,
                 assignee_user_id=params.get("assignee_user_id"),
@@ -576,8 +595,8 @@ def _handle_write(db: Session, actor: SysUser, req: AssistantRequest,
 # =============================================================
 # 入口
 # =============================================================
-def handle_enterprise_message(db: Session, actor: SysUser,
-                              req: AssistantRequest) -> AssistantResult:
+def _handle_enterprise_message(db: Session, actor: SysUser,
+                               req: AssistantRequest, state: dict) -> AssistantResult:
     if not actor.is_employee:
         raise ForbiddenError("仅员工可使用企业助手")
 
@@ -590,18 +609,37 @@ def handle_enterprise_message(db: Session, actor: SysUser,
             lead_id = cached["ids"][idx]
             try:
                 dto = crm_service.get_lead(db, actor, lead_id)
+                state["selected_lead_id"] = lead_id
                 runtime_state.drop("employee:"+str(actor.id)+":"+str(req.conversation_id))
+                pending = cached.get("pending")
+                if pending:
+                    pending = {**pending, "params": {**(pending.get("params") or {}), "lead_id": lead_id}}
+                    wf = WfEnterpriseOutput(**validate_enterprise(pending))
+                    state["_wf"] = wf.model_dump()
+                    if wf.missing_fields:
+                        return _result(req, wf.answer, missing=wf.missing_fields)
+                    return (_handle_write(db, actor, req, wf) if wf.intent in WRITE_INTENTS
+                            else _handle_read(db, actor, req, wf, state))
                 return _result(req, _render_lead_detail(dto))
-            except NotFoundError:
+            except (ForbiddenError, NotFoundError):
                 return _result(req, "该客户已不在你的可见范围。")
+        return _result(req, "请回复列表中有效的序号。", missing=["selection"])
+
+    if cached and not re.fullmatch(r"\d{1,2}", text):
+        runtime_state.drop("employee:"+str(actor.id)+":"+str(req.conversation_id))
 
     # 2) 调 Dify（事务外）
-    payload = _build_payload(db, actor, req)
+    payload = {**_build_payload(db, actor, req), **assistant_session.context(state)}
     actor_id=actor.id
     db.rollback()
     try:
         raw = run_enterprise_workflow(payload, user=actor_id)
+        knowledge = {k: raw.get(k, default) for k, default in (("answer", ""), ("sources", []), ("warnings", []))}
+        raw = validate_enterprise(raw, payload)
+        if raw["intent"] in {"KNOWLEDGE", "OTHER"}:
+            raw.update(knowledge)
         wf = WfEnterpriseOutput(**raw)
+        state["_wf"] = wf.model_dump()
     except (AIUnavailableError, AITimeoutError, AIBadResponseError) as exc:
         logger.info("企业助手 AI 不可用：%s", exc.__class__.__name__)
         return _result(req, "AI 服务暂不可用，请使用表单或工作台操作。",
@@ -616,11 +654,25 @@ def handle_enterprise_message(db: Session, actor: SysUser,
                        warnings=["INTENT_NOT_ALLOWED"])
 
     try:
+        if wf.missing_fields and wf.intent in READ_INTENTS | WRITE_INTENTS:
+            return _result(req, wf.answer or "请补全业务信息。", missing=wf.missing_fields, warnings=wf.warnings)
         if wf.intent in WRITE_INTENTS:
             return _handle_write(db, actor, req, wf)
         if wf.intent in READ_INTENTS:
-            return _handle_read(db, actor, req, wf)
+            return _handle_read(db, actor, req, wf, state)
         return _result(req, wf.answer or _KNOWLEDGE_REPLY,
                        sources=wf.sources, warnings=wf.warnings)
     except AppError as exc:
         return _result(req, exc.message, warnings=[exc.code])
+
+
+def handle_enterprise_message(db: Session, actor: SysUser, req: AssistantRequest) -> AssistantResult:
+    if not actor.is_employee:
+        raise ForbiddenError("仅员工可使用企业助手")
+    key, state = assistant_session.begin("enterprise", actor.id, req)
+    if req.message.strip() in assistant_session.CANCEL:
+        runtime_state.drop("employee:" + str(actor.id) + ":" + req.conversation_id)
+        return assistant_session.finish(key, state, req, None, _result(req, "已取消当前助手草稿。"))
+    result = _handle_enterprise_message(db, actor, req, state)
+    wf = state.pop("_wf", None)
+    return assistant_session.finish(key, state, req, wf, result)

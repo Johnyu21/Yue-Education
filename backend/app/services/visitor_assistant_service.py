@@ -180,6 +180,10 @@ def handle_visitor_message(db: Session, req: AssistantRequest, *,
         missing = [f for f in ("name", "mobile") if not merged.get(f)]
     else:
         missing = list(raw.get("missing_fields") or [])
+    if intent in _DRAFT_INTENTS and merged.get("mobile"):
+        import re
+        if not re.fullmatch(r"1[3-9]\d{9}", str(merged["mobile"])) and "mobile" not in missing:
+            missing.append("mobile")
 
     warnings = list(raw.get("warnings") or [])
     if intent == "ACTIVITY_DRAFT" and not merged.get("event_id") \

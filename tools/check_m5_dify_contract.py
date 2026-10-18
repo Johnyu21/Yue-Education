@@ -57,6 +57,17 @@ def validate(app, raw, payload):
 
 
 class ContractTests(unittest.TestCase):
+    def test_unknown_work_count_is_not_defaulted(self):
+        content = copy.deepcopy(CONTENT)
+        content["items"][0].pop("count")
+        with self.assertRaises(ValueError):
+            validate(ASSISTANT, {"answer": "草稿", "content": content}, DAILY)
+
+    def test_concrete_question_and_specialist_redirect_preserved(self):
+        value = validate(ASSISTANT, {"answer": "草稿", "next_question": "客户回访具体进行了几次？", "specialist_redirect": True, "content": CONTENT}, DAILY)
+        self.assertIn("几次", value["answer"])
+        self.assertIn("专项模块", value["answer"])
+
     def test_model_wrappers_and_invalid_json(self):
         raw = json.dumps({"narrative": "合成事实整理"}, ensure_ascii=False)
         for wrapper in (raw, "```json\n" + raw + "\n```", "~~~json\n" + raw + "\n~~~",

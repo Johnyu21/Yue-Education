@@ -11,9 +11,11 @@ from app.schemas.assistant import AssistantResult, Proposal, SourceItem, WfStude
 from app.schemas.service import ServiceCreateRequest
 from app.schemas.feedback import FeedbackCreateRequest
 from app.services import psych_service, student_service, feedback_service, academic_service
+from app.services import assistant_session
+from app.integrations.dify.contracts import validate_student
 
 
-def handle_student_message(db,user,req,auth_token=None):
+def _handle_student_message(db,user,req,state,auth_token=None):
     if not user.is_student:raise ForbiddenError("仅学生可使用学生助手")
     actor_id=user.id
     profile=student_repo.get_profile_by_user(db,actor_id)
@@ -28,11 +30,18 @@ def handle_student_message(db,user,req,auth_token=None):
     payload={"schema_version":"1.0","message":req.message,"message_id":str(req.message_id),
         "conversation_id":req.conversation_id,"input_kind":req.input_kind,"observe_emotion":consent,
         "context":req.context.model_dump() if req.context else None}
+    payload.update(assistant_session.context(state))
     db.rollback()
     def result(answer,**kwargs):
         return AssistantResult(conversationId=req.conversation_id,messageId=str(req.message_id),answer=answer,**kwargs)
     try:
-        wf=WfStudentOutput.model_validate(call_student_workflow(payload,actor_id))
+        raw=call_student_workflow(payload,actor_id)
+        knowledge={k:raw.get(k,default) for k,default in (("answer",""),("sources",[]),("warnings",[]))}
+        raw=validate_student(raw,payload)
+        if raw["intent"] in {"FAQ","OTHER"}:
+            raw.update(knowledge)
+        wf=WfStudentOutput.model_validate(raw)
+        state["_wf"]=wf.model_dump(exclude_none=True)
     except (AppError,ValidationError,ValueError,TypeError):
         return result("AI服务暂不可用，请使用业务表单办理。",aiStatus="UNAVAILABLE")
     profile=student_repo.get_profile_by_user(db,actor_id)
@@ -42,6 +51,8 @@ def handle_student_message(db,user,req,auth_token=None):
                 emotion_state=wf.observation.emotion_state,confidence=wf.observation.confidence)
     status=ai_status()
     try:
+        if wf.missing_fields:
+            return result(wf.answer or "请补全业务信息。",missingFields=wf.missing_fields,warnings=wf.warnings,aiStatus=status)
         if wf.intent=="PROFILE_QUERY":return result(student_service.get_self_overview(db,user).model_dump_json(),aiStatus=status)
         if wf.intent in {"SCORE_QUERY","SCHEDULE_QUERY","CASE_QUERY"}:
             handler={"SCORE_QUERY":academic_service.list_scores,"SCHEDULE_QUERY":academic_service.list_schedules,"CASE_QUERY":academic_service.list_application_cases}[wf.intent]
@@ -55,6 +66,7 @@ def handle_student_message(db,user,req,auth_token=None):
         draft=wf.draft or {};key=str(uuid4());operation=None
         if wf.intent=="SERVICE_DRAFT":
             data=ServiceCreateRequest(**{**draft,"request_key":key,"confirmed":True})
+            student_service.validate_service_content(data)
             preview=student_service.canonical_service_payload(data);operation="SUBMIT_SERVICE"
         elif wf.intent=="FEEDBACK_DRAFT":
             data=FeedbackCreateRequest(**{**draft,"request_key":key,"confirmed":True})
@@ -76,3 +88,14 @@ def handle_student_message(db,user,req,auth_token=None):
     except ValidationError as exc:
         return result("请补全业务信息后再确认。",missingFields=[str(e['loc'][0]) for e in exc.errors()],aiStatus=status)
     except AppError as exc:return result(exc.message,warnings=[exc.code],aiStatus=status)
+
+
+def handle_student_message(db,user,req,auth_token=None):
+    if not user.is_student:raise ForbiddenError("仅学生可使用学生助手")
+    key,state=assistant_session.begin("student",user.id,req)
+    if req.message.strip() in assistant_session.CANCEL:
+        out=AssistantResult(conversationId=req.conversation_id,messageId=str(req.message_id),answer="已取消当前助手草稿。",aiStatus=ai_status())
+        return assistant_session.finish(key,state,req,None,out)
+    out=_handle_student_message(db,user,req,state,auth_token)
+    wf=state.pop("_wf",None)
+    return assistant_session.finish(key,state,req,wf,out)
