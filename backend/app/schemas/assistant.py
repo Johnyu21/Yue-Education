@@ -66,7 +66,7 @@ class ObservationOutput(BaseModel):
 
 class WfStudentOutput(BaseModel):
     """Dify End 节点 output_json 的解析结构。"""
-    schema_version: str = "1.0"
+    schema_version: Literal["1.0"] = "1.0"
     answer: str = ""
     intent: str | None = None
     draft: dict | None = None

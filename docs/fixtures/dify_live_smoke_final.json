@@ -1,0 +1,782 @@
+{
+  "checked_at": "2026-10-18T19:03:21.674985+08:00",
+  "results": [
+    {
+      "case": "visitor_faq",
+      "audience": "visitor",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "d669927d-7dd2-4a65-b617-ea5827e24f26",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "FAQ",
+        "answer": "根据资料，赴德国留学的手续可分为院校/APS申请与签证申请两部分。资料给出的时间线为：前一年9—12月准备高考成绩认证、APS审核材料；当年1—3月提交APS审核（审核周期4—8周）；当年3—7月通过uni-assist或直接向大学递交申请（多数截止7月15日）；当年7—8月预约签证面谈并完成签证申请；当年9—10月等待签证结果并安排入境。签证申请流程包括：①准备有效护照、APS审核证书/证明、德国大学录取通知书、语言成绩证明、冻结账户证明、旅行医疗保险、MMR疫苗接种证明、个人简历和动机信等材料；②在德国驻华使领馆CSP平台注册并上传材料，预审通过后获得预约链接，需在3个月内完成面试；③按户籍领区选择签证中心并预约面签，建议提前3—6周；④携带原件及3份单面复印件参加面签，支付签证费并提供生物识别信息；⑤等待签证结果，审理周期通常4—8周，高峰期可能延长至10周。来源：record 1《06_德国留学政策指南.md》“学生签证申请流程（2026年CSP平台新政）”；record 2说明该指南为访客版整理材料，具体办理以APS、使领馆、外管局最新要求为准。",
+        "draft": null,
+        "missing_fields": [],
+        "sources": [
+          {
+            "document_id": "17051457-a38a-40b1-92b8-77671266a9ca",
+            "title": "06_德国留学政策指南.md",
+            "section": "1b048a3d-3c9d-4d9b-b9fb-e4ea6a56965a"
+          },
+          {
+            "document_id": "17051457-a38a-40b1-92b8-77671266a9ca",
+            "title": "06_德国留学政策指南.md",
+            "section": "163c2862-15b9-4e5e-bd5e-651f86cd73e6"
+          }
+        ],
+        "warnings": [],
+        "mode": "VISITOR_ANSWER"
+      },
+      "elapsed_seconds": 8.86,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"schema_version\":\"1.0\",\"mode\":\"VISITOR_ANSWER\",\"intent\":\"FAQ\",\"answer\":\"赴德国留学的申请手续通常涉及以下环节：先确认目标院校与专业的入学要求，准备学历、成绩和语言能力等申请材料；通过学校指定渠道提交申请并留意截止时间；获得录取后办理资金证明、医疗保险等签证所需材料，再向德国驻华使领馆申请留学签证；入境后按当地规定完成住址登记、居留许可等手续。具体材料清单、语言要求和签证流程会因院校、专业和个人情况不同而有差异，建议以目标院校及德国官方最新公告为准。\",\"draft\":null,\"missing_fields\":[],\"sources\":[],\"warnings\":[]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅知识问答进入检索",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge",
+          "type": "knowledge-retrieval",
+          "title": "在工作室选择对应知识库",
+          "status": "succeeded",
+          "retrieved_count": 3,
+          "source_titles": [
+            "06_德国留学政策指南.md",
+            "06_德国留学政策指南.md",
+            "06_德国留学政策指南.md"
+          ]
+        },
+        {
+          "id": "knowledge_context",
+          "type": "code",
+          "title": "核验实际检索来源",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_llm",
+          "type": "llm",
+          "title": "依据已核验资料回答",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"answer\":\"根据资料，赴德国留学的手续可分为院校/APS申请与签证申请两部分。资料给出的时间线为：前一年9—12月准备高考成绩认证、APS审核材料；当年1—3月提交APS审核（审核周期4—8周）；当年3—7月通过uni-assist或直接向大学递交申请（多数截止7月15日）；当年7—8月预约签证面谈并完成签证申请；当年9—10月等待签证结果并安排入境。签证申请流程包括：①准备有效护照、APS审核证书/证明、德国大学录取通知书、语言成绩证明、冻结账户证明、旅行医疗保险、MMR疫苗接种证明、个人简历和动机信等材料；②在德国驻华使领馆CSP平台注册并上传材料，预审通过后获得预约链接，需在3个月内完成面试；③按户籍领区选择签证中心并预约面签，建议提前3—6周；④携带原件及3份单面复印件参加面签，支付签证费并提供生物识别信息；⑤等待签证结果，审理周期通常4—8周，高峰期可能延长至10周。来源：record 1《06_德国留学政策指南.md》“学生签证申请流程（2026年CSP平台新政）”；record 2说明该指南为访客版整理材料，具体办理以APS、使领馆、外管局最新要求为准。\",\"citation_ids\":[\"1\",\"2\"]}"
+        },
+        {
+          "id": "knowledge_validate",
+          "type": "code",
+          "title": "引用白名单及无依据兜底",
+          "status": "succeeded"
+        },
+        {
+          "id": "end_knowledge",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "visitor_lead",
+      "audience": "visitor",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "59c63c35-6846-4d2c-aa50-dd4be2fad357",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "LEAD_DRAFT",
+        "answer": "请核对咨询或活动意向，确认后由系统办理。活动资格及余位以系统核验为准。",
+        "draft": {
+          "name": "联调测试访客",
+          "mobile": "13912345678"
+        },
+        "missing_fields": [],
+        "sources": [],
+        "warnings": [],
+        "mode": "VISITOR_ANSWER"
+      },
+      "elapsed_seconds": 1.38,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"schema_version\":\"1.0\",\"mode\":\"VISITOR_ANSWER\",\"intent\":\"LEAD_DRAFT\",\"answer\":\"已记录您的联系意向，请核对：姓名联调测试访客，手机号13912345678。\",\"draft\":{\"name\":\"联调测试访客\",\"mobile\":\"13912345678\"},\"missing_fields\":[],\"sources\":[],\"warnings\":[]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅知识问答进入检索",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "student_faq",
+      "audience": "student",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "81812a5c-b825-4c31-a0c7-768c86bbeaf2",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "FAQ",
+        "answer": "根据《06_德国留学政策指南.md》，学生签证入境后应在2周内前往当地居民登记处（Bürgeramt）完成住址登记。",
+        "draft": null,
+        "missing_fields": [],
+        "sources": [
+          {
+            "document_id": "17051457-a38a-40b1-92b8-77671266a9ca",
+            "title": "06_德国留学政策指南.md",
+            "section": "a50d5573-b977-4778-8173-b9731374a99c"
+          }
+        ],
+        "warnings": [
+          "NO_VERIFIED_SOURCE"
+        ]
+      },
+      "elapsed_seconds": 8.83,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"schema_version\":\"1.0\",\"intent\":\"FAQ\",\"answer\":\"德国留学生入境后，一般应在搬入住所后14天内到当地 Bürgeramt/Einwohnermeldeamt（居民登记处）办理住址登记（Anmeldung）。通常需要预约，并携带护照、签证或居留许可、房东出具的入住确认（Wohnungsgeberbestätigung）及登记表；各地具体时限和材料可能不同，请以当地市政官网或学校国际处资料为准。当前未提供可核验的资料片段，无法注明具体来源。\",\"draft\":null,\"missing_fields\":[],\"sources\":[],\"warnings\":[\"NO_VERIFIED_SOURCE\"]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅知识问答进入检索",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge",
+          "type": "knowledge-retrieval",
+          "title": "在工作室选择对应知识库",
+          "status": "succeeded",
+          "retrieved_count": 3,
+          "source_titles": [
+            "06_德国留学政策指南.md",
+            "06_德国留学政策指南.md",
+            "04_中德精英人才共建计划.md"
+          ]
+        },
+        {
+          "id": "knowledge_context",
+          "type": "code",
+          "title": "核验实际检索来源",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_llm",
+          "type": "llm",
+          "title": "依据已核验资料回答",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"answer\":\"根据《06_德国留学政策指南.md》，学生签证入境后应在2周内前往当地居民登记处（Bürgeramt）完成住址登记。\",\"citation_ids\":[\"1\"]}"
+        },
+        {
+          "id": "knowledge_validate",
+          "type": "code",
+          "title": "引用白名单及无依据兜底",
+          "status": "succeeded"
+        },
+        {
+          "id": "end_knowledge",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "student_leave",
+      "audience": "student",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "75d6afdd-70a3-4bdf-9ff5-1d2ed42a9376",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "SERVICE_DRAFT",
+        "answer": "请补充：start_at、end_at",
+        "draft": {
+          "service_type": "LEAVE",
+          "title": "个人事务请假",
+          "description": "个人事务"
+        },
+        "missing_fields": [
+          "start_at",
+          "end_at"
+        ],
+        "sources": [],
+        "warnings": []
+      },
+      "elapsed_seconds": 1.73,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"schema_version\":\"1.0\",\"intent\":\"SERVICE_DRAFT\",\"answer\":\"请补充请假的开始时间和结束时间，具体到日期和时刻。\",\"draft\":{\"service_type\":\"LEAVE\",\"title\":\"个人事务请假\",\"description\":\"个人事务\"},\"missing_fields\":[\"start_at\",\"end_at\"],\"sources\":[],\"warnings\":[]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅知识问答进入检索",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "student_staff_boundary",
+      "audience": "student",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "9e04806b-bc6b-4777-9b40-51288024a682",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "OTHER",
+        "answer": "学生助手不提供员工内部资料，请咨询学生服务或办理本人业务。",
+        "draft": null,
+        "missing_fields": [],
+        "sources": [],
+        "warnings": [
+          "OUT_OF_SCOPE"
+        ]
+      },
+      "elapsed_seconds": 1.36,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"schema_version\":\"1.0\",\"intent\":\"OTHER\",\"answer\":\"你提出的公司新人指南和员工绩效薪酬制度属于员工内部资料，不在学生服务范围内，我无法提供。如你有学生相关的请假、考务、成绩、日程或反馈等需求，我可以继续帮你。\",\"draft\":null,\"missing_fields\":[],\"sources\":[],\"warnings\":[\"OUT_OF_SCOPE\"]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅知识问答进入检索",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "student_admin_route",
+      "audience": "student",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "54ddb9c7-c680-47a1-8332-d24af774aa01",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "OTHER",
+        "answer": "请到行政服务页面查看本人请假、考务或资料更正申请的处理结果。",
+        "draft": null,
+        "missing_fields": [],
+        "sources": [],
+        "warnings": [
+          "ADMIN_SERVICE_PAGE"
+        ]
+      },
+      "elapsed_seconds": 1.27,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"schema_version\":\"1.0\",\"intent\":\"OTHER\",\"answer\":\"请假申请的审批进度不属于我可直接查询的范围，请前往行政服务页面查看已批准的请假申请。\",\"draft\":null,\"missing_fields\":[],\"sources\":[],\"warnings\":[\"ADMIN_SERVICE_PAGE\"]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅知识问答进入检索",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "enterprise_faq",
+      "audience": "enterprise",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "458f6ee9-bd3a-44df-bb39-0e7d5fd8c3eb",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "KNOWLEDGE",
+        "answer": "根据《公司新人指南》，新人融入计划包括：入职首周参加公司文化培训（09:00-18:00）；入职首月与导师进行2次职业发展规划讨论；季度参加公司组织的海外学历提升经验分享会。来源：《公司新人指南》。",
+        "draft": null,
+        "missing_fields": [],
+        "sources": [
+          {
+            "document_id": "ad82a849-adfe-45e2-8111-d1f84c9755ec",
+            "title": "02_公司新人指南.md",
+            "section": "ff5e2576-50b6-4ff3-94a9-a95cb5210700"
+          },
+          {
+            "document_id": "ad82a849-adfe-45e2-8111-d1f84c9755ec",
+            "title": "02_公司新人指南.md",
+            "section": "12fe579f-3c68-4609-9cfe-e5733c11dd0e"
+          }
+        ],
+        "warnings": [],
+        "params": {},
+        "action": null
+      },
+      "elapsed_seconds": 6.92,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"schema_version\":\"1.0\",\"intent\":\"KNOWLEDGE\",\"action\":null,\"params\":{},\"draft\":null,\"answer\":\"\",\"missing_fields\":[],\"sources\":[],\"warnings\":[]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅知识问答进入检索",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge",
+          "type": "knowledge-retrieval",
+          "title": "在工作室选择对应知识库",
+          "status": "succeeded",
+          "retrieved_count": 2,
+          "source_titles": [
+            "02_公司新人指南.md",
+            "02_公司新人指南.md"
+          ]
+        },
+        {
+          "id": "knowledge_context",
+          "type": "code",
+          "title": "核验实际检索来源",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_llm",
+          "type": "llm",
+          "title": "依据已核验资料回答",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"answer\":\"根据《公司新人指南》，新人融入计划包括：入职首周参加公司文化培训（09:00-18:00）；入职首月与导师进行2次职业发展规划讨论；季度参加公司组织的海外学历提升经验分享会。来源：《公司新人指南》。\",\"citation_ids\":[\"1\",\"2\"]}"
+        },
+        {
+          "id": "knowledge_validate",
+          "type": "code",
+          "title": "引用白名单及无依据兜底",
+          "status": "succeeded"
+        },
+        {
+          "id": "end_knowledge",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "enterprise_todo",
+      "audience": "enterprise",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "4a4c2c12-bad4-4aed-8411-956f31abbb6f",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "TODO_LIST",
+        "answer": "已整理业务请求，待后端核验。",
+        "draft": null,
+        "missing_fields": [],
+        "sources": [],
+        "warnings": [],
+        "params": {},
+        "action": "query"
+      },
+      "elapsed_seconds": 1.64,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"schema_version\":\"1.0\",\"intent\":\"TODO_LIST\",\"action\":null,\"params\":{},\"draft\":null,\"answer\":\"\",\"missing_fields\":[],\"sources\":[],\"warnings\":[]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅知识问答进入检索",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "assessment",
+      "audience": "assessment",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "4b201307-1ed3-4231-bf6c-0f4bf1c84d09",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "mode": "ASSESSMENT_EXTRACT",
+        "facts": {
+          "education": "本科",
+          "city": "广州"
+        },
+        "evidence": [
+          {
+            "field": "city",
+            "source_ref": "resume:p2",
+            "snippet": "居住城市广州"
+          }
+        ],
+        "missing_fields": [],
+        "warnings": []
+      },
+      "elapsed_seconds": 2.47,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取简历事实与原文证据",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"schema_version\":\"1.0\",\"mode\":\"ASSESSMENT_EXTRACT\",\"facts\":{\"education\":\"本科\",\"city\":\"广州\"},\"evidence\":[{\"field\":\"city\",\"source_ref\":\"resume:p2\",\"snippet\":\"居住城市广州\"}],\"missing_fields\":[],\"warnings\":[]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "daily",
+      "audience": "report_assistant",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "06ce75a8-4a25-4b18-a0ab-0f49918b92e4",
+      "workflow_status": "succeeded",
+      "output": {
+        "answer": "日报草稿已整理，请到“我的日报”核对后自行提交审核；明日计划可选填。",
+        "content": {
+          "work_summary": "整理公开活动资料2次",
+          "difficulties": "无",
+          "next_plan": "",
+          "items": [
+            {
+              "category": "OTHER",
+              "description": "整理公开活动资料",
+              "count": 2,
+              "student_ids": [],
+              "source_event_id": null,
+              "result": ""
+            }
+          ]
+        },
+        "missing_fields": []
+      },
+      "elapsed_seconds": 2.48,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "接收后端核验数据",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核对业务入参与字段白名单",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "整理普通日报",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"answer\":\"请核对草稿\",\"next_question\":\"\",\"specialist_redirect\":false,\"content\":{\"work_summary\":\"整理公开活动资料2次\",\"items\":[{\"category\":\"OTHER\",\"description\":\"整理公开活动资料\",\"count\":2,\"student_ids\":[],\"source_event_id\":null,\"result\":\"\"}],\"difficulties\":\"无\",\"next_plan\":\"\"}}"
+        },
+        {
+          "id": "validate",
+          "type": "code",
+          "title": "核验业务契约并净化输出",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "返回后端继续校验",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "report",
+      "audience": "report_generation",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "202f72e6-19ad-476c-a084-418c5f9546e8",
+      "workflow_status": "succeeded",
+      "output": {
+        "narrative": "日报日汇总\n统计期间：2026-10-18 至 2026-10-18\n统计范围：合成联调范围\n\n一、后端核定指标\n普通工作次数：2次\n统计口径：合成验收资料\n\n二、数据说明\n仅合成验收资料\n\n三、工作情况与待跟进事项\n本期为2026年10月18日日报整理，范围为合成联调范围。根据当天已审核日报记录，普通工作次数为2次。日报反映的工作内容为整理公开活动资料2次；日报中注明没有困难。相关记录为合成验收资料，内容较简，具体工作对象、完成情况等暂无更细记录，待核对补充。本期日报未提供未完成事项、待核对事项或明日计划，暂不列示。"
+      },
+      "elapsed_seconds": 1.39,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "接收后端核验数据",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核对业务入参与字段白名单",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "整理六类报告正文",
+          "status": "succeeded",
+          "has_reasoning_prefix": false,
+          "model_text": "{\"narrative\":\"本期为2026年10月18日日报整理，范围为合成联调范围。根据当天已审核日报记录，普通工作次数为2次。日报反映的工作内容为整理公开活动资料2次；日报中注明没有困难。相关记录为合成验收资料，内容较简，具体工作对象、完成情况等暂无更细记录，待核对补充。本期日报未提供未完成事项、待核对事项或明日计划，暂不列示。\"}"
+        },
+        {
+          "id": "validate",
+          "type": "code",
+          "title": "核验业务契约并净化输出",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "返回后端继续校验",
+          "status": "succeeded"
+        }
+      ]
+    }
+  ]
+}

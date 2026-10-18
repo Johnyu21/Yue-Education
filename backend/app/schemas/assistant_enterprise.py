@@ -6,10 +6,11 @@ Dify 只输出意图/参数/草稿；写操作由后端签发提议卡片（conf
 """
 from app.core.dto import BaseModel
 from pydantic import Field
+from typing import Literal
 
 
 class WfEnterpriseOutput(BaseModel):
-    schema_version: str = "1.0"
+    schema_version: Literal["1.0"] = "1.0"
     intent: str = "OTHER"
     action: str | None = None
     params: dict = Field(default_factory=dict)

@@ -51,7 +51,9 @@ def workflow(settings,key,payload,uid):
                     break
     if final and final.get("status")=="succeeded" and not failures:
         return parse_json_output(final["outputs"]["output_json"])
-    raise ValueError("Dify工作流未成功或响应不完整")
+    failed_nodes=",".join(str(n.get("node_id", "unknown")) for n in failures) or "none"
+    run_id=str((final or {}).get("id", "unknown"))
+    raise ValueError("Dify工作流未成功(status="+str((final or {}).get("status"))+", nodes="+failed_nodes+", run="+run_id+")")
 
 
 def number(text):

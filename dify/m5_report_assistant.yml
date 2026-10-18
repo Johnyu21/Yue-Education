@@ -1,81 +1,147 @@
 # M5 整合业务契约版；可重新运行 tools/build_m5_dify_workflows.py 生成。
 # 导入后核对模型供应商、凭据与发布状态；离线校验不代表真实Dify联调通过。
-version: 0.5.0
-kind: app
 app:
-  name: M5_报告助手
   description: 整合业务契约版：普通日报多轮收集与核实查询；不接收心理、投诉明细或专项事件引用；状态和提交由后端管理
-  mode: workflow
-  icon: 📋
-  icon_type: emoji
+  icon: 🤖
   icon_background: '#FDE8E7'
+  mode: workflow
+  name: M5_报告助手
   use_icon_as_answer_icon: false
 dependencies:
-- type: marketplace
+- current_identifier: null
+  type: marketplace
   value:
     marketplace_plugin_unique_identifier: langgenius/deepseek:0.0.24@9e12eef09973667f0eaf4f082af883167e1de88740b22e71e71488d020c3778a
     version: null
+kind: app
+version: 0.5.0
 workflow:
   conversation_variables: []
   environment_variables: []
   features:
-    opening_statement: ''
-    suggested_questions: []
-    suggested_questions_after_answer:
-      enabled: false
-    speech_to_text:
-      enabled: false
-    text_to_speech:
-      enabled: false
-      language: ''
-      voice: ''
-    sensitive_word_avoidance:
-      enabled: false
-    retriever_resource:
-      enabled: false
     file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
       enabled: false
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 20
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
       image:
         enabled: false
         number_limits: 3
         transfer_methods:
         - local_file
         - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
   graph:
-    nodes:
-    - id: start
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: code
+      id: start-prepare
+      source: start
+      sourceHandle: source
+      target: prepare
+      targetHandle: target
       type: custom
-      data:
-        title: 接收后端核验数据
-        type: start
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: prepare-llm
+      source: prepare
+      sourceHandle: source
+      target: llm
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: llm-validate
+      source: llm
+      sourceHandle: source
+      target: validate
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: end
+      id: validate-end
+      source: validate
+      sourceHandle: source
+      target: end
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
         desc: ''
         selected: false
+        title: 接收后端核验数据
+        type: start
         variables:
         - label: 业务输入JSON
-          variable: payload_json
-          type: paragraph
-          required: true
           max_length: 60000
           options: []
+          required: true
+          type: paragraph
+          variable: payload_json
+      height: 108
+      id: start
       position:
         x: 80
         y: 260
       positionAbsolute:
         x: 80
         y: 260
-      width: 244
-      height: 116
+      selected: true
       sourcePosition: right
       targetPosition: left
-      selected: false
-    - id: prepare
       type: custom
-      data:
-        title: 核对业务入参与字段白名单
-        type: code
-        desc: ''
-        selected: false
-        code_language: python3
+      width: 242
+    - data:
         code: |
           import json
           import re
@@ -125,7 +191,7 @@ workflow:
                       raise ValueError("Specialist details do not belong in ordinary dailies")
                   if item.get("source_event_id") is not None:
                       raise ValueError("Ordinary dailies cannot reference specialist events")
-                  count = item.get("count", 1)
+                  count = item.get("count")
                   if type(count) is not int or not 0 <= count <= 10000:
                       raise ValueError("Invalid work count")
                   students = ids(item.get("student_ids", []))
@@ -165,42 +231,52 @@ workflow:
                       selected_student_ids=ids(payload.get("selected_student_ids", [])),
                       content_policy="仅普通工作；禁止心理原文、投诉明细、专项事件引用及诊断。专项内容请到专项模块处理。")
               return {"normalized_json": json.dumps(result, ensure_ascii=False, allow_nan=False)}
-        variables:
-        - variable: payload_json
-          value_selector:
-          - start
-          - payload_json
+        code_language: python3
+        desc: ''
         outputs:
           normalized_json:
-            type: string
             children: null
+            type: string
+        selected: false
+        title: 核对业务入参与字段白名单
+        type: code
+        variables:
+        - value_selector:
+          - start
+          - payload_json
+          variable: payload_json
+      height: 51
+      id: prepare
       position:
         x: 390
         y: 260
       positionAbsolute:
         x: 390
         y: 260
-      width: 244
-      height: 116
+      selected: false
       sourcePosition: right
       targetPosition: left
-      selected: false
-    - id: llm
       type: custom
-      data:
-        title: 整理普通日报
-        type: llm
-        desc: ''
-        selected: false
+      width: 241
+    - data:
         context:
           enabled: false
           variable_selector: []
+        desc: ''
+        memory:
+          query_prompt_template: ''
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 10
         model:
-          provider: langgenius/deepseek/deepseek
-          name: deepseek-chat
-          mode: chat
           completion_params:
             temperature: 0.1
+          mode: chat
+          name: deepseek-v4-flash
+          provider: langgenius/deepseek/deepseek
         prompt_template:
         - id: system
           role: system
@@ -209,12 +285,14 @@ workflow:
             只接受后端task=DAILY_COLLECT或QUERY，不查询数据库、不调用接口、不保存、不提交、不审核。
             QUERY：只输出 {"answer":"原样复制verified_answer"}。数字、人员和范围只能来自verified_answer。
             DAILY_COLLECT：结合最近对话合并现有draft，只输出JSON：
-            {"answer":"追问或请核对草稿","content":{"work_summary":"","items":[{"category":"CUSTOMER","description":"普通工作事实","count":1,"student_ids":[],"source_event_id":null,"result":""}],"difficulties":"","next_plan":""}}
+            {"answer":"追问或请核对草稿","next_question":"存在具体缺项时的一个追问，没有则空字符串","specialist_redirect":false,"content":{"work_summary":"","items":[{"category":"CUSTOMER","description":"普通工作事实","count":1,"student_ids":[],"source_event_id":null,"result":""}],"difficulties":"","next_plan":""}}
             普通工作category仅CUSTOMER、DELIVERY、ENROLLMENT、LEAVE、OTHER。禁止PSYCH、COMPLAINT及所有专项事件引用，source_event_id必须null。
             不要把心理原文、投诉明细、诊断、风险标签写入任何文本字段，也不能改成OTHER后混入。遇到专项内容，保留已有普通日报，提示去专项模块；普通工作与专项内容混合时只整理普通工作。不要重复输出敏感内容。
             work_summary和difficulties必须由员工提供，未提供则空字符串。明确“无/没有困难”时difficulties填“无”，不再追问。next_plan可空，永不必填。
+            员工在message里描述的普通工作本身就是work_summary的事实来源，可忠实简写为概述，不要求再单独提供“工作概述”字段；例如“今天整理公开活动资料2次，没有困难”须填work_summary="整理公开活动资料2次"、difficulties="无"，不能把work_summary留空后重复追问。
             用户只补充困难或明日计划时，完整保留现有今日工作和items。用户明确更正时修改对应项，不重复追加同一工作；只有明确要求重新开始/清空日报才清空。history用于消解指代，不能用历史消息重复增加次数。
-            不能编造姓名、工作量、结果、时间。count表示员工申报工作次数，不表示新增学生人数；未知工作量不创建需要猜测count的新item，可先把已知事实写入work_summary并追问。items允许为空。
+            不能编造姓名、工作量、结果、时间。count表示员工申报工作次数，不表示新增学生人数；未知工作量不创建需要猜测count的新item，可先把已知事实写入work_summary并在next_question追问数量。items允许为空。
+            next_question只放一个必要的澄清问题，不放保存、完成或审批结论；没有具体问题时填空字符串。遇到心理/投诉明细时specialist_redirect=true，仅引导专项模块且不复述敏感原文。
             student_ids仅可来自selected_student_ids或draft已有student_ids；姓名不能推导ID，未选择学生时保持空数组，不能把选择的学生自动绑定到所有工作。
             description非空且<=2000字，items<=100项，每项count为0至10000整数，关联学生<=20。work_summary<=5000字，difficulties和next_plan各<=3000字。
             不得输出权限、confirmed、request_key、version或提交结果。所有输出仅为待员工核对的草稿；不宣称已保存或已审核。
@@ -222,40 +300,30 @@ workflow:
         - id: input
           role: user
           text: '{{#prepare.normalized_json#}}'
+        retry_config:
+          max_retries: 1
+          retry_enabled: true
+          retry_interval: 1000
+        selected: false
+        title: 整理普通日报
+        type: llm
         variables: []
         vision:
           enabled: false
-        memory:
-          query_prompt_template: ''
-          role_prefix:
-            user: ''
-            assistant: ''
-          window:
-            enabled: false
-            size: 10
-        retry_config:
-          max_retries: 1
-          retry_interval: 1000
-          retry_enabled: true
+      height: 116
+      id: llm
       position:
         x: 700
         y: 260
       positionAbsolute:
         x: 700
         y: 260
-      width: 244
-      height: 116
+      selected: false
       sourcePosition: right
       targetPosition: left
-      selected: false
-    - id: validate
       type: custom
-      data:
-        title: 核验业务契约并净化输出
-        type: code
-        desc: ''
-        selected: false
-        code_language: python3
+      width: 241
+    - data:
         code: |
           import json
           import re
@@ -305,7 +373,7 @@ workflow:
                       raise ValueError("Specialist details do not belong in ordinary dailies")
                   if item.get("source_event_id") is not None:
                       raise ValueError("Ordinary dailies cannot reference specialist events")
-                  count = item.get("count", 1)
+                  count = item.get("count")
                   if type(count) is not int or not 0 <= count <= 10000:
                       raise ValueError("Invalid work count")
                   students = ids(item.get("student_ids", []))
@@ -333,15 +401,32 @@ workflow:
                   content = daily_content(value.get("content"), allowed)
                   missing = [key for key in ("work_summary", "difficulties") if not content[key].strip()]
                   answer = value["answer"].strip()
+                  question = text(value.get("next_question", ""), "next_question", 1000).strip()
+                  redirect = value.get("specialist_redirect", False)
+                  if type(redirect) is not bool:
+                      raise ValueError("Invalid specialist_redirect")
                   if "work_summary" in missing:
                       answer = "请补充今日工作（仅普通工作）。心理与投诉明细请在专项模块记录。"
                   elif "difficulties" in missing:
                       answer = "今天是否遇到困难或需要协助？没有可以回复“无”。"
                   else:
                       answer = "日报草稿已整理，请到“我的日报”核对后自行提交审核；明日计划可选填。"
+                  if question:
+                      answer = "还需核对：" + question
+                  if redirect:
+                      answer = "心理和投诉明细请到专项模块记录，普通日报仅保留普通工作。" + answer
                   # The backend also recalculates missing_fields and continues to authorize all writes.
                   output = {"answer": answer, "content": content, "missing_fields": missing}
               return {"output_json": json.dumps(output, ensure_ascii=False, allow_nan=False)}
+        code_language: python3
+        desc: ''
+        outputs:
+          output_json:
+            children: null
+            type: string
+        selected: false
+        title: 核验业务契约并净化输出
+        type: code
         variables:
         - variable: raw
           value_selector:
@@ -351,95 +436,45 @@ workflow:
           value_selector:
           - prepare
           - normalized_json
-        outputs:
-          output_json:
-            type: string
-            children: null
+      height: 51
+      id: validate
       position:
         x: 1010
         y: 260
       positionAbsolute:
         x: 1010
         y: 260
-      width: 244
-      height: 116
+      selected: false
       sourcePosition: right
       targetPosition: left
-      selected: false
-    - id: end
       type: custom
-      data:
-        title: 返回后端继续校验
-        type: end
+      width: 241
+    - data:
         desc: ''
-        selected: false
         outputs:
-        - variable: output_json
-          value_selector:
+        - value_selector:
           - validate
           - output_json
           value_type: string
+          variable: output_json
+        selected: false
+        title: 返回后端继续校验
+        type: end
+      height: 87
+      id: end
       position:
         x: 1320
         y: 260
       positionAbsolute:
         x: 1320
         y: 260
-      width: 244
-      height: 116
+      selected: false
       sourcePosition: right
       targetPosition: left
-      selected: false
-    edges:
-    - id: start-prepare
-      source: start
-      target: prepare
-      sourceHandle: source
-      targetHandle: target
       type: custom
-      zIndex: 0
-      data:
-        sourceType: start
-        targetType: code
-        isInIteration: false
-        isInLoop: false
-    - id: prepare-llm
-      source: prepare
-      target: llm
-      sourceHandle: source
-      targetHandle: target
-      type: custom
-      zIndex: 0
-      data:
-        sourceType: code
-        targetType: llm
-        isInIteration: false
-        isInLoop: false
-    - id: llm-validate
-      source: llm
-      target: validate
-      sourceHandle: source
-      targetHandle: target
-      type: custom
-      zIndex: 0
-      data:
-        sourceType: llm
-        targetType: code
-        isInIteration: false
-        isInLoop: false
-    - id: validate-end
-      source: validate
-      target: end
-      sourceHandle: source
-      targetHandle: target
-      type: custom
-      zIndex: 0
-      data:
-        sourceType: code
-        targetType: end
-        isInIteration: false
-        isInLoop: false
+      width: 241
     viewport:
-      x: 0
-      y: 0
+      x: -25.349999999999994
+      y: 111.64999999999998
       zoom: 0.7
+  rag_pipeline_variables: []

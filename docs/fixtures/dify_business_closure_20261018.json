@@ -1,0 +1,3351 @@
+{
+  "tested_at": "2026-10-18T11:04:06.428Z",
+  "test_marker": "联调测试-19106581",
+  "ui_receipt": "0738dfe0-5503-4b3f-97c6-4dde554550a5",
+  "receipts": [
+    {
+      "step": "employee_create_lead",
+      "result": {
+        "status": 201,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "lead_id": "8",
+          "created": true,
+          "version": 2
+        },
+        "request_id": "4fdd73be-7e82-433d-a683-df6c0ece0480"
+      }
+    },
+    {
+      "step": "create_lead_replay",
+      "result": {
+        "status": 201,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "created": true,
+          "lead_id": "8",
+          "version": 2
+        },
+        "request_id": "e8c79644-8c39-4e39-891f-592cdb00db4a"
+      }
+    },
+    {
+      "step": "add_followup",
+      "result": {
+        "status": 201,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "follow_up_id": "2",
+          "lead_version": 3,
+          "next_follow_up_at": null
+        },
+        "request_id": "d002c737-76a9-4d97-a598-52eeff9216fa"
+      }
+    },
+    {
+      "step": "lead_status",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "id": "8",
+          "status": "FOLLOWING",
+          "version": 4
+        },
+        "request_id": "64402dbd-87d1-4226-943a-1ee588b4afa6"
+      }
+    },
+    {
+      "step": "student_leave_submit",
+      "draft": {
+        "conversationId": "b7cfe43a-493a-4c8f-a5f2-e5c129acfe10",
+        "messageId": "67c92785-aa55-4ee5-af0e-072a77914008",
+        "answer": "请核对确认卡，确认后才会提交。",
+        "sources": [],
+        "missingFields": [],
+        "proposal": {
+          "operation": "SUBMIT_SERVICE",
+          "entityId": null,
+          "preview": {
+            "service_type": "LEAVE",
+            "title": "联调测试-19106581个人事务请假",
+            "description": "联调测试-19106581个人事务",
+            "start_at": "2026-10-20T09:00:00+08:00",
+            "end_at": "2026-10-20T18:00:00+08:00",
+            "change_request": null
+          },
+          "expectedVersion": null,
+          "requestKey": "[REDACTED]",
+          "confirmationToken": "[REDACTED]",
+          "expiresAt": "2026-10-18T10:31:20.220618Z"
+        },
+        "aiStatus": "LIVE",
+        "warnings": []
+      },
+      "result": {
+        "status": 201,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "id": "2",
+          "status": "PENDING",
+          "assignee_display_name": "联调班主任",
+          "version": 1
+        },
+        "request_id": "6c670518-6427-478d-8f77-38aeefb35848"
+      }
+    },
+    {
+      "step": "leave_approve",
+      "result": {
+        "status": 500,
+        "code": "INTERNAL_ERROR",
+        "message": "服务器内部错误",
+        "data": null,
+        "errors": [],
+        "request_id": ""
+      }
+    },
+    {
+      "step": "student_reads_approval",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "id": "2",
+          "studentProfileId": "2",
+          "studentDisplayName": "联调学生",
+          "serviceType": "LEAVE",
+          "title": "联调测试-19106581个人事务请假",
+          "description": "联调测试-19106581个人事务",
+          "startAt": "2026-10-20T01:00:00Z",
+          "endAt": "2026-10-20T10:00:00Z",
+          "changeRequest": null,
+          "assigneeDisplayName": "联调班主任",
+          "status": "PENDING",
+          "decisionNote": null,
+          "decidedAt": null,
+          "createTime": "2026-10-18T10:26:37.442205Z",
+          "version": 1
+        },
+        "request_id": "7885b492-0036-493e-ba8c-3ac8edaea415"
+      }
+    },
+    {
+      "step": "leave_approve_fixed",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "id": "2",
+          "studentProfileId": "2",
+          "studentDisplayName": "联调学生",
+          "serviceType": "LEAVE",
+          "title": "联调测试-19106581个人事务请假",
+          "description": "联调测试-19106581个人事务",
+          "startAt": "2026-10-20T01:00:00Z",
+          "endAt": "2026-10-20T10:00:00Z",
+          "changeRequest": null,
+          "assigneeDisplayName": "联调班主任",
+          "status": "APPROVED",
+          "decisionNote": "联调测试-19106581已核对请假时段，同意。",
+          "decidedAt": "2026-10-18T10:30:07.073927Z",
+          "createTime": "2026-10-18T10:26:37.442205Z",
+          "version": 2
+        },
+        "request_id": "6b15f894-f163-43c2-9361-1b810be88b19"
+      }
+    },
+    {
+      "step": "student_assistant_read_approval",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "conversationId": "ce225302-addd-4985-989b-779568f4d94f",
+          "messageId": "ec44766c-557d-4524-9712-7f2613584092",
+          "answer": "{\"items\": [], \"total\": 0}",
+          "sources": [],
+          "missingFields": [],
+          "proposal": null,
+          "aiStatus": "LIVE",
+          "warnings": []
+        },
+        "request_id": "afafefd3-e3c2-49ed-8b10-04695f0113ad"
+      }
+    },
+    {
+      "step": "daily_save",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "restricted": false,
+          "id": "a90ea671-75fd-47ab-89e0-02d6bc85ed63",
+          "employee_user_id": "7",
+          "employee_display_name": "联调顾问",
+          "dept_id": "7",
+          "report_date": "2026-10-17",
+          "original_text": "联调测试-19106581：整理公开活动资料2次，没有困难，明天继续整理材料。",
+          "content": {
+            "work_summary": "【联调测试-19106581，合成验收】整理公开活动资料2次",
+            "items": [
+              {
+                "category": "OTHER",
+                "description": "整理公开活动资料",
+                "student_ids": [],
+                "source_event_id": null,
+                "count": 2,
+                "result": ""
+              }
+            ],
+            "difficulties": "无",
+            "next_plan": "明天继续整理材料"
+          },
+          "structured_content": {
+            "work_summary": "【联调测试-19106581，合成验收】整理公开活动资料2次",
+            "items": [
+              {
+                "category": "OTHER",
+                "description": "整理公开活动资料",
+                "student_ids": [],
+                "source_event_id": null,
+                "count": 2,
+                "result": ""
+              }
+            ],
+            "difficulties": "无",
+            "next_plan": "明天继续整理材料"
+          },
+          "status": "DRAFT",
+          "version": 1,
+          "approved_version": null,
+          "approved_at": null,
+          "return_reason": "",
+          "submitted_at": null,
+          "updated_at": "2026-10-18T10:30:34.109677+00:00"
+        },
+        "request_id": "c9588c81-ec74-4b58-bbeb-951863acff39"
+      }
+    },
+    {
+      "step": "daily_submit",
+      "result": {
+        "status": 422,
+        "code": "VALIDATION_ERROR",
+        "message": "参数校验失败",
+        "data": null,
+        "errors": [
+          {
+            "field": "action",
+            "reason": "Extra inputs are not permitted"
+          }
+        ],
+        "request_id": "4a0675d6-bc36-44d8-ab77-47f0be3d0b99"
+      }
+    },
+    {
+      "step": "daily_submit_corrected",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "restricted": false,
+          "id": "a90ea671-75fd-47ab-89e0-02d6bc85ed63",
+          "employee_user_id": "7",
+          "employee_display_name": "联调顾问",
+          "dept_id": "7",
+          "report_date": "2026-10-17",
+          "original_text": "联调测试-19106581：整理公开活动资料2次，没有困难，明天继续整理材料。",
+          "content": {
+            "work_summary": "【联调测试-19106581，合成验收】整理公开活动资料2次",
+            "items": [
+              {
+                "category": "OTHER",
+                "description": "整理公开活动资料",
+                "student_ids": [],
+                "source_event_id": null,
+                "count": 2,
+                "result": ""
+              }
+            ],
+            "difficulties": "无",
+            "next_plan": "明天继续整理材料"
+          },
+          "structured_content": {
+            "work_summary": "【联调测试-19106581，合成验收】整理公开活动资料2次",
+            "items": [
+              {
+                "category": "OTHER",
+                "description": "整理公开活动资料",
+                "student_ids": [],
+                "source_event_id": null,
+                "count": 2,
+                "result": ""
+              }
+            ],
+            "difficulties": "无",
+            "next_plan": "明天继续整理材料"
+          },
+          "status": "SUBMITTED",
+          "version": 2,
+          "approved_version": null,
+          "approved_at": null,
+          "return_reason": "",
+          "submitted_at": "2026-10-18T10:31:10.551270+00:00",
+          "updated_at": "2026-10-18T10:31:10.551270+00:00"
+        },
+        "request_id": "b1340034-ba41-4b65-9da2-e8d1c78fe329"
+      }
+    },
+    {
+      "step": "daily_approve",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "restricted": false,
+          "id": "a90ea671-75fd-47ab-89e0-02d6bc85ed63",
+          "employee_user_id": "7",
+          "employee_display_name": "联调顾问",
+          "dept_id": "7",
+          "report_date": "2026-10-17",
+          "original_text": "联调测试-19106581：整理公开活动资料2次，没有困难，明天继续整理材料。",
+          "content": {
+            "work_summary": "【联调测试-19106581，合成验收】整理公开活动资料2次",
+            "items": [
+              {
+                "category": "OTHER",
+                "description": "整理公开活动资料",
+                "student_ids": [],
+                "source_event_id": null,
+                "count": 2,
+                "result": ""
+              }
+            ],
+            "difficulties": "无",
+            "next_plan": "明天继续整理材料"
+          },
+          "structured_content": {
+            "work_summary": "【联调测试-19106581，合成验收】整理公开活动资料2次",
+            "items": [
+              {
+                "category": "OTHER",
+                "description": "整理公开活动资料",
+                "student_ids": [],
+                "source_event_id": null,
+                "count": 2,
+                "result": ""
+              }
+            ],
+            "difficulties": "无",
+            "next_plan": "明天继续整理材料"
+          },
+          "status": "APPROVED",
+          "version": 3,
+          "approved_version": 2,
+          "approved_at": "2026-10-18T10:31:29.163500+00:00",
+          "return_reason": "",
+          "submitted_at": "2026-10-18T10:31:10.551270+00:00",
+          "updated_at": "2026-10-18T10:31:29.163500+00:00"
+        },
+        "request_id": "b47e0ef9-cf8c-4884-8bd5-a7968abedb05"
+      }
+    },
+    {
+      "step": "report_preview_CUSTOMER_OPERATION",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "snapshot_id": "cc607623-0c1e-4a3c-8a2e-55eba3403ce9",
+          "type": "CUSTOMER_OPERATION",
+          "title": "客户经营报告",
+          "start_date": "2026-10-17",
+          "end_date": "2026-10-17",
+          "scope": "本部门 · 界面联调部门",
+          "as_of": "2026-10-18T10:31:52.375010+00:00",
+          "generated_at": "2026-10-18T10:31:52.375010+00:00",
+          "metrics": [
+            {
+              "key": "new_customers",
+              "label": "期间新增客户",
+              "value": 4,
+              "unit": "人",
+              "formula": "created_date在统计范围内，按客户ID去重",
+              "available": true
+            },
+            {
+              "key": "intent_students",
+              "label": "当前未签约意向客户",
+              "value": 1,
+              "unit": "人",
+              "formula": "当前意向已填写且状态为NEW/FOLLOWING；不提供历史状态快照",
+              "available": true
+            },
+            {
+              "key": "enrolled",
+              "label": "期间签约客户",
+              "value": 3,
+              "unit": "人",
+              "formula": "signed_at在统计范围内",
+              "available": true
+            },
+            {
+              "key": "lost_customers",
+              "label": "期间流失客户",
+              "value": 0,
+              "unit": "人",
+              "formula": "lost_at在统计范围内",
+              "available": true
+            },
+            {
+              "key": "conversion_rate",
+              "label": "新增客户当前签约率",
+              "value": 75,
+              "unit": "%",
+              "formula": "新增客户中当前已签约人数/本期新增客户数；分母为0时无值",
+              "available": true
+            },
+            {
+              "key": "previous_new_customers",
+              "label": "上一等长期间新增客户",
+              "value": 0,
+              "unit": "人",
+              "formula": "2026-10-16 至 2026-10-16",
+              "available": true
+            }
+          ],
+          "narrative": "客户经营报告\n统计期间：2026-10-17 至 2026-10-17\n统计范围：本部门 · 界面联调部门\n\n一、后端核定指标\n期间新增客户：4人\n统计口径：created_date在统计范围内，按客户ID去重\n当前未签约意向客户：1人\n统计口径：当前意向已填写且状态为NEW/FOLLOWING；不提供历史状态快照\n期间签约客户：3人\n统计口径：signed_at在统计范围内\n期间流失客户：0人\n统计口径：lost_at在统计范围内\n新增客户当前签约率：75.0%\n统计口径：新增客户中当前已签约人数/本期新增客户数；分母为0时无值\n上一等长期间新增客户：0人\n统计口径：2026-10-16 至 2026-10-16\n\n二、数据说明\n来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学\n意向人数为当前状态；无法还原过去某日的意向状态\n\n三、工作情况与待跟进事项\n一、总体概况\n本报告统计范围为“本部门 · 界面联调部门”，统计期间为2026-10-17至2026-10-17。当日新增客户4人，期间签约客户3人，期间流失客户0人，当前未签约意向客户1人。新增客户当前签约率为75.0%，该数值由系统按新增客户中当前已签约人数与本期新增客户数计算得出，本报告不做重算。上一等长期间（2026-10-16至2026-10-16）新增客户为0人。\n\n二、客户接待与跟进\n本期新增客户为：联调客户、王梓涵（演示）、赵沐晴（演示）、刘星宇（演示）。接待与跟进记录覆盖联调客户、王梓涵（演示）、赵沐晴（演示）、刘星宇（演示）以及联调测试-19106581，以上记录的跟进计划字段均显示为“暂无跟进计划”，即当期尚未形成具体跟进安排。其中联调测试-19106581出现在接待与跟进记录中，但不在本期新增客户名单内，两者统计范围不同，其归属期间待核对补充，本报告不对该客户的新增归属或当前状态作推断。\n\n三、意向与签约\n当前未签约意向客户为1人，即联调客户，其意向状态为系统记录的当前状态。期间签约客户为3人，分别为王梓涵（演示）、赵沐晴（演示）、刘星宇（演示）。需说明的是，客户签约不等同于实际入学，本报告不据此推断实际到校或就读情况；当前意向为时点状态，不等同于历史某一日期的意向状态，本期无历史意向快照可供比对。\n\n四、已有转化路径与日期趋势\n期间转化路径记录显示“无状态迁移事件”，即本期未记录到客户状态流转的发生过程，签约结果与过程节点之间的对应关系暂无过程记录支撑，待核对补充。日期趋势方面，新增客户集中在2026-10-17当日，为4人；本期统计区间仅含该单日，故未形成跨日对比。\n\n五、来源、学历与流失情况\n来源分布显示本期4名新增客户来源均为MANUAL（手工录入），共4人，未记录其他来源渠道。学历分布显示4人均为“未填写”，学历信息完整度有待补充。流失方面，期间流失客户为0人，流失原因记录为“无记录”，本期无可归纳的流失原因类型。\n\n六、待跟进事项\n待跟进事项记录共两项，内容均为“暂无跟进计划”，未形成具体客户、责任人或时间安排，需由业务人员补充确认后另行跟进。结合接待与跟进记录，本期全部在册客户均未填写跟进计划，建议优先补齐跟进安排并明确跟进节点。\n\n七、口径与待核对说明\n本报告数据来源为正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学；意向人数为当前状态，无法还原过去某日的意向状态。新增客户数、签约客户数、流失客户数分别按客户ID与对应业务时间字段统计，属不同统计口径，不宜相互直接折算。本期学历信息缺失、转化过程无状态迁移记录、跟进计划普遍为空，相关项目均为待核对补充，本报告不补造名单、完成率、同比环比或转化过程数据。",
+          "ai_status": "LIVE",
+          "warnings": [
+            "来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学",
+            "意向人数为当前状态；无法还原过去某日的意向状态"
+          ],
+          "facts": [
+            {
+              "section": "新增客户",
+              "text": "联调客户、王梓涵（演示）、赵沐晴（演示）、刘星宇（演示）"
+            },
+            {
+              "section": "接待与跟进",
+              "text": "联调客户：暂无跟进计划；王梓涵（演示）：暂无跟进计划；赵沐晴（演示）：暂无跟进计划；刘星宇（演示）：暂无跟进计划；联调测试-19106581：暂无跟进计划"
+            },
+            {
+              "section": "意向学生",
+              "text": "联调客户"
+            },
+            {
+              "section": "签约转化",
+              "text": "王梓涵（演示）、赵沐晴（演示）、刘星宇（演示）"
+            },
+            {
+              "section": "待跟进事项",
+              "text": "暂无跟进计划；暂无跟进计划"
+            },
+            {
+              "section": "期间转化路径",
+              "text": "无状态迁移事件"
+            },
+            {
+              "section": "新增客户日期趋势",
+              "text": "2026-10-17：4人"
+            },
+            {
+              "section": "来源分布",
+              "text": "MANUAL：4"
+            },
+            {
+              "section": "学历分布",
+              "text": "未填写：4"
+            },
+            {
+              "section": "流失原因",
+              "text": "无记录"
+            }
+          ]
+        },
+        "request_id": "acd1fbed-d30a-4322-ace7-59d2ffe56006"
+      }
+    },
+    {
+      "step": "report_preview_DAILY_DAY",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "snapshot_id": "101f0237-2cc3-4e28-964d-5e92648b841b",
+          "type": "DAILY_DAY",
+          "title": "日报日汇总",
+          "start_date": "2026-10-17",
+          "end_date": "2026-10-17",
+          "scope": "本部门 · 界面联调部门",
+          "as_of": "2026-10-18T10:31:48.981261+00:00",
+          "generated_at": "2026-10-18T10:31:48.981261+00:00",
+          "metrics": [
+            {
+              "key": "approved_daily",
+              "label": "已通过有效日报",
+              "value": 1,
+              "unit": "篇",
+              "formula": "每员工每日一份，使用最近通过内容",
+              "available": true
+            },
+            {
+              "key": "customer",
+              "label": "客户跟进",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "delivery",
+              "label": "学生交付",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "enrollment",
+              "label": "入学跟踪",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "psych",
+              "label": "心理相关工作",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "complaint",
+              "label": "投诉处理",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "leave",
+              "label": "请假处理",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "expected_daily",
+              "label": "范围员工自然日应报基数",
+              "value": 1,
+              "unit": "篇",
+              "formula": "所选有效员工数×自然日数，未接入排班日历",
+              "available": true
+            },
+            {
+              "key": "daily_coverage",
+              "label": "审核通过覆盖率",
+              "value": 100,
+              "unit": "%",
+              "formula": "已通过日报/自然日应报基数",
+              "available": true
+            }
+          ],
+          "narrative": "日报日汇总\n统计期间：2026-10-17 至 2026-10-17\n统计范围：本部门 · 界面联调部门\n\n一、后端核定指标\n已通过有效日报：1篇\n统计口径：每员工每日一份，使用最近通过内容\n客户跟进：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n学生交付：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n入学跟踪：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n心理相关工作：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n投诉处理：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n请假处理：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n范围员工自然日应报基数：1篇\n统计口径：所选有效员工数×自然日数，未接入排班日历\n审核通过覆盖率：100.0%\n统计口径：已通过日报/自然日应报基数\n\n二、数据说明\n来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学\n\n三、工作情况与待跟进事项\n【2026-10-17 工作日报整理】\n\n一、审核依据\n本报告仅依据范围内已审核通过的日报整理，共1篇有效日报，审核通过版本为版本2，审核时间为2026-10-18 10:31:29（UTC）。未通过审核的内容未纳入本报告依据。\n\n二、当天已审核日报中的普通工作\n联调顾问当日记录1项普通工作事项：整理公开活动资料2次。该项属于资料整理类工作，日报中未进一步说明所涉活动名称、资料明细及交付对象。\n\n三、工作次数量化情况\n日报申报的客户跟进、学生交付、入学跟踪、心理相关工作、投诉处理、请假处理等各类工作量均为0次。上述口径为日报申报工作量，不等同于新增业务事件项数或去重人数。\n\n四、困难与支持\n日报填报“无”，当日未提出需要协调或支持的事项。\n\n五、未完成事项与待核对事项\n日报中未明确列示已完成或未完成状态，系统不自动推断完成情况，待核对补充：整理公开活动资料2次的具体完成进度、成果形式及后续安排，需由填报人根据实际工作补充确认。该项为日报补充待核对内容，不并入正式业务事件统计。\n\n六、明日计划\n输入材料未提供明日计划，暂无记录。\n\n七、说明\n客户意向为当前状态，签约不等同于实际入学；本报告不涉及相关推断。日报覆盖率为100%，系已通过日报与自然日应报基数的比值，未接入排班日历。",
+          "ai_status": "LIVE",
+          "warnings": [
+            "来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学"
+          ],
+          "facts": [
+            {
+              "section": "审核依据",
+              "text": "a90ea671-75fd-47ab-89e0-02d6bc85ed63：通过版本 2，审核时间 2026-10-18 10:31:29.163500+00:00"
+            },
+            {
+              "section": "联调顾问 2026-10-17",
+              "text": "【联调测试-19106581，合成验收】整理公开活动资料2次"
+            },
+            {
+              "section": "未完成事项",
+              "text": "请根据实际工作补充，系统不自动推断完成情况"
+            },
+            {
+              "section": "困难与支持",
+              "text": "无"
+            }
+          ]
+        },
+        "request_id": "c11eadb7-291d-47f3-90d8-5e243c8d96e6"
+      }
+    },
+    {
+      "step": "report_preview_DAILY_WEEK",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "snapshot_id": "bfac3c22-da9c-4cb5-bc82-0ad488a122c3",
+          "type": "DAILY_WEEK",
+          "title": "日报周汇总",
+          "start_date": "2026-10-17",
+          "end_date": "2026-10-17",
+          "scope": "本部门 · 界面联调部门",
+          "as_of": "2026-10-18T10:31:52.902374+00:00",
+          "generated_at": "2026-10-18T10:31:52.902374+00:00",
+          "metrics": [
+            {
+              "key": "approved_daily",
+              "label": "已通过有效日报",
+              "value": 1,
+              "unit": "篇",
+              "formula": "每员工每日一份，使用最近通过内容",
+              "available": true
+            },
+            {
+              "key": "customer",
+              "label": "客户跟进",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "delivery",
+              "label": "学生交付",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "enrollment",
+              "label": "入学跟踪",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "psych",
+              "label": "心理相关工作",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "complaint",
+              "label": "投诉处理",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "leave",
+              "label": "请假处理",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "expected_daily",
+              "label": "范围员工自然日应报基数",
+              "value": 1,
+              "unit": "篇",
+              "formula": "所选有效员工数×自然日数，未接入排班日历",
+              "available": true
+            },
+            {
+              "key": "daily_coverage",
+              "label": "审核通过覆盖率",
+              "value": 100,
+              "unit": "%",
+              "formula": "已通过日报/自然日应报基数",
+              "available": true
+            }
+          ],
+          "narrative": "日报周汇总\n统计期间：2026-10-17 至 2026-10-17\n统计范围：本部门 · 界面联调部门\n\n一、后端核定指标\n已通过有效日报：1篇\n统计口径：每员工每日一份，使用最近通过内容\n客户跟进：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n学生交付：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n入学跟踪：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n心理相关工作：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n投诉处理：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n请假处理：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n范围员工自然日应报基数：1篇\n统计口径：所选有效员工数×自然日数，未接入排班日历\n审核通过覆盖率：100.0%\n统计口径：已通过日报/自然日应报基数\n\n二、数据说明\n来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学\n\n三、工作情况与待跟进事项\n一、工作概况\n本报告期为2026年10月17日（单日），范围为“本部门 · 界面联调部门”。本报告仅依据范围内已审核通过的日报内容整理，未审核或未提交的内容不作为正式依据。本期范围内已通过审核的有效日报为1篇（通过版本2，审核时间2026-10-18 10:31:29），审核通过覆盖率情况见后端附列指标。日报申报的客户跟进、学生交付、入学跟踪、心理相关工作、投诉处理、请假处理等专项工作量本期均无申报记录，暂按“暂无记录”处理；该结果仅反映日报申报情况，不等同于相关业务实际未发生，如需确认应与业务台账核对。\n\n二、重点工作\n本期已审核日报中记录的正式工作为：联调顾问于2026年10月17日开展“【联调测试-19106581，合成验收】整理公开活动资料”，共计2次。该事项属资料整理类事务性工作，日报中未记录与之关联的客户、学生、入学、心理、投诉或请假等业务情形，故不作延伸推断。\n\n三、困难与支持\n日报“困难与支持”栏填报为“无”，本期无需要上级或跨部门协调支持的事项记录。\n\n四、未完成或待核对事项（独立列示，不计入正式工作事件）\n日报“未完成事项”栏未填写具体内容，仅为系统提示性文字“请根据实际工作补充，系统不自动推断完成情况”。该栏位内容属待核对信息，需由填报人补充说明具体未完成事项及其进度，本报告不据此推断任何完成情况，也不将其并入本期正式工作事件统计。\n\n五、待跟进事项\n1. 请填报人补充2026年10月17日“未完成事项”的具体内容、当前进度及是否需要协调支持，补充后另行核对。\n2. 本期客户跟进、学生交付、入学跟踪、心理相关工作、投诉处理、请假处理等专项均无日报申报记录，如当日实际发生相关工作，建议补录日报或提供相应业务台账，以便纳入后续核对。\n3. 本期仅覆盖单日且仅1篇有效日报，后续如需形成周度趋势判断，需在更长周期内持续积累已审核日报后再行整理。\n\n说明：本报告所引客户意向为当前状态、签约不等同于实际入学等口径提示以后端warnings为准；本报告未重算或改写任何指标，未提供名单、完成率、同比、环比、转化率或评价类结论。",
+          "ai_status": "LIVE",
+          "warnings": [
+            "来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学"
+          ],
+          "facts": [
+            {
+              "section": "审核依据",
+              "text": "a90ea671-75fd-47ab-89e0-02d6bc85ed63：通过版本 2，审核时间 2026-10-18 10:31:29.163500+00:00"
+            },
+            {
+              "section": "联调顾问 2026-10-17",
+              "text": "【联调测试-19106581，合成验收】整理公开活动资料2次"
+            },
+            {
+              "section": "未完成事项",
+              "text": "请根据实际工作补充，系统不自动推断完成情况"
+            },
+            {
+              "section": "困难与支持",
+              "text": "无"
+            }
+          ]
+        },
+        "request_id": "aca15901-359b-4d7d-95d8-da451e4e567a"
+      }
+    },
+    {
+      "step": "report_preview_PSYCH_WEEK",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "snapshot_id": "9df48ec9-d7e1-4fe0-aea4-0cdc73a0d198",
+          "type": "PSYCH_WEEK",
+          "title": "心理周报",
+          "start_date": "2026-10-17",
+          "end_date": "2026-10-17",
+          "scope": "本部门 · 界面联调部门",
+          "as_of": "2026-10-18T10:31:50.377144+00:00",
+          "generated_at": "2026-10-18T10:31:50.377144+00:00",
+          "metrics": [
+            {
+              "key": "approved_daily",
+              "label": "已通过有效日报",
+              "value": 1,
+              "unit": "篇",
+              "formula": "每员工每日一份，使用最近通过内容",
+              "available": true
+            },
+            {
+              "key": "previous_new_events",
+              "label": "上一等长期间新增业务事件",
+              "value": 0,
+              "unit": "项",
+              "formula": "2026-10-16 至 2026-10-16",
+              "available": true
+            },
+            {
+              "key": "new_events",
+              "label": "期间新增业务事件",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "continuing",
+              "label": "此前发生本期跟进",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "daily_supplements",
+              "label": "日报补充待核对",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "resolved",
+              "label": "期间解决业务事件",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "observed_student_days",
+              "label": "有效观测学生日",
+              "value": 0,
+              "unit": "学生日",
+              "formula": "同一学生同一自然日取最后有效版本",
+              "available": true
+            },
+            {
+              "key": "unobserved_student_days",
+              "label": "缺少有效观测的学生日",
+              "value": 0,
+              "unit": "学生日",
+              "formula": "不将未观测自动判为健康",
+              "available": true
+            },
+            {
+              "key": "observation_coverage",
+              "label": "有效观测覆盖率",
+              "value": null,
+              "unit": "%",
+              "formula": "有效观测学生日/有当前同意的非演示学生自然日基数",
+              "available": true
+            },
+            {
+              "key": "emotion_healthy",
+              "label": "HEALTHY",
+              "value": 0,
+              "unit": "学生日",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "emotion_negative",
+              "label": "NEGATIVE",
+              "value": 0,
+              "unit": "学生日",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "emotion_very_negative",
+              "label": "VERY_NEGATIVE",
+              "value": 0,
+              "unit": "学生日",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "emotion_unknown",
+              "label": "UNKNOWN",
+              "value": 0,
+              "unit": "学生日",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "high_risk",
+              "label": "高优先级关怀事件",
+              "value": 0,
+              "unit": "项",
+              "formula": "包括规则直接触发事件",
+              "available": true
+            }
+          ],
+          "narrative": "心理工作周报\n统计期间：2026-10-17 至 2026-10-17\n统计范围：本部门 · 界面联调部门\n\n一、后端核定指标\n已通过有效日报：1篇\n统计口径：每员工每日一份，使用最近通过内容\n上一等长期间新增业务事件：0项\n统计口径：2026-10-16 至 2026-10-16\n期间新增业务事件：0项\n此前发生本期跟进：0项\n日报补充待核对：0项\n期间解决业务事件：0项\n有效观测学生日：0学生日\n统计口径：同一学生同一自然日取最后有效版本\n缺少有效观测的学生日：0学生日\n统计口径：不将未观测自动判为健康\n有效观测覆盖率：暂无可用值\n统计口径：有效观测学生日/有当前同意的非演示学生自然日基数\nHEALTHY：0学生日\nNEGATIVE：0学生日\nVERY_NEGATIVE：0学生日\nUNKNOWN：0学生日\n高优先级关怀事件：0项\n统计口径：包括规则直接触发事件\n\n二、数据说明\n来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学\n\n三、工作情况与待跟进事项\n本期为2026-10-17，范围为本部门·界面联调部门。心理关怀工作概况：已通过有效日报1篇；期间新增心理关怀业务事件0项，高优先级关怀事件0项；此前发生、本期仍跟进0项；期间解决业务事件0项。有效观测学生日0，缺少有效观测的学生日0；有效观测覆盖率因基数信息暂无有效值，待核对补充。HEALTHY、NEGATIVE、VERY_NEGATIVE、UNKNOWN各情绪标签学生日均为0，仅表示本期未形成对应观测记录；情绪标签只是记录，不是诊断，未观测不能判为健康，也不作医疗判断或风险推测。已有措施与结果：已提供事实中暂无具体关怀措施及结果记录，待核对补充。待跟进与协调：无未解决记录。日报补充待核对：0项，无未关联事项；该项独立列示，未并入正式业务事件总数。",
+          "ai_status": "LIVE",
+          "warnings": [
+            "来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学"
+          ],
+          "facts": [
+            {
+              "section": "本期新增",
+              "text": "无记录"
+            },
+            {
+              "section": "此前发生仍在跟进",
+              "text": "无记录"
+            },
+            {
+              "section": "日报补充",
+              "text": "无未关联事项"
+            },
+            {
+              "section": "待跟进与协调",
+              "text": "无未解决记录"
+            }
+          ]
+        },
+        "request_id": "4c170b6e-b4ed-4ceb-81b3-c742baa2857d"
+      }
+    },
+    {
+      "step": "report_preview_COMPLAINT_WEEK",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "snapshot_id": "3b6b679e-a059-486a-be94-57a5731a1f72",
+          "type": "COMPLAINT_WEEK",
+          "title": "投诉周报",
+          "start_date": "2026-10-17",
+          "end_date": "2026-10-17",
+          "scope": "本部门 · 界面联调部门",
+          "as_of": "2026-10-18T10:31:49.349506+00:00",
+          "generated_at": "2026-10-18T10:31:49.349506+00:00",
+          "metrics": [
+            {
+              "key": "approved_daily",
+              "label": "已通过有效日报",
+              "value": 1,
+              "unit": "篇",
+              "formula": "每员工每日一份，使用最近通过内容",
+              "available": true
+            },
+            {
+              "key": "previous_new_events",
+              "label": "上一等长期间新增业务事件",
+              "value": 0,
+              "unit": "项",
+              "formula": "2026-10-16 至 2026-10-16",
+              "available": true
+            },
+            {
+              "key": "new_events",
+              "label": "期间新增业务事件",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "continuing",
+              "label": "此前发生本期跟进",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "daily_supplements",
+              "label": "日报补充待核对",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "resolved",
+              "label": "期间解决业务事件",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "open_tickets",
+              "label": "未关闭投诉",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "overdue_tickets",
+              "label": "当前超期未解决投诉",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "rating_count",
+              "label": "满意度样本",
+              "value": 0,
+              "unit": "份",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "rating_average",
+              "label": "平均满意度",
+              "value": null,
+              "unit": "分",
+              "formula": "仅统计已评分工单",
+              "available": true
+            },
+            {
+              "key": "reopened",
+              "label": "重开次数",
+              "value": 0,
+              "unit": "次",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "first_response_hours",
+              "label": "平均首次响应时长",
+              "value": null,
+              "unit": "小时",
+              "formula": "仅统计已有对应时间戳的工单",
+              "available": true
+            },
+            {
+              "key": "resolution_hours",
+              "label": "平均解决时长",
+              "value": null,
+              "unit": "小时",
+              "formula": "仅统计已有对应时间戳的工单",
+              "available": true
+            }
+          ],
+          "narrative": "投诉处理周报\n统计期间：2026-10-17 至 2026-10-17\n统计范围：本部门 · 界面联调部门\n\n一、后端核定指标\n已通过有效日报：1篇\n统计口径：每员工每日一份，使用最近通过内容\n上一等长期间新增业务事件：0项\n统计口径：2026-10-16 至 2026-10-16\n期间新增业务事件：0项\n此前发生本期跟进：0项\n日报补充待核对：0项\n期间解决业务事件：0项\n未关闭投诉：0项\n当前超期未解决投诉：0项\n满意度样本：0份\n平均满意度：暂无可用值\n统计口径：仅统计已评分工单\n重开次数：0次\n平均首次响应时长：暂无可用值\n统计口径：仅统计已有对应时间戳的工单\n平均解决时长：暂无可用值\n统计口径：仅统计已有对应时间戳的工单\n\n二、数据说明\n来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学\n\n三、工作情况与待跟进事项\n本期（2026-10-17 至 2026-10-17）投诉周报所涉范围为本部门·界面联调部门。期间已通过有效日报1篇，作为本期投诉与协调事项的正式依据。\n\n一、本期新增投诉\n本期新增业务事件0项，未记录到新增投诉或新增客户诉求事项，暂无具体工单、诉求内容及涉及环节可供列示。\n\n二、此前发生、本期仍在跟进\n此前发生并在本期继续跟进的投诉事项0项，暂无在办事项记录。\n\n三、已有处理措施与结果\n本期解决业务事件0项，当前未关闭投诉0项，当前超期未解决投诉0项。因本期无投诉工单记录，处理措施、处理过程及处理结果暂无记录，待核对补充。满意度样本0份，平均满意度不适用，本期不对客户满意情况作推断；平均首次响应时长、平均解决时长因无对应时间戳记录，暂无数据可列示；重开次数0次。\n\n四、未解决与待协调事项\n未解决记录为空，本期无待协调事项列示。若后续补充投诉受理或跨部门协调需求，需另行核对后跟进。\n\n五、日报补充待核对事项\n日报补充待核对0项，无未关联事项。本期日报补充内容不涉及独立列示的待核对事项，故未并入正式业务事件统计。\n\n六、说明\n本期统计期间与上一等长期间（2026-10-16 至 2026-10-16）新增业务事件均为0项，数据口径一致。上述内容仅依据正式业务表与已审核通过日报整理，未包含未经审核的日报内容；客户意向为当前状态，签约不等同于实际入学。",
+          "ai_status": "LIVE",
+          "warnings": [
+            "来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学"
+          ],
+          "facts": [
+            {
+              "section": "本期新增",
+              "text": "无记录"
+            },
+            {
+              "section": "此前发生仍在跟进",
+              "text": "无记录"
+            },
+            {
+              "section": "日报补充",
+              "text": "无未关联事项"
+            },
+            {
+              "section": "待跟进与协调",
+              "text": "无未解决记录"
+            }
+          ]
+        },
+        "request_id": "cac632e5-8670-4d39-907a-bd9a60e9ab39"
+      }
+    },
+    {
+      "step": "report_preview_MANAGER_WEEK",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "snapshot_id": "16df8893-f45a-48b5-8828-37b5d5bfaf8d",
+          "type": "MANAGER_WEEK",
+          "title": "部门主管周报",
+          "start_date": "2026-10-17",
+          "end_date": "2026-10-17",
+          "scope": "本部门 · 界面联调部门",
+          "as_of": "2026-10-18T10:31:51.056439+00:00",
+          "generated_at": "2026-10-18T10:31:51.056439+00:00",
+          "metrics": [
+            {
+              "key": "approved_daily",
+              "label": "已通过有效日报",
+              "value": 1,
+              "unit": "篇",
+              "formula": "每员工每日一份，使用最近通过内容",
+              "available": true
+            },
+            {
+              "key": "customer",
+              "label": "客户跟进",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "delivery",
+              "label": "学生交付",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "enrollment",
+              "label": "入学跟踪",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "psych",
+              "label": "心理相关工作",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "complaint",
+              "label": "投诉处理",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "leave",
+              "label": "请假处理",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "new_customers",
+              "label": "期间新增客户",
+              "value": 4,
+              "unit": "人",
+              "formula": "按创建日期与客户ID统计",
+              "available": true
+            },
+            {
+              "key": "enrolled_students",
+              "label": "期间签约客户",
+              "value": 3,
+              "unit": "人",
+              "formula": "按签约日期统计",
+              "available": true
+            },
+            {
+              "key": "expected_daily",
+              "label": "范围员工自然日应报基数",
+              "value": 1,
+              "unit": "篇",
+              "formula": "所选有效员工数×自然日数，未接入排班日历",
+              "available": true
+            },
+            {
+              "key": "daily_coverage",
+              "label": "审核通过覆盖率",
+              "value": 100,
+              "unit": "%",
+              "formula": "已通过日报/自然日应报基数",
+              "available": true
+            }
+          ],
+          "narrative": "审核依据\na90ea671-75fd-47ab-89e0-02d6bc85ed63：通过版本 2，审核时间 2026-10-18 10:31:29.163500+00:00\n\n联调顾问 2026-10-17\n【联调测试-19106581，合成验收】整理公开活动资料2次\n\n未完成事项\n请根据实际工作补充，系统不自动推断完成情况\n\n困难与支持\n无\n\n团队管理情况\n待主管补充人员安排、新人培养与协作情况\n\n主要问题及处理措施\n待主管核对补充\n\n需要协调的支持\n待主管填写，没有可填无\n\n下周工作安排\n选填",
+          "ai_status": "UNAVAILABLE",
+          "warnings": [
+            "来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学",
+            "Dify不可用，已保留确定性指标和事实文本"
+          ],
+          "facts": [
+            {
+              "section": "审核依据",
+              "text": "a90ea671-75fd-47ab-89e0-02d6bc85ed63：通过版本 2，审核时间 2026-10-18 10:31:29.163500+00:00"
+            },
+            {
+              "section": "联调顾问 2026-10-17",
+              "text": "【联调测试-19106581，合成验收】整理公开活动资料2次"
+            },
+            {
+              "section": "未完成事项",
+              "text": "请根据实际工作补充，系统不自动推断完成情况"
+            },
+            {
+              "section": "困难与支持",
+              "text": "无"
+            },
+            {
+              "section": "团队管理情况",
+              "text": "待主管补充人员安排、新人培养与协作情况"
+            },
+            {
+              "section": "主要问题及处理措施",
+              "text": "待主管核对补充"
+            },
+            {
+              "section": "需要协调的支持",
+              "text": "待主管填写，没有可填无"
+            },
+            {
+              "section": "下周工作安排",
+              "text": "选填"
+            }
+          ]
+        },
+        "request_id": "457072e7-ef99-4252-85f1-b5b38c46a0e9"
+      }
+    },
+    {
+      "step": "report_save",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "id": "164d30ee-7aa4-453e-9806-836be5e5a552",
+          "snapshot_id": "101f0237-2cc3-4e28-964d-5e92648b841b",
+          "owner_id": "9",
+          "type": "DAILY_DAY",
+          "title": "联调测试-19106581 日报验收报告",
+          "start_date": "2026-10-17",
+          "end_date": "2026-10-17",
+          "narrative": "日报日汇总\n统计期间：2026-10-17 至 2026-10-17\n统计范围：本部门 · 界面联调部门\n\n一、后端核定指标\n已通过有效日报：1篇\n统计口径：每员工每日一份，使用最近通过内容\n客户跟进：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n学生交付：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n入学跟踪：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n心理相关工作：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n投诉处理：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n请假处理：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n范围员工自然日应报基数：1篇\n统计口径：所选有效员工数×自然日数，未接入排班日历\n审核通过覆盖率：100.0%\n统计口径：已通过日报/自然日应报基数\n\n二、数据说明\n来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学\n\n三、工作情况与待跟进事项\n【2026-10-17 工作日报整理】\n\n一、审核依据\n本报告仅依据范围内已审核通过的日报整理，共1篇有效日报，审核通过版本为版本2，审核时间为2026-10-18 10:31:29（UTC）。未通过审核的内容未纳入本报告依据。\n\n二、当天已审核日报中的普通工作\n联调顾问当日记录1项普通工作事项：整理公开活动资料2次。该项属于资料整理类工作，日报中未进一步说明所涉活动名称、资料明细及交付对象。\n\n三、工作次数量化情况\n日报申报的客户跟进、学生交付、入学跟踪、心理相关工作、投诉处理、请假处理等各类工作量均为0次。上述口径为日报申报工作量，不等同于新增业务事件项数或去重人数。\n\n四、困难与支持\n日报填报“无”，当日未提出需要协调或支持的事项。\n\n五、未完成事项与待核对事项\n日报中未明确列示已完成或未完成状态，系统不自动推断完成情况，待核对补充：整理公开活动资料2次的具体完成进度、成果形式及后续安排，需由填报人根据实际工作补充确认。该项为日报补充待核对内容，不并入正式业务事件统计。\n\n六、明日计划\n输入材料未提供明日计划，暂无记录。\n\n七、说明\n客户意向为当前状态，签约不等同于实际入学；本报告不涉及相关推断。日报覆盖率为100%，系已通过日报与自然日应报基数的比值，未接入排班日历。",
+          "metrics": [
+            {
+              "key": "approved_daily",
+              "unit": "篇",
+              "label": "已通过有效日报",
+              "value": 1,
+              "formula": "每员工每日一份，使用最近通过内容",
+              "available": true
+            },
+            {
+              "key": "customer",
+              "unit": "次",
+              "label": "客户跟进",
+              "value": 0,
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "delivery",
+              "unit": "次",
+              "label": "学生交付",
+              "value": 0,
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "enrollment",
+              "unit": "次",
+              "label": "入学跟踪",
+              "value": 0,
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "psych",
+              "unit": "次",
+              "label": "心理相关工作",
+              "value": 0,
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "complaint",
+              "unit": "次",
+              "label": "投诉处理",
+              "value": 0,
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "leave",
+              "unit": "次",
+              "label": "请假处理",
+              "value": 0,
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "expected_daily",
+              "unit": "篇",
+              "label": "范围员工自然日应报基数",
+              "value": 1,
+              "formula": "所选有效员工数×自然日数，未接入排班日历",
+              "available": true
+            },
+            {
+              "key": "daily_coverage",
+              "unit": "%",
+              "label": "审核通过覆盖率",
+              "value": 100,
+              "formula": "已通过日报/自然日应报基数",
+              "available": true
+            }
+          ],
+          "scope": "本部门 · 界面联调部门",
+          "employee_user_ids": [
+            "7"
+          ],
+          "ai_status": "LIVE",
+          "warnings": [
+            "来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学"
+          ],
+          "status": "DRAFT",
+          "version": 1,
+          "created_at": "2026-10-18T10:32:08.066632+00:00",
+          "updated_at": "2026-10-18T10:32:08.066632+00:00"
+        },
+        "request_id": "64462168-9760-4a3f-8460-366c294641c1"
+      }
+    },
+    {
+      "step": "report_export",
+      "result": [
+        {
+          "fmt": "docx",
+          "status": 200,
+          "bytes": 38107,
+          "signature": "504b0304"
+        },
+        {
+          "fmt": "pdf",
+          "status": 200,
+          "bytes": 6165,
+          "signature": "25504446"
+        }
+      ]
+    },
+    {
+      "step": "visitor_capture",
+      "result": {
+        "status": 201,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "accepted": true,
+          "receiptNo": "66bc44a2-f68c-4892-bd32-5bd270996c7f"
+        },
+        "request_id": "c075659c-1cc0-409c-9bd1-e72ccb246f2d"
+      }
+    },
+    {
+      "step": "upgrade_interest",
+      "result": {
+        "status": 201,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "accepted": true,
+          "followUpId": "5",
+          "advisorDisplayName": "联调顾问"
+        },
+        "request_id": "59f8f793-e440-46d7-b2fb-1fc1b91f5df2"
+      }
+    },
+    {
+      "step": "assessment_backend",
+      "result": {
+        "status": 201,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "assessmentRequestId": "b8df0e0e-c0ec-4e48-9b5c-0afd5754656e",
+          "status": "SUCCEEDED",
+          "leadVersion": 6
+        },
+        "request_id": "08177c44-4f43-4142-ae5a-b1b20e917f6c"
+      }
+    },
+    {
+      "step": "student_feedback_submit",
+      "result": {
+        "status": 201,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "id": "2",
+          "category": "SUGGESTION",
+          "subject": "联调测试-19106581资料建议",
+          "teacherName": "联调班主任",
+          "projectCategory": "界面联调升学项目",
+          "courseProjectId": null,
+          "content": "联调测试-19106581建议增加公开活动资料示例",
+          "status": "PENDING",
+          "resolution": null,
+          "firstResponseAt": null,
+          "resolvedAt": null,
+          "closedAt": null,
+          "satisfactionRating": null,
+          "satisfactionComment": null,
+          "createTime": "2026-10-18T10:34:55.147010Z",
+          "version": 1
+        },
+        "request_id": "042ee779-414d-489e-a1d1-d3d28709ac9d"
+      }
+    },
+    {
+      "step": "assessment_read",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "assessmentStatus": "SUCCEEDED",
+          "assessmentRequestId": "b8df0e0e-c0ec-4e48-9b5c-0afd5754656e",
+          "assessedAt": "2026-10-18T10:34:36.706296+00:00",
+          "report": {
+            "facts": {
+              "city": "广州",
+              "education": "本科"
+            },
+            "score": null,
+            "evidence": [],
+            "projects": [
+              {
+                "decision": "NEEDS_INFO",
+                "projectId": "5",
+                "failedRules": [],
+                "passedRules": [],
+                "projectName": "界面联调升学项目",
+                "ruleVersion": null,
+                "missingFields": [
+                  "approved_project_rules"
+                ]
+              }
+            ],
+            "warnings": [
+              "NO_RESUME_TEXT"
+            ],
+            "extraction": {
+              "mode": "ASSESSMENT_EXTRACT",
+              "facts": {
+                "city": "广州",
+                "education": "本科"
+              },
+              "schema_version": "1.0"
+            },
+            "ruleVersion": null,
+            "missingFields": [
+              "approved_project_rules"
+            ],
+            "schema_version": "1.0",
+            "assessedForRequestId": "b8df0e0e-c0ec-4e48-9b5c-0afd5754656e"
+          },
+          "latestScore": null,
+          "assessmentErrorCode": null,
+          "isPreviousReport": false
+        },
+        "request_id": "f487e7c6-f824-42b4-932e-c59e3ece3ad2"
+      }
+    },
+    {
+      "step": "manager_report_retest",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "snapshot_id": "85e0bdbe-415d-43da-9c93-778dbcb3bd8e",
+          "type": "MANAGER_WEEK",
+          "title": "部门主管周报",
+          "start_date": "2026-10-17",
+          "end_date": "2026-10-17",
+          "scope": "本部门 · 界面联调部门",
+          "as_of": "2026-10-18T10:35:30.110213+00:00",
+          "generated_at": "2026-10-18T10:35:30.110213+00:00",
+          "metrics": [
+            {
+              "key": "approved_daily",
+              "label": "已通过有效日报",
+              "value": 1,
+              "unit": "篇",
+              "formula": "每员工每日一份，使用最近通过内容",
+              "available": true
+            },
+            {
+              "key": "customer",
+              "label": "客户跟进",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "delivery",
+              "label": "学生交付",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "enrollment",
+              "label": "入学跟踪",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "psych",
+              "label": "心理相关工作",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "complaint",
+              "label": "投诉处理",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "leave",
+              "label": "请假处理",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "new_customers",
+              "label": "期间新增客户",
+              "value": 4,
+              "unit": "人",
+              "formula": "按创建日期与客户ID统计",
+              "available": true
+            },
+            {
+              "key": "enrolled_students",
+              "label": "期间签约客户",
+              "value": 3,
+              "unit": "人",
+              "formula": "按签约日期统计",
+              "available": true
+            },
+            {
+              "key": "expected_daily",
+              "label": "范围员工自然日应报基数",
+              "value": 1,
+              "unit": "篇",
+              "formula": "所选有效员工数×自然日数，未接入排班日历",
+              "available": true
+            },
+            {
+              "key": "daily_coverage",
+              "label": "审核通过覆盖率",
+              "value": 100,
+              "unit": "%",
+              "formula": "已通过日报/自然日应报基数",
+              "available": true
+            }
+          ],
+          "narrative": "主管周报\n统计期间：2026-10-17 至 2026-10-17\n统计范围：本部门 · 界面联调部门\n\n一、后端核定指标\n已通过有效日报：1篇\n统计口径：每员工每日一份，使用最近通过内容\n客户跟进：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n学生交付：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n入学跟踪：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n心理相关工作：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n投诉处理：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n请假处理：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n期间新增客户：4人\n统计口径：按创建日期与客户ID统计\n期间签约客户：3人\n统计口径：按签约日期统计\n范围员工自然日应报基数：1篇\n统计口径：所选有效员工数×自然日数，未接入排班日历\n审核通过覆盖率：100.0%\n统计口径：已通过日报/自然日应报基数\n\n二、数据说明\n来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学\n\n三、工作情况与待跟进事项\n本期（2026-10-17，本部门·界面联调部门）部门已通过有效日报1篇，审核通过覆盖率100.0%。从已有记录看，本期部门工作以资料整理为主，客户跟进、学生交付、入学跟踪、心理相关工作、投诉处理、请假处理等日报申报工作量均为0次。需要注意，这些指标反映的是日报申报的工作量，不等同于新增业务事件、去重人数或实际服务成果。\n\n一、部门工作概况\n本期范围内有1篇审核通过的日报，其审核通过版本为2，审核时间为2026-10-18 10:31:29（UTC）。日报内容显示，联调顾问完成了2次公开活动资料整理（合成验收记录）。除此之外，本期暂无客户跟进、学生交付、入学跟踪、心理相关工作、投诉处理、请假处理等方面的日报申报记录。同时，本期新增客户4人，签约客户3人；客户意向状态是当前状态，签约不等同于实际入学，这部分情况需结合业务记录进一步核对。\n\n二、关键工作\n1. 联调顾问完成公开活动资料整理2次，具体为“联调测试-19106581，合成验收”记录。\n2. 从审核情况看，本期应报基数为1篇，已通过1篇，覆盖率为100.0%。\n3. 客户跟进、学生交付、入学跟踪、心理、投诉、请假等业务方向的日报申报量均为0次，本期暂无相关工作记录可整理。\n\n三、服务异常\n本期未提供已确认的服务异常事实，暂无可列示的服务异常。如需披露，请主管结合业务实际补充核对。\n\n四、团队管理情况\n待主管补充：人员安排、新人培养与协作情况暂无记录。现有日报仅能反映1名联调顾问的工作内容，无法据此判断团队整体分工、人员状态或协作成效。\n\n五、主要问题及处理措施\n待主管核对补充。日报“困难与支持”栏记录为“无”，未反映其他问题。\n\n六、未完成事项与待跟进\n1. 未完成事项：现有记录提示“请根据实际工作补充，系统不自动推断完成情况”，即当前没有可确认的未完成事项明细，需由相关员工补充说明。\n2. 需要协调的支持：待主管填写；没有可填“无”。\n3. 本期新增客户4人、签约3人的后续跟进与服务衔接情况，需结合客户跟进记录核对；当前日报未体现相应跟进次数。\n4. 客户意向为当前状态记录，不能等同于历史时点意向；签约不等同于实际入学，后续入学跟踪情况暂无日报记录。\n\n七、明日计划（日报明确提供）\n联调顾问计划明天继续整理材料。\n\n八、下周工作安排\n本周下周工作安排为选填项，本期未提供具体内容，待主管补充。\n\n说明：本期数据来源为正式业务表与审核通过的日报；以上内容仅整理已提供事实，未对客户状态、完成率及服务成效作推断。",
+          "ai_status": "LIVE",
+          "warnings": [
+            "来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学"
+          ],
+          "facts": [
+            {
+              "section": "审核依据",
+              "text": "a90ea671-75fd-47ab-89e0-02d6bc85ed63：通过版本 2，审核时间 2026-10-18 10:31:29.163500+00:00"
+            },
+            {
+              "section": "联调顾问 2026-10-17",
+              "text": "【联调测试-19106581，合成验收】整理公开活动资料2次"
+            },
+            {
+              "section": "明日计划",
+              "text": "联调顾问：明天继续整理材料"
+            },
+            {
+              "section": "未完成事项",
+              "text": "请根据实际工作补充，系统不自动推断完成情况"
+            },
+            {
+              "section": "困难与支持",
+              "text": "无"
+            },
+            {
+              "section": "团队管理情况",
+              "text": "待主管补充人员安排、新人培养与协作情况"
+            },
+            {
+              "section": "主要问题及处理措施",
+              "text": "待主管核对补充"
+            },
+            {
+              "section": "需要协调的支持",
+              "text": "待主管填写，没有可填无"
+            },
+            {
+              "section": "下周工作安排",
+              "text": "选填"
+            }
+          ]
+        },
+        "request_id": "94bc6066-87e4-4df4-8836-67caffcebe69"
+      }
+    },
+    {
+      "step": "feedback_resolve",
+      "result": {
+        "status": 403,
+        "code": "FORBIDDEN",
+        "message": "仅受理人可解决",
+        "data": null,
+        "errors": [],
+        "request_id": "6f91c15e-9b13-4fb9-9779-d648a91d5448"
+      }
+    },
+    {
+      "step": "student_service_read_final",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "id": "2",
+          "studentProfileId": "2",
+          "studentDisplayName": "联调学生",
+          "serviceType": "LEAVE",
+          "title": "联调测试-19106581个人事务请假",
+          "description": "联调测试-19106581个人事务",
+          "startAt": "2026-10-20T01:00:00Z",
+          "endAt": "2026-10-20T10:00:00Z",
+          "changeRequest": null,
+          "assigneeDisplayName": "联调班主任",
+          "status": "APPROVED",
+          "decisionNote": "联调测试-19106581已核对请假时段，同意。",
+          "decidedAt": "2026-10-18T10:30:07.073927Z",
+          "createTime": "2026-10-18T10:26:37.442205Z",
+          "version": 2
+        },
+        "request_id": "1b212801-477a-4bd5-b05a-d0879c388cf3"
+      }
+    },
+    {
+      "step": "floating_report_route",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "answer": "已准备日报日汇总的生成条件。请点击下方按钮，到报告中心核对时间范围并生成。",
+          "draft": {
+            "report_date": "2026-10-18",
+            "content": {
+              "work_summary": "整理公开活动资料2次；交付学生2名；跟踪3名学生的入学进度；向老板汇报工作。",
+              "items": [
+                {
+                  "category": "OTHER",
+                  "description": "整理公开活动资料",
+                  "student_ids": [],
+                  "source_event_id": null,
+                  "count": 2,
+                  "result": ""
+                },
+                {
+                  "category": "DELIVERY",
+                  "description": "交付学生2名",
+                  "student_ids": [],
+                  "source_event_id": null,
+                  "count": 1,
+                  "result": ""
+                },
+                {
+                  "category": "ENROLLMENT",
+                  "description": "跟踪3名学生的入学进度",
+                  "student_ids": [],
+                  "source_event_id": null,
+                  "count": 1,
+                  "result": ""
+                },
+                {
+                  "category": "OTHER",
+                  "description": "向老板汇报工作",
+                  "student_ids": [],
+                  "source_event_id": null,
+                  "count": 1,
+                  "result": ""
+                }
+              ],
+              "difficulties": "无",
+              "next_plan": "明天继续整理公开活动资料。"
+            },
+            "awaiting": null,
+            "_authorization": {
+              "dept_id": 7,
+              "dept_ids": [
+                7
+              ],
+              "admin": false,
+              "head": false,
+              "caps": [],
+              "students": [
+                [
+                  "2",
+                  "GRANTED"
+                ],
+                [
+                  "3",
+                  "NOT_GIVEN"
+                ],
+                [
+                  "4",
+                  "NOT_GIVEN"
+                ],
+                [
+                  "5",
+                  "NOT_GIVEN"
+                ]
+              ]
+            }
+          },
+          "proposal": {
+            "type": "DAILY_DAY",
+            "start_date": "2026-10-17",
+            "end_date": "2026-10-17"
+          },
+          "missing_fields": [],
+          "ai_status": "DETERMINISTIC",
+          "warnings": [],
+          "version": 17
+        },
+        "request_id": "9235611d-fda9-4cc8-b3bc-d223b19c41a1"
+      }
+    },
+    {
+      "step": "feedback_resolve_after_claim",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "id": "2",
+          "category": "SUGGESTION",
+          "subject": "联调测试-19106581资料建议",
+          "teacherName": "联调班主任",
+          "projectCategory": "界面联调升学项目",
+          "courseProjectId": null,
+          "content": "联调测试-19106581建议增加公开活动资料示例",
+          "status": "RESOLVED",
+          "resolution": "已记录资料示例建议，联调验收完成",
+          "firstResponseAt": "2026-10-18T10:36:03.071052Z",
+          "resolvedAt": "2026-10-18T10:36:26.091470Z",
+          "closedAt": null,
+          "satisfactionRating": null,
+          "satisfactionComment": null,
+          "createTime": "2026-10-18T10:34:55.147010Z",
+          "version": 3,
+          "priority": "NORMAL",
+          "deptId": "7",
+          "assigneeUserId": "9",
+          "dueAt": "2026-10-19T10:34:55.145006Z",
+          "firstResolvedAt": "2026-10-18T10:36:26.091470Z",
+          "isNotified": true,
+          "reopenedCount": 0,
+          "handlingHistory": [
+            {
+              "at": "2026-10-18T10:36:03.071052+00:00",
+              "actor": "9",
+              "action": "CLAIM",
+              "request_key": "[REDACTED]"
+            },
+            {
+              "action": "RESOLVE",
+              "actor": "9",
+              "at": "2026-10-18T10:36:26.091470+00:00",
+              "resolution": "已记录资料示例建议，联调验收完成",
+              "request_key": "[REDACTED]"
+            }
+          ]
+        },
+        "request_id": "fc7d0098-905d-415b-b7b5-8a8fbc1b0cd2"
+      }
+    },
+    {
+      "step": "daily_report_plan_fixed",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "snapshot_id": "6342022b-b96c-4298-b575-4fd9af5e4cf3",
+          "type": "DAILY_DAY",
+          "title": "日报日汇总",
+          "start_date": "2026-10-17",
+          "end_date": "2026-10-17",
+          "scope": "本部门 · 界面联调部门",
+          "as_of": "2026-10-18T10:36:28.974790+00:00",
+          "generated_at": "2026-10-18T10:36:28.974790+00:00",
+          "metrics": [
+            {
+              "key": "approved_daily",
+              "label": "已通过有效日报",
+              "value": 1,
+              "unit": "篇",
+              "formula": "每员工每日一份，使用最近通过内容",
+              "available": true
+            },
+            {
+              "key": "customer",
+              "label": "客户跟进",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "delivery",
+              "label": "学生交付",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "enrollment",
+              "label": "入学跟踪",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "psych",
+              "label": "心理相关工作",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "complaint",
+              "label": "投诉处理",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "leave",
+              "label": "请假处理",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "expected_daily",
+              "label": "范围员工自然日应报基数",
+              "value": 1,
+              "unit": "篇",
+              "formula": "所选有效员工数×自然日数，未接入排班日历",
+              "available": true
+            },
+            {
+              "key": "daily_coverage",
+              "label": "审核通过覆盖率",
+              "value": 100,
+              "unit": "%",
+              "formula": "已通过日报/自然日应报基数",
+              "available": true
+            }
+          ],
+          "narrative": "审核依据\na90ea671-75fd-47ab-89e0-02d6bc85ed63：通过版本 2，审核时间 2026-10-18 10:31:29.163500+00:00\n\n联调顾问 2026-10-17\n【联调测试-19106581，合成验收】整理公开活动资料2次\n\n明日计划\n联调顾问：明天继续整理材料\n\n未完成事项\n请根据实际工作补充，系统不自动推断完成情况\n\n困难与支持\n无",
+          "ai_status": "UNAVAILABLE",
+          "warnings": [
+            "来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学",
+            "Dify不可用，已保留确定性指标和事实文本"
+          ],
+          "facts": [
+            {
+              "section": "审核依据",
+              "text": "a90ea671-75fd-47ab-89e0-02d6bc85ed63：通过版本 2，审核时间 2026-10-18 10:31:29.163500+00:00"
+            },
+            {
+              "section": "联调顾问 2026-10-17",
+              "text": "【联调测试-19106581，合成验收】整理公开活动资料2次"
+            },
+            {
+              "section": "明日计划",
+              "text": "联调顾问：明天继续整理材料"
+            },
+            {
+              "section": "未完成事项",
+              "text": "请根据实际工作补充，系统不自动推断完成情况"
+            },
+            {
+              "section": "困难与支持",
+              "text": "无"
+            }
+          ]
+        },
+        "request_id": "cb607838-945d-45d1-8793-43ea9dc32c3a"
+      }
+    },
+    {
+      "step": "student_feedback_confirm_close",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "id": "2",
+          "category": "SUGGESTION",
+          "subject": "联调测试-19106581资料建议",
+          "teacherName": "联调班主任",
+          "projectCategory": "界面联调升学项目",
+          "courseProjectId": null,
+          "content": "联调测试-19106581建议增加公开活动资料示例",
+          "status": "CLOSED",
+          "resolution": "已记录资料示例建议，联调验收完成",
+          "firstResponseAt": "2026-10-18T10:36:03.071052Z",
+          "resolvedAt": "2026-10-18T10:36:26.091470Z",
+          "closedAt": "2026-10-18T10:36:58.769863Z",
+          "satisfactionRating": null,
+          "satisfactionComment": null,
+          "createTime": "2026-10-18T10:34:55.147010Z",
+          "version": 4
+        },
+        "request_id": "91c5c78a-0701-4a32-8cd2-c68fdff0d6c4"
+      }
+    },
+    {
+      "step": "test_project_document_rules",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "id": "8",
+          "code": "DIFY_TEST_20053662",
+          "name": "联调测试-19106581德国报名条件核验",
+          "country": "德国",
+          "educationLevel": "高中及以上",
+          "description": "仅联调验收；依据《中德精英人才共建计划》报名要求核验，不构成正式录取或政策承诺。",
+          "admissionRequirements": null,
+          "facultySummary": null,
+          "durationMonths": null,
+          "feeAmount": null,
+          "feeCurrency": null,
+          "defaultDeptId": "7",
+          "isPublished": false,
+          "admissionRules": {
+            "version": "test-20261018",
+            "source": "教育服务/公司业务/中德精英人才共建计划.docx：报名要求",
+            "criteria": [
+              {
+                "field": "age",
+                "op": "GTE",
+                "value": 18,
+                "label": "年龄不低于18岁"
+              },
+              {
+                "field": "age",
+                "op": "LTE",
+                "value": 35,
+                "label": "年龄不高于35岁"
+              },
+              {
+                "field": "education",
+                "op": "IN",
+                "values": [
+                  "高中",
+                  "中专",
+                  "大专",
+                  "本科",
+                  "硕士",
+                  "博士"
+                ],
+                "label": "高中及以上学历"
+              },
+              {
+                "field": "hands_on_ability",
+                "op": "EQ",
+                "value": "强",
+                "label": "动手能力强"
+              },
+              {
+                "field": "logical_thinking",
+                "op": "EQ",
+                "value": "强",
+                "label": "逻辑思维强"
+              },
+              {
+                "field": "criminal_record",
+                "op": "EQ",
+                "value": "无",
+                "label": "无犯罪记录"
+              },
+              {
+                "field": "german_learning_ability",
+                "op": "EQ",
+                "value": "有",
+                "label": "有德语学习和表达能力"
+              }
+            ]
+          },
+          "ruleVersion": "test-20261018",
+          "ruleApprovedAt": "2026-10-18T10:40:53.868228+00:00",
+          "version": 2
+        },
+        "request_id": "385422bd-2aaf-49f7-846b-1c607d7fcbcb"
+      }
+    },
+    {
+      "step": "assessment_three_outcomes",
+      "result": [
+        {
+          "expected": "MATCH",
+          "actual": "MATCH",
+          "status": 201,
+          "report": {
+            "status": 200,
+            "code": "OK",
+            "message": "成功",
+            "data": {
+              "assessmentStatus": "SUCCEEDED",
+              "assessmentRequestId": "37267fe4-3d16-4091-928c-cd146b0ab1ec",
+              "assessedAt": "2026-10-18T10:41:10.629073+00:00",
+              "report": {
+                "facts": {
+                  "age": 24,
+                  "city": "广州",
+                  "education": "本科",
+                  "criminal_record": "无",
+                  "hands_on_ability": "强",
+                  "logical_thinking": "强",
+                  "german_learning_ability": "有"
+                },
+                "score": null,
+                "evidence": [],
+                "projects": [
+                  {
+                    "decision": "MATCH",
+                    "projectId": "8",
+                    "failedRules": [],
+                    "passedRules": [
+                      "年龄不低于18岁",
+                      "年龄不高于35岁",
+                      "高中及以上学历",
+                      "动手能力强",
+                      "逻辑思维强",
+                      "无犯罪记录",
+                      "有德语学习和表达能力"
+                    ],
+                    "projectName": "联调测试-19106581德国报名条件核验",
+                    "ruleVersion": "test-20261018",
+                    "missingFields": []
+                  }
+                ],
+                "warnings": [
+                  "NO_RESUME_TEXT"
+                ],
+                "extraction": {
+                  "mode": "ASSESSMENT_EXTRACT",
+                  "facts": {
+                    "age": 24,
+                    "city": "广州",
+                    "education": "本科",
+                    "criminal_record": "无",
+                    "hands_on_ability": "强",
+                    "logical_thinking": "强",
+                    "german_learning_ability": "有"
+                  },
+                  "schema_version": "1.0"
+                },
+                "ruleVersion": "test-20261018",
+                "missingFields": [],
+                "schema_version": "1.0",
+                "assessedForRequestId": "37267fe4-3d16-4091-928c-cd146b0ab1ec"
+              },
+              "latestScore": null,
+              "assessmentErrorCode": null,
+              "isPreviousReport": false
+            },
+            "request_id": "1d94c298-b168-4e74-9511-1b7949d7fefa"
+          }
+        },
+        {
+          "expected": "NO_MATCH",
+          "actual": "NO_MATCH",
+          "status": 201,
+          "report": {
+            "status": 200,
+            "code": "OK",
+            "message": "成功",
+            "data": {
+              "assessmentStatus": "SUCCEEDED",
+              "assessmentRequestId": "47c8c037-66ab-4957-b8eb-f3cf7b35b67a",
+              "assessedAt": "2026-10-18T10:41:14.237367+00:00",
+              "report": {
+                "facts": {
+                  "age": 17,
+                  "city": "广州",
+                  "education": "本科",
+                  "criminal_record": "无",
+                  "hands_on_ability": "强",
+                  "logical_thinking": "强",
+                  "german_learning_ability": "有"
+                },
+                "score": null,
+                "evidence": [],
+                "projects": [
+                  {
+                    "decision": "NO_MATCH",
+                    "projectId": "8",
+                    "failedRules": [
+                      "年龄不低于18岁"
+                    ],
+                    "passedRules": [
+                      "年龄不高于35岁",
+                      "高中及以上学历",
+                      "动手能力强",
+                      "逻辑思维强",
+                      "无犯罪记录",
+                      "有德语学习和表达能力"
+                    ],
+                    "projectName": "联调测试-19106581德国报名条件核验",
+                    "ruleVersion": "test-20261018",
+                    "missingFields": []
+                  }
+                ],
+                "warnings": [
+                  "NO_RESUME_TEXT"
+                ],
+                "extraction": {
+                  "mode": "ASSESSMENT_EXTRACT",
+                  "facts": {
+                    "age": 17,
+                    "city": "广州",
+                    "education": "本科",
+                    "criminal_record": "无",
+                    "hands_on_ability": "强",
+                    "logical_thinking": "强",
+                    "german_learning_ability": "有"
+                  },
+                  "schema_version": "1.0"
+                },
+                "ruleVersion": "test-20261018",
+                "missingFields": [],
+                "schema_version": "1.0",
+                "assessedForRequestId": "47c8c037-66ab-4957-b8eb-f3cf7b35b67a"
+              },
+              "latestScore": null,
+              "assessmentErrorCode": null,
+              "isPreviousReport": false
+            },
+            "request_id": "a4a41b5c-f8c7-4d7a-96e3-4da37bde647c"
+          }
+        },
+        {
+          "expected": "NEEDS_INFO",
+          "actual": "NEEDS_INFO",
+          "status": 201,
+          "report": {
+            "status": 200,
+            "code": "OK",
+            "message": "成功",
+            "data": {
+              "assessmentStatus": "SUCCEEDED",
+              "assessmentRequestId": "6236f3ae-aa2c-4f7d-b48b-c5afa214637d",
+              "assessedAt": "2026-10-18T10:41:17.131669+00:00",
+              "report": {
+                "facts": {
+                  "age": 24,
+                  "city": "广州",
+                  "education": "本科"
+                },
+                "score": null,
+                "evidence": [],
+                "projects": [
+                  {
+                    "decision": "NEEDS_INFO",
+                    "projectId": "8",
+                    "failedRules": [],
+                    "passedRules": [
+                      "年龄不低于18岁",
+                      "年龄不高于35岁",
+                      "高中及以上学历"
+                    ],
+                    "projectName": "联调测试-19106581德国报名条件核验",
+                    "ruleVersion": "test-20261018",
+                    "missingFields": [
+                      "hands_on_ability",
+                      "logical_thinking",
+                      "criminal_record",
+                      "german_learning_ability"
+                    ]
+                  }
+                ],
+                "warnings": [
+                  "NO_RESUME_TEXT",
+                  "NEEDS_MANUAL_CONFIRMATION"
+                ],
+                "extraction": {
+                  "mode": "ASSESSMENT_EXTRACT",
+                  "facts": {
+                    "age": 24,
+                    "city": "广州",
+                    "education": "本科"
+                  },
+                  "schema_version": "1.0"
+                },
+                "ruleVersion": "test-20261018",
+                "missingFields": [
+                  "criminal_record",
+                  "german_learning_ability",
+                  "hands_on_ability",
+                  "logical_thinking"
+                ],
+                "schema_version": "1.0",
+                "assessedForRequestId": "6236f3ae-aa2c-4f7d-b48b-c5afa214637d"
+              },
+              "latestScore": null,
+              "assessmentErrorCode": null,
+              "isPreviousReport": false
+            },
+            "request_id": "fcaf941c-6dc2-4e0e-aa2d-3837b7a9e818"
+          }
+        }
+      ]
+    },
+    {
+      "step": "final_report_CUSTOMER_OPERATION",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "snapshot_id": "d726153d-09be-4fd6-8f25-9fd99842f593",
+          "type": "CUSTOMER_OPERATION",
+          "title": "客户经营报告",
+          "start_date": "2026-10-17",
+          "end_date": "2026-10-17",
+          "scope": "本部门 · 界面联调部门",
+          "as_of": "2026-10-18T10:44:03.799786+00:00",
+          "generated_at": "2026-10-18T10:44:03.799786+00:00",
+          "metrics": [
+            {
+              "key": "new_customers",
+              "label": "期间新增客户",
+              "value": 4,
+              "unit": "人",
+              "formula": "created_date在统计范围内，按客户ID去重",
+              "available": true
+            },
+            {
+              "key": "intent_students",
+              "label": "当前未签约意向客户",
+              "value": 1,
+              "unit": "人",
+              "formula": "当前意向已填写且状态为NEW/FOLLOWING；不提供历史状态快照",
+              "available": true
+            },
+            {
+              "key": "enrolled",
+              "label": "期间签约客户",
+              "value": 3,
+              "unit": "人",
+              "formula": "signed_at在统计范围内",
+              "available": true
+            },
+            {
+              "key": "lost_customers",
+              "label": "期间流失客户",
+              "value": 0,
+              "unit": "人",
+              "formula": "lost_at在统计范围内",
+              "available": true
+            },
+            {
+              "key": "conversion_rate",
+              "label": "新增客户当前签约率",
+              "value": 75,
+              "unit": "%",
+              "formula": "新增客户中当前已签约人数/本期新增客户数；分母为0时无值",
+              "available": true
+            },
+            {
+              "key": "previous_new_customers",
+              "label": "上一等长期间新增客户",
+              "value": 0,
+              "unit": "人",
+              "formula": "2026-10-16 至 2026-10-16",
+              "available": true
+            }
+          ],
+          "narrative": "客户经营报告\n统计期间：2026-10-17 至 2026-10-17\n统计范围：本部门 · 界面联调部门\n\n一、后端核定指标\n期间新增客户：4人\n统计口径：created_date在统计范围内，按客户ID去重\n当前未签约意向客户：1人\n统计口径：当前意向已填写且状态为NEW/FOLLOWING；不提供历史状态快照\n期间签约客户：3人\n统计口径：signed_at在统计范围内\n期间流失客户：0人\n统计口径：lost_at在统计范围内\n新增客户当前签约率：75.0%\n统计口径：新增客户中当前已签约人数/本期新增客户数；分母为0时无值\n上一等长期间新增客户：0人\n统计口径：2026-10-16 至 2026-10-16\n\n二、数据说明\n来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学\n意向人数为当前状态；无法还原过去某日的意向状态\n\n三、工作情况与待跟进事项\n【客户运营工作情况报告】\n统计期间：2026-10-17 至 2026-10-17；范围：本部门 · 界面联调部门。以下内容仅依据本期已提供的客户事实与指标整理，客户的意向与状态均为当前记录，签约不等同于实际入学。\n\n一、总体情况\n本期新增客户4人，期间签约客户3人，期间流失客户0人；新增客户当前签约率为75.0%，当前未签约意向客户1人。上一等长期间（2026-10-16 至 2026-10-16）新增客户记录为0人。本期新增客户集中在2026-10-17当天，未出现跨日分布。\n\n二、新增客户与来源、学历情况\n本期新增客户名单为：联调客户、王梓涵（演示）、赵沐晴（演示）、刘星宇（演示），共4人。\n来源分布方面，本期4人均记录为MANUAL来源。学历分布方面，4人均为“未填写”，本报告不对未填写项作推断，学历信息待后续核对补充。\n\n三、客户接待与跟进情况\n接待与跟进记录共列示5条：联调客户、王梓涵（演示）、赵沐晴（演示）、刘星宇（演示）、联调测试-19106581，5条记录的内容均显示“暂无跟进计划”。即本期客户虽已进入接待与跟进环节，但尚未形成明确的跟进计划记录。\n需说明的是，“联调测试-19106581”出现在接待与跟进记录中，但未出现在本期新增客户名单内，其客户归属与记录口径待核对，本报告不推断其客户状态。\n\n四、意向与签约转化情况\n当前未签约意向客户1人，为“联调客户”；该客户在接待与跟进记录中同样显示“暂无跟进计划”。此为当前意向状态的记录，不涉及历史时点意向还原。\n期间签约客户3人：王梓涵（演示）、赵沐晴（演示）、刘星宇（演示）。以上3人均在本期新增客户名单内，与新增客户当前签约率75.0%的指标口径相对应。签约事实未包含实际入学信息，不能据此认定已实际入学。\n\n五、已有转化路径与日期趋势\n期间转化路径方面，本期“无状态迁移事件”记录，即未记录到客户状态的迁移过程，因此本期签约客户的具体转化路径环节暂无过程性记录可供回溯，待核对补充。\n日期趋势方面，新增客户仅记录于2026-10-17当天，为4人；本期范围内其他日期无新增客户记录。\n\n六、流失情况\n期间流失客户0人，流失原因无记录。因本期无流失样本，本报告不分析流失原因构成。\n\n七、待跟进事项\n1. 待跟进事项记录共2条，内容均为“暂无跟进计划”，尚无可执行的具体跟进安排；\n2. 联调客户等5个对象的接待与跟进记录均显示“暂无跟进计划”，跟进计划待补充；\n3. 当前未签约意向客户“联调客户”尚无跟进计划记录，其后续跟进安排待确认；\n4. 本期新增客户学历信息均为“未填写”，需补充核对；\n5. “联调测试-19106581”与本期新增客户名单的口径差异需核对；\n6. 本期无状态迁移事件记录，签约客户的转化路径过程信息待核对补充。\n\n八、日报补充待核对事项\n本期事实来源为正式业务表与M5审核通过的日报。日报中未单独列示客户运营类的补充待核对事项，暂无记录；如后续有补充记录，应独立列示，不并入本期正式客户事件口径。\n\n说明：本报告中的客户意向为当前状态记录，无法还原过去某一日期的意向状态；各项人数指标分别按客户、签约、流失等不同口径统计，不可相互替代。",
+          "ai_status": "LIVE",
+          "warnings": [
+            "来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学",
+            "意向人数为当前状态；无法还原过去某日的意向状态"
+          ],
+          "facts": [
+            {
+              "section": "新增客户",
+              "text": "联调客户、王梓涵（演示）、赵沐晴（演示）、刘星宇（演示）"
+            },
+            {
+              "section": "接待与跟进",
+              "text": "联调客户：暂无跟进计划；王梓涵（演示）：暂无跟进计划；赵沐晴（演示）：暂无跟进计划；刘星宇（演示）：暂无跟进计划；联调测试-19106581：暂无跟进计划"
+            },
+            {
+              "section": "意向学生",
+              "text": "联调客户"
+            },
+            {
+              "section": "签约转化",
+              "text": "王梓涵（演示）、赵沐晴（演示）、刘星宇（演示）"
+            },
+            {
+              "section": "待跟进事项",
+              "text": "暂无跟进计划；暂无跟进计划"
+            },
+            {
+              "section": "期间转化路径",
+              "text": "无状态迁移事件"
+            },
+            {
+              "section": "新增客户日期趋势",
+              "text": "2026-10-17：4人"
+            },
+            {
+              "section": "来源分布",
+              "text": "MANUAL：4"
+            },
+            {
+              "section": "学历分布",
+              "text": "未填写：4"
+            },
+            {
+              "section": "流失原因",
+              "text": "无记录"
+            }
+          ]
+        },
+        "request_id": "4e29e58d-b867-439b-a029-4d338db77ec0"
+      }
+    },
+    {
+      "step": "final_report_DAILY_DAY",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "snapshot_id": "f8c190ec-7998-4db3-89fb-8188f35c10f3",
+          "type": "DAILY_DAY",
+          "title": "日报日汇总",
+          "start_date": "2026-10-17",
+          "end_date": "2026-10-17",
+          "scope": "本部门 · 界面联调部门",
+          "as_of": "2026-10-18T10:44:09.360733+00:00",
+          "generated_at": "2026-10-18T10:44:09.360733+00:00",
+          "metrics": [
+            {
+              "key": "approved_daily",
+              "label": "已通过有效日报",
+              "value": 1,
+              "unit": "篇",
+              "formula": "每员工每日一份，使用最近通过内容",
+              "available": true
+            },
+            {
+              "key": "customer",
+              "label": "客户跟进",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "delivery",
+              "label": "学生交付",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "enrollment",
+              "label": "入学跟踪",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "psych",
+              "label": "心理相关工作",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "complaint",
+              "label": "投诉处理",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "leave",
+              "label": "请假处理",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "expected_daily",
+              "label": "范围员工自然日应报基数",
+              "value": 1,
+              "unit": "篇",
+              "formula": "所选有效员工数×自然日数，未接入排班日历",
+              "available": true
+            },
+            {
+              "key": "daily_coverage",
+              "label": "审核通过覆盖率",
+              "value": 100,
+              "unit": "%",
+              "formula": "已通过日报/自然日应报基数",
+              "available": true
+            }
+          ],
+          "narrative": "日报日汇总\n统计期间：2026-10-17 至 2026-10-17\n统计范围：本部门 · 界面联调部门\n\n一、后端核定指标\n已通过有效日报：1篇\n统计口径：每员工每日一份，使用最近通过内容\n客户跟进：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n学生交付：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n入学跟踪：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n心理相关工作：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n投诉处理：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n请假处理：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n范围员工自然日应报基数：1篇\n统计口径：所选有效员工数×自然日数，未接入排班日历\n审核通过覆盖率：100.0%\n统计口径：已通过日报/自然日应报基数\n\n二、数据说明\n来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学\n\n三、工作情况与待跟进事项\n一、当日工作概况\n本报告依据范围内已审核通过的日报整理，共1篇（审核通过版本2，审核时间2026-10-18 10:31:29）。日报申报内容以资料整理类事务为主，未记录客户跟进、学生交付、入学跟踪、心理相关工作、投诉处理、请假处理等专项工作事项。\n\n二、普通工作\n联调顾问（2026-10-17）：整理公开活动资料2次。日报中该条目标注为“联调测试-19106581，合成验收”。\n\n三、困难与支持\n日报填报“无”，本日暂无困难与支持事项记录。\n\n四、未完成或待核对事项（独立列示，不计入正式工作事件）\n日报“未完成事项”栏内容为“请根据实际工作补充，系统不自动推断完成情况”，属于填报提示，未形成具体未完成事项。该项待核对补充，不能据此推断任何工作的完成情况。\n\n五、明日计划\n联调顾问：明天继续整理材料。该内容来自日报明确填报，仅作为计划记录，不代表已完成。\n\n说明：以上仅引用已审核日报中的事实，未对客户状态、完成率、转化情况等作推断；日报申报工作量与业务事件项数、去重人数等统计口径不同。",
+          "ai_status": "LIVE",
+          "warnings": [
+            "来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学"
+          ],
+          "facts": [
+            {
+              "section": "审核依据",
+              "text": "a90ea671-75fd-47ab-89e0-02d6bc85ed63：通过版本 2，审核时间 2026-10-18 10:31:29.163500+00:00"
+            },
+            {
+              "section": "联调顾问 2026-10-17",
+              "text": "【联调测试-19106581，合成验收】整理公开活动资料2次"
+            },
+            {
+              "section": "明日计划",
+              "text": "联调顾问：明天继续整理材料"
+            },
+            {
+              "section": "未完成事项",
+              "text": "请根据实际工作补充，系统不自动推断完成情况"
+            },
+            {
+              "section": "困难与支持",
+              "text": "无"
+            }
+          ]
+        },
+        "request_id": "8e6bc391-67a1-416c-b2cc-48eb2839ac57"
+      }
+    },
+    {
+      "step": "final_report_DAILY_WEEK",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "snapshot_id": "6c9e2550-c14a-40c4-ba27-ed0bec4a4269",
+          "type": "DAILY_WEEK",
+          "title": "日报周汇总",
+          "start_date": "2026-10-17",
+          "end_date": "2026-10-17",
+          "scope": "本部门 · 界面联调部门",
+          "as_of": "2026-10-18T10:44:12.772837+00:00",
+          "generated_at": "2026-10-18T10:44:12.772837+00:00",
+          "metrics": [
+            {
+              "key": "approved_daily",
+              "label": "已通过有效日报",
+              "value": 1,
+              "unit": "篇",
+              "formula": "每员工每日一份，使用最近通过内容",
+              "available": true
+            },
+            {
+              "key": "customer",
+              "label": "客户跟进",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "delivery",
+              "label": "学生交付",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "enrollment",
+              "label": "入学跟踪",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "psych",
+              "label": "心理相关工作",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "complaint",
+              "label": "投诉处理",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "leave",
+              "label": "请假处理",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "expected_daily",
+              "label": "范围员工自然日应报基数",
+              "value": 1,
+              "unit": "篇",
+              "formula": "所选有效员工数×自然日数，未接入排班日历",
+              "available": true
+            },
+            {
+              "key": "daily_coverage",
+              "label": "审核通过覆盖率",
+              "value": 100,
+              "unit": "%",
+              "formula": "已通过日报/自然日应报基数",
+              "available": true
+            }
+          ],
+          "narrative": "日报周汇总\n统计期间：2026-10-17 至 2026-10-17\n统计范围：本部门 · 界面联调部门\n\n一、后端核定指标\n已通过有效日报：1篇\n统计口径：每员工每日一份，使用最近通过内容\n客户跟进：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n学生交付：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n入学跟踪：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n心理相关工作：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n投诉处理：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n请假处理：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n范围员工自然日应报基数：1篇\n统计口径：所选有效员工数×自然日数，未接入排班日历\n审核通过覆盖率：100.0%\n统计口径：已通过日报/自然日应报基数\n\n二、数据说明\n来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学\n\n三、工作情况与待跟进事项\n本期（2026-10-17）范围为“本部门 · 界面联调部门”，已通过有效日报1篇，范围内员工自然日应报基数为1篇，审核通过覆盖率100.0%。本期日报申报的客户跟进、学生交付、入学跟踪、心理相关工作、投诉处理、请假处理均为0次，这些是日报申报工作量口径，不等同于新增业务事件或去重人数。\n\n一、工作概况\n联调顾问在2026-10-17提交日报，内容为整理公开活动资料2次，属于普通日常工作。该日报的审核依据为：通过版本2，审核时间2026-10-18 10:31:29.163500+00:00。\n\n二、重点工作\n本期日报中未申报客户跟进、学生交付、入学跟踪、心理相关工作、投诉处理、请假处理等专项工作，相关工作次数均为0次，暂无可列示的重点专项内容。\n\n三、困难与支持\n日报记录“困难与支持：无”。\n\n四、未完成或待核对事项\n日报“未完成事项”栏提示：请根据实际工作补充，系统不自动推断完成情况。该项属于待核对补充内容，已独立列示，未并入正式工作事件统计。\n\n五、明日计划\n联调顾问填报：明天继续整理材料。该内容为日报中明确提供的计划，仅作记录。\n\n六、说明\n本期仅依据已审核通过的日报整理，未审核内容不作为正式依据；客户意向、签约与入学等未在日报中体现，暂无记录或待核对补充。",
+          "ai_status": "LIVE",
+          "warnings": [
+            "来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学"
+          ],
+          "facts": [
+            {
+              "section": "审核依据",
+              "text": "a90ea671-75fd-47ab-89e0-02d6bc85ed63：通过版本 2，审核时间 2026-10-18 10:31:29.163500+00:00"
+            },
+            {
+              "section": "联调顾问 2026-10-17",
+              "text": "【联调测试-19106581，合成验收】整理公开活动资料2次"
+            },
+            {
+              "section": "明日计划",
+              "text": "联调顾问：明天继续整理材料"
+            },
+            {
+              "section": "未完成事项",
+              "text": "请根据实际工作补充，系统不自动推断完成情况"
+            },
+            {
+              "section": "困难与支持",
+              "text": "无"
+            }
+          ]
+        },
+        "request_id": "acc127b6-61bd-4cd7-9fda-0a4d19433bf1"
+      }
+    },
+    {
+      "step": "final_report_PSYCH_WEEK",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "snapshot_id": "7e53e0cf-6459-4c46-baa2-337f233e5ff0",
+          "type": "PSYCH_WEEK",
+          "title": "心理周报",
+          "start_date": "2026-10-17",
+          "end_date": "2026-10-17",
+          "scope": "本部门 · 界面联调部门",
+          "as_of": "2026-10-18T10:44:16.093252+00:00",
+          "generated_at": "2026-10-18T10:44:16.093252+00:00",
+          "metrics": [
+            {
+              "key": "approved_daily",
+              "label": "已通过有效日报",
+              "value": 1,
+              "unit": "篇",
+              "formula": "每员工每日一份，使用最近通过内容",
+              "available": true
+            },
+            {
+              "key": "previous_new_events",
+              "label": "上一等长期间新增业务事件",
+              "value": 0,
+              "unit": "项",
+              "formula": "2026-10-16 至 2026-10-16",
+              "available": true
+            },
+            {
+              "key": "new_events",
+              "label": "期间新增业务事件",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "continuing",
+              "label": "此前发生本期跟进",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "daily_supplements",
+              "label": "日报补充待核对",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "resolved",
+              "label": "期间解决业务事件",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "observed_student_days",
+              "label": "有效观测学生日",
+              "value": 0,
+              "unit": "学生日",
+              "formula": "同一学生同一自然日取最后有效版本",
+              "available": true
+            },
+            {
+              "key": "unobserved_student_days",
+              "label": "缺少有效观测的学生日",
+              "value": 0,
+              "unit": "学生日",
+              "formula": "不将未观测自动判为健康",
+              "available": true
+            },
+            {
+              "key": "observation_coverage",
+              "label": "有效观测覆盖率",
+              "value": null,
+              "unit": "%",
+              "formula": "有效观测学生日/有当前同意的非演示学生自然日基数",
+              "available": true
+            },
+            {
+              "key": "emotion_healthy",
+              "label": "HEALTHY",
+              "value": 0,
+              "unit": "学生日",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "emotion_negative",
+              "label": "NEGATIVE",
+              "value": 0,
+              "unit": "学生日",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "emotion_very_negative",
+              "label": "VERY_NEGATIVE",
+              "value": 0,
+              "unit": "学生日",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "emotion_unknown",
+              "label": "UNKNOWN",
+              "value": 0,
+              "unit": "学生日",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "high_risk",
+              "label": "高优先级关怀事件",
+              "value": 0,
+              "unit": "项",
+              "formula": "包括规则直接触发事件",
+              "available": true
+            }
+          ],
+          "narrative": "心理工作周报\n统计期间：2026-10-17 至 2026-10-17\n统计范围：本部门 · 界面联调部门\n\n一、后端核定指标\n已通过有效日报：1篇\n统计口径：每员工每日一份，使用最近通过内容\n上一等长期间新增业务事件：0项\n统计口径：2026-10-16 至 2026-10-16\n期间新增业务事件：0项\n此前发生本期跟进：0项\n日报补充待核对：0项\n期间解决业务事件：0项\n有效观测学生日：0学生日\n统计口径：同一学生同一自然日取最后有效版本\n缺少有效观测的学生日：0学生日\n统计口径：不将未观测自动判为健康\n有效观测覆盖率：暂无可用值\n统计口径：有效观测学生日/有当前同意的非演示学生自然日基数\nHEALTHY：0学生日\nNEGATIVE：0学生日\nVERY_NEGATIVE：0学生日\nUNKNOWN：0学生日\n高优先级关怀事件：0项\n统计口径：包括规则直接触发事件\n\n二、数据说明\n来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学\n\n三、工作情况与待跟进事项\n一、本期概况（2026-10-17 至 2026-10-17）\n\n本报告范围为“本部门 · 界面联调部门”，周期为 2026-10-17 单日。期间已通过有效日报 1 篇；新增业务事件 0 项，上一等长期间（2026-10-16 至 2026-10-16）新增业务事件 0 项；此前发生、本期仍在跟进 0 项；期间解决业务事件 0 项；日报补充待核对 0 项；高优先级关怀事件 0 项。\n\n二、本期新增\n\n本期无新增心理关怀类业务事件记录。\n\n三、此前发生、本期仍在跟进\n\n本期无此前发生并继续跟进的记录。\n\n四、已有措施与结果\n\n根据现有事实，本期未见已记录的措施与结果，期间解决业务事件为 0 项。相关情况待核对补充。\n\n五、观测记录说明\n\n本期有效观测学生日 0 学生日，缺少有效观测的学生日 0 学生日，有效观测覆盖率暂无记录（指标值为空，不作 0 处理）。情绪标签记录方面：HEALTHY 0 学生日、NEGATIVE 0 学生日、VERY_NEGATIVE 0 学生日、UNKNOWN 0 学生日。上述仅为观测记录情况，情绪标签不等同于诊断结论；未观测不等于健康，本期不作任何医疗判断或风险推测。\n\n六、待跟进与协调\n\n本期无未解决记录，暂无需要协调的事项。\n\n七、日报补充待核对（独立列示）\n\n日报补充待核对 0 项，无未关联事项。该项为独立统计口径，不并入正式业务事件总数。\n\n八、说明\n\n本报告仅引用已提供的正式业务表与审核通过日报内容，不推断学生状态与风险。客户意向为当前状态，签约不等同于实际入学。有效观测覆盖率因指标值为空，写为暂无记录，未按 0 计算。",
+          "ai_status": "LIVE",
+          "warnings": [
+            "来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学"
+          ],
+          "facts": [
+            {
+              "section": "本期新增",
+              "text": "无记录"
+            },
+            {
+              "section": "此前发生仍在跟进",
+              "text": "无记录"
+            },
+            {
+              "section": "日报补充",
+              "text": "无未关联事项"
+            },
+            {
+              "section": "待跟进与协调",
+              "text": "无未解决记录"
+            }
+          ]
+        },
+        "request_id": "ff0e2e0f-6468-4d71-92c8-e07a260fb34d"
+      }
+    },
+    {
+      "step": "final_report_COMPLAINT_WEEK",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "snapshot_id": "b9be82f1-0742-4907-a412-de4c8ffadd62",
+          "type": "COMPLAINT_WEEK",
+          "title": "投诉周报",
+          "start_date": "2026-10-17",
+          "end_date": "2026-10-17",
+          "scope": "本部门 · 界面联调部门",
+          "as_of": "2026-10-18T10:44:19.900538+00:00",
+          "generated_at": "2026-10-18T10:44:19.900538+00:00",
+          "metrics": [
+            {
+              "key": "approved_daily",
+              "label": "已通过有效日报",
+              "value": 1,
+              "unit": "篇",
+              "formula": "每员工每日一份，使用最近通过内容",
+              "available": true
+            },
+            {
+              "key": "previous_new_events",
+              "label": "上一等长期间新增业务事件",
+              "value": 0,
+              "unit": "项",
+              "formula": "2026-10-16 至 2026-10-16",
+              "available": true
+            },
+            {
+              "key": "new_events",
+              "label": "期间新增业务事件",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "continuing",
+              "label": "此前发生本期跟进",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "daily_supplements",
+              "label": "日报补充待核对",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "resolved",
+              "label": "期间解决业务事件",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "open_tickets",
+              "label": "未关闭投诉",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "overdue_tickets",
+              "label": "当前超期未解决投诉",
+              "value": 0,
+              "unit": "项",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "rating_count",
+              "label": "满意度样本",
+              "value": 0,
+              "unit": "份",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "rating_average",
+              "label": "平均满意度",
+              "value": null,
+              "unit": "分",
+              "formula": "仅统计已评分工单",
+              "available": true
+            },
+            {
+              "key": "reopened",
+              "label": "重开次数",
+              "value": 0,
+              "unit": "次",
+              "formula": "",
+              "available": true
+            },
+            {
+              "key": "first_response_hours",
+              "label": "平均首次响应时长",
+              "value": null,
+              "unit": "小时",
+              "formula": "仅统计已有对应时间戳的工单",
+              "available": true
+            },
+            {
+              "key": "resolution_hours",
+              "label": "平均解决时长",
+              "value": null,
+              "unit": "小时",
+              "formula": "仅统计已有对应时间戳的工单",
+              "available": true
+            }
+          ],
+          "narrative": "投诉处理周报\n统计期间：2026-10-17 至 2026-10-17\n统计范围：本部门 · 界面联调部门\n\n一、后端核定指标\n已通过有效日报：1篇\n统计口径：每员工每日一份，使用最近通过内容\n上一等长期间新增业务事件：0项\n统计口径：2026-10-16 至 2026-10-16\n期间新增业务事件：0项\n此前发生本期跟进：0项\n日报补充待核对：0项\n期间解决业务事件：0项\n未关闭投诉：0项\n当前超期未解决投诉：0项\n满意度样本：0份\n平均满意度：暂无可用值\n统计口径：仅统计已评分工单\n重开次数：0次\n平均首次响应时长：暂无可用值\n统计口径：仅统计已有对应时间戳的工单\n平均解决时长：暂无可用值\n统计口径：仅统计已有对应时间戳的工单\n\n二、数据说明\n来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学\n\n三、工作情况与待跟进事项\n一、本期投诉与问题概况\n\n2026-10-17 至 2026-10-17，本部门 · 界面联调部门范围内，已通过有效日报 1 篇。本期新增投诉/业务事件 0 项，上一等长期间（2026-10-16 至 2026-10-16）新增 0 项；此前发生、本期仍在跟进 0 项；本期解决 0 项；未关闭投诉 0 项，按后端当前口径超期未解决投诉 0 项；重开 0 次。\n\n二、本期新增投诉/问题\n\n暂无记录。本期未登记新增投诉或需处理业务事件。\n\n三、此前发生、本期仍在跟进事项\n\n暂无记录。本期无此前发生并继续跟进的投诉或业务事件。\n\n四、已有处理措施与结果\n\n本期解决业务事件 0 项，无已闭环处理记录可列示。未关闭投诉 0 项。\n\n五、未解决与待协调事项\n\n无未解决记录。本期无待协调事项登记。\n\n六、日报补充待核对（独立列示）\n\n日报补充待核对 0 项，日报中无未关联事项。该部分为日报补充信息，不计入正式业务事件总数。\n\n七、响应与满意度情况\n\n满意度样本 0 份，平均满意度暂无记录（不推断满意或不满）。平均首次响应时长、平均解决时长均暂无记录，因无具备对应时间戳的工单样本，待核对补充。超期口径为后端当前统计结果，未依据历史日期自行重算。\n\n八、后续关注\n\n本期各项投诉指标均为 0，无新增、无在跟、无未关闭及超期事项。建议继续保持投诉登记与日报补充事项的分账管理，确保后续出现事项时可按本期、在跟、已解决、待协调分别归集；对响应时长与满意度评价，需在有实际工单时间戳及评分样本后再行统计，当前不作推断。",
+          "ai_status": "LIVE",
+          "warnings": [
+            "来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学"
+          ],
+          "facts": [
+            {
+              "section": "本期新增",
+              "text": "无记录"
+            },
+            {
+              "section": "此前发生仍在跟进",
+              "text": "无记录"
+            },
+            {
+              "section": "日报补充",
+              "text": "无未关联事项"
+            },
+            {
+              "section": "待跟进与协调",
+              "text": "无未解决记录"
+            }
+          ]
+        },
+        "request_id": "5f2dcbb1-8f29-418f-a53a-21b434d36412"
+      }
+    },
+    {
+      "step": "final_report_MANAGER_WEEK",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "snapshot_id": "89594bb6-eb99-4334-8045-5ef638702f69",
+          "type": "MANAGER_WEEK",
+          "title": "部门主管周报",
+          "start_date": "2026-10-17",
+          "end_date": "2026-10-17",
+          "scope": "本部门 · 界面联调部门",
+          "as_of": "2026-10-18T10:44:34.665035+00:00",
+          "generated_at": "2026-10-18T10:44:34.665035+00:00",
+          "metrics": [
+            {
+              "key": "approved_daily",
+              "label": "已通过有效日报",
+              "value": 1,
+              "unit": "篇",
+              "formula": "每员工每日一份，使用最近通过内容",
+              "available": true
+            },
+            {
+              "key": "customer",
+              "label": "客户跟进",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "delivery",
+              "label": "学生交付",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "enrollment",
+              "label": "入学跟踪",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "psych",
+              "label": "心理相关工作",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "complaint",
+              "label": "投诉处理",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "leave",
+              "label": "请假处理",
+              "value": 0,
+              "unit": "次",
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "new_customers",
+              "label": "期间新增客户",
+              "value": 4,
+              "unit": "人",
+              "formula": "按创建日期与客户ID统计",
+              "available": true
+            },
+            {
+              "key": "enrolled_students",
+              "label": "期间签约客户",
+              "value": 3,
+              "unit": "人",
+              "formula": "按签约日期统计",
+              "available": true
+            },
+            {
+              "key": "expected_daily",
+              "label": "范围员工自然日应报基数",
+              "value": 1,
+              "unit": "篇",
+              "formula": "所选有效员工数×自然日数，未接入排班日历",
+              "available": true
+            },
+            {
+              "key": "daily_coverage",
+              "label": "审核通过覆盖率",
+              "value": 100,
+              "unit": "%",
+              "formula": "已通过日报/自然日应报基数",
+              "available": true
+            }
+          ],
+          "narrative": "主管周报\n统计期间：2026-10-17 至 2026-10-17\n统计范围：本部门 · 界面联调部门\n\n一、后端核定指标\n已通过有效日报：1篇\n统计口径：每员工每日一份，使用最近通过内容\n客户跟进：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n学生交付：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n入学跟踪：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n心理相关工作：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n投诉处理：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n请假处理：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n期间新增客户：4人\n统计口径：按创建日期与客户ID统计\n期间签约客户：3人\n统计口径：按签约日期统计\n范围员工自然日应报基数：1篇\n统计口径：所选有效员工数×自然日数，未接入排班日历\n审核通过覆盖率：100.0%\n统计口径：已通过日报/自然日应报基数\n\n二、数据说明\n来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学\n\n三、工作情况与待跟进事项\n本期（2026-10-17，本部门·界面联调部门）部门工作以资料整理及联调合成验收相关事项为主。依据审核通过的日报（版本2，审核时间2026-10-18）整理，范围内有1篇有效日报。联调顾问记录完成“整理公开活动资料2次”，日报标记为“【联调测试-19106581，合成验收】”。指标显示本期新增客户4人、签约客户3人；签约不等同于实际入学，客户意向为当前状态，具体业务情况以正式业务表为准。日报申报口径下，客户跟进、学生交付、入学跟踪、心理相关工作、投诉处理、请假处理均无工作量记录，上述口径不等同于新增业务事件或去重人数。\n\n关键工作方面，本期可确认的正式工作为公开活动资料整理2次，以及联调测试、合成验收相关记录；除上述内容外，暂无其他关键工作事实。服务异常方面，本期未提供服务异常记录，待核对补充。\n\n团队管理方面，本期未提供人员安排、新人培养与协作情况等事实，待主管补充。困难与支持方面，日报记录为“无”；需要协调的支持事项待主管填写，没有可填“无”。\n\n主要问题及处理措施方面，日报未明确具体问题与处理措施，待主管核对补充。未完成事项方面，日报未明确未完成事项，系统不自动推断完成情况，请根据实际工作补充核对。明日计划为“明天继续整理材料”。\n\n待核对补充事项独立列示如下：团队管理情况待主管补充；主要问题及处理措施待主管核对补充；需要协调的支持待主管填写；未完成事项待按实际工作补充核对；服务异常记录待核对补充。上述内容不并入已确认的正式工作事件。\n\n下周工作安排未提供（选填），待主管补充。以上仅整理已提供事实，不包含对客户状态、完成情况或风险的推断。",
+          "ai_status": "LIVE",
+          "warnings": [
+            "来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学"
+          ],
+          "facts": [
+            {
+              "section": "审核依据",
+              "text": "a90ea671-75fd-47ab-89e0-02d6bc85ed63：通过版本 2，审核时间 2026-10-18 10:31:29.163500+00:00"
+            },
+            {
+              "section": "联调顾问 2026-10-17",
+              "text": "【联调测试-19106581，合成验收】整理公开活动资料2次"
+            },
+            {
+              "section": "明日计划",
+              "text": "联调顾问：明天继续整理材料"
+            },
+            {
+              "section": "未完成事项",
+              "text": "请根据实际工作补充，系统不自动推断完成情况"
+            },
+            {
+              "section": "困难与支持",
+              "text": "无"
+            },
+            {
+              "section": "团队管理情况",
+              "text": "待主管补充人员安排、新人培养与协作情况"
+            },
+            {
+              "section": "主要问题及处理措施",
+              "text": "待主管核对补充"
+            },
+            {
+              "section": "需要协调的支持",
+              "text": "待主管填写，没有可填无"
+            },
+            {
+              "section": "下周工作安排",
+              "text": "选填"
+            }
+          ]
+        },
+        "request_id": "6c51fa51-b5a5-4527-a7bb-277e88c8b7f4"
+      }
+    },
+    {
+      "step": "report_save_with_plan",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "id": "164d30ee-7aa4-453e-9806-836be5e5a552",
+          "snapshot_id": "101f0237-2cc3-4e28-964d-5e92648b841b",
+          "owner_id": "9",
+          "type": "DAILY_DAY",
+          "title": "联调测试-19106581 日报验收报告",
+          "start_date": "2026-10-17",
+          "end_date": "2026-10-17",
+          "narrative": "日报日汇总\n统计期间：2026-10-17 至 2026-10-17\n统计范围：本部门 · 界面联调部门\n\n一、后端核定指标\n已通过有效日报：1篇\n统计口径：每员工每日一份，使用最近通过内容\n客户跟进：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n学生交付：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n入学跟踪：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n心理相关工作：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n投诉处理：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n请假处理：0次\n统计口径：日报申报工作量，不等同于新增业务事件或去重人数\n范围员工自然日应报基数：1篇\n统计口径：所选有效员工数×自然日数，未接入排班日历\n审核通过覆盖率：100.0%\n统计口径：已通过日报/自然日应报基数\n\n二、数据说明\n来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学\n\n三、工作情况与待跟进事项\n一、当日工作概况\n本报告依据范围内已审核通过的日报整理，共1篇（审核通过版本2，审核时间2026-10-18 10:31:29）。日报申报内容以资料整理类事务为主，未记录客户跟进、学生交付、入学跟踪、心理相关工作、投诉处理、请假处理等专项工作事项。\n\n二、普通工作\n联调顾问（2026-10-17）：整理公开活动资料2次。日报中该条目标注为“联调测试-19106581，合成验收”。\n\n三、困难与支持\n日报填报“无”，本日暂无困难与支持事项记录。\n\n四、未完成或待核对事项（独立列示，不计入正式工作事件）\n日报“未完成事项”栏内容为“请根据实际工作补充，系统不自动推断完成情况”，属于填报提示，未形成具体未完成事项。该项待核对补充，不能据此推断任何工作的完成情况。\n\n五、明日计划\n联调顾问：明天继续整理材料。该内容来自日报明确填报，仅作为计划记录，不代表已完成。\n\n说明：以上仅引用已审核日报中的事实，未对客户状态、完成率、转化情况等作推断；日报申报工作量与业务事件项数、去重人数等统计口径不同。",
+          "metrics": [
+            {
+              "key": "approved_daily",
+              "unit": "篇",
+              "label": "已通过有效日报",
+              "value": 1,
+              "formula": "每员工每日一份，使用最近通过内容",
+              "available": true
+            },
+            {
+              "key": "customer",
+              "unit": "次",
+              "label": "客户跟进",
+              "value": 0,
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "delivery",
+              "unit": "次",
+              "label": "学生交付",
+              "value": 0,
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "enrollment",
+              "unit": "次",
+              "label": "入学跟踪",
+              "value": 0,
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "psych",
+              "unit": "次",
+              "label": "心理相关工作",
+              "value": 0,
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "complaint",
+              "unit": "次",
+              "label": "投诉处理",
+              "value": 0,
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "leave",
+              "unit": "次",
+              "label": "请假处理",
+              "value": 0,
+              "formula": "日报申报工作量，不等同于新增业务事件或去重人数",
+              "available": true
+            },
+            {
+              "key": "expected_daily",
+              "unit": "篇",
+              "label": "范围员工自然日应报基数",
+              "value": 1,
+              "formula": "所选有效员工数×自然日数，未接入排班日历",
+              "available": true
+            },
+            {
+              "key": "daily_coverage",
+              "unit": "%",
+              "label": "审核通过覆盖率",
+              "value": 100,
+              "formula": "已通过日报/自然日应报基数",
+              "available": true
+            }
+          ],
+          "scope": "本部门 · 界面联调部门",
+          "employee_user_ids": [
+            "7"
+          ],
+          "ai_status": "LIVE",
+          "warnings": [
+            "来源：正式业务表与M5审核通过的日报；客户意向为当前状态，签约不等同于实际入学"
+          ],
+          "status": "DRAFT",
+          "version": 2,
+          "created_at": "2026-10-18T10:32:08.066632+00:00",
+          "updated_at": "2026-10-18T10:46:08.594631+00:00"
+        },
+        "request_id": "cdd3d475-6748-42fc-86f1-5d4f1d8ad359"
+      }
+    },
+    {
+      "step": "final_report_exports",
+      "result": [
+        {
+          "format": "docx",
+          "status": 200,
+          "bytes": 38045
+        },
+        {
+          "format": "pdf",
+          "status": 200,
+          "bytes": 5969
+        }
+      ]
+    },
+    {
+      "step": "visitor_event_registration",
+      "result": {
+        "status": 422,
+        "code": "VALIDATION_ERROR",
+        "message": "参数校验失败",
+        "data": null,
+        "errors": [
+          {
+            "field": "confirmation_token",
+            "reason": "Extra inputs are not permitted"
+          }
+        ],
+        "request_id": "058fad7f-1271-4ff8-bf66-212844ec4fb7"
+      }
+    },
+    {
+      "step": "visitor_event_registration_frontend_payload",
+      "result": {
+        "status": 201,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "registrationId": "1",
+          "eventId": "3",
+          "status": "REGISTERED",
+          "registeredAt": "2026-10-18T10:47:46.816394+00:00",
+          "version": 2,
+          "cancelToken": "[REDACTED]"
+        },
+        "request_id": "43d37e5e-1f3e-4b20-8c7d-e630f277491f"
+      }
+    },
+    {
+      "step": "test_application_create",
+      "result": {
+        "status": 404,
+        "code": "NOT_FOUND",
+        "message": "资源不存在",
+        "data": null,
+        "errors": [],
+        "request_id": "67d60f71-2de7-42b8-b28a-793a0d037a21"
+      }
+    },
+    {
+      "step": "test_application_create_advisor",
+      "result": {
+        "status": 201,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "caseNo": "23bd5725-0af1-4444-9eda-6b4e237f3655",
+          "rootId": "3",
+          "sequenceNo": 1,
+          "stage": "SUBMITTED"
+        },
+        "request_id": "92e119d6-d330-4591-8c15-ae93d20c6e15"
+      }
+    },
+    {
+      "step": "application_advance",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "caseNo": "23bd5725-0af1-4444-9eda-6b4e237f3655",
+          "latestSequence": 2,
+          "stage": "PROCESSING",
+          "events": [
+            {
+              "id": "4",
+              "caseNo": "23bd5725-0af1-4444-9eda-6b4e237f3655",
+              "studentProfileId": "2",
+              "sequenceNo": 2,
+              "itemType": "DOCUMENT",
+              "title": "联调测试-19106581文书进度验收",
+              "stage": "PROCESSING",
+              "eventKind": "STAGE",
+              "detail": "联调测试-19106581文书资料开始整理。",
+              "assigneeDisplayName": "联调顾问",
+              "occurredAt": "2026-10-18T10:48:13.677562Z",
+              "dataSource": "MANUAL",
+              "createTime": "2026-10-18T10:48:25.854359Z"
+            }
+          ]
+        },
+        "request_id": "ef57cdcd-b631-44cf-8b43-f2668be7cddf"
+      }
+    },
+    {
+      "step": "student_application_read",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "conversationId": "609ddf33-4be1-4f41-9e07-80c03e8007aa",
+          "messageId": "be5eb9cc-7f9b-4238-abea-474830af58e8",
+          "answer": "{\"items\": [{\"caseNo\": \"23bd5725-0af1-4444-9eda-6b4e237f3655\", \"rootId\": \"4\", \"studentProfileId\": \"2\", \"itemType\": \"DOCUMENT\", \"title\": \"联调测试-19106581文书进度验收\", \"targetSchool\": null, \"targetCountry\": null, \"targetProgram\": null, \"stage\": \"PROCESSING\", \"latestSequence\": 2, \"assigneeDisplayName\": \"联调顾问\", \"occurredAt\": \"2026-10-18T10:48:13.677562Z\", \"dataSource\": \"MANUAL\"}], \"total\": 1}",
+          "sources": [],
+          "missingFields": [],
+          "proposal": null,
+          "aiStatus": "LIVE",
+          "warnings": []
+        },
+        "request_id": "8beebee4-a019-4bc5-b8ff-c0e780229c6e"
+      }
+    },
+    {
+      "step": "test_rules_education_literal_scope",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "id": "8",
+          "code": "DIFY_TEST_20053662",
+          "name": "联调测试-19106581德国报名条件核验",
+          "country": "德国",
+          "educationLevel": "高中及以上",
+          "description": "仅联调验收；依据《中德精英人才共建计划》报名要求核验，不构成正式录取或政策承诺。",
+          "admissionRequirements": null,
+          "facultySummary": null,
+          "durationMonths": null,
+          "feeAmount": null,
+          "feeCurrency": null,
+          "defaultDeptId": "7",
+          "isPublished": false,
+          "admissionRules": {
+            "version": "test-20261018",
+            "source": "教育服务/公司业务/中德精英人才共建计划.docx：报名要求",
+            "criteria": [
+              {
+                "field": "age",
+                "op": "GTE",
+                "value": 18,
+                "label": "年龄不低于18岁"
+              },
+              {
+                "field": "age",
+                "op": "LTE",
+                "value": 35,
+                "label": "年龄不高于35岁"
+              },
+              {
+                "field": "education",
+                "op": "IN",
+                "values": [
+                  "高中",
+                  "大专",
+                  "本科",
+                  "硕士",
+                  "博士"
+                ],
+                "label": "高中及以上学历"
+              },
+              {
+                "field": "hands_on_ability",
+                "op": "EQ",
+                "value": "强",
+                "label": "动手能力强"
+              },
+              {
+                "field": "logical_thinking",
+                "op": "EQ",
+                "value": "强",
+                "label": "逻辑思维强"
+              },
+              {
+                "field": "criminal_record",
+                "op": "EQ",
+                "value": "无",
+                "label": "无犯罪记录"
+              },
+              {
+                "field": "german_learning_ability",
+                "op": "EQ",
+                "value": "有",
+                "label": "有德语学习和表达能力"
+              }
+            ]
+          },
+          "ruleVersion": "test-20261018-r2",
+          "ruleApprovedAt": "2026-10-18T10:52:33.672309+00:00",
+          "version": 3
+        },
+        "request_id": "6214096e-b788-43cd-a7fa-9575532a7e58"
+      }
+    },
+    {
+      "step": "student_staff_isolation_backend",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "conversationId": "2c4617d9-ca65-4c9c-aed2-6c1c5aaf229d",
+          "messageId": "531f5822-4cef-4ef4-a113-6d41c8a0829b",
+          "answer": "学生助手不提供员工内部资料，请咨询学生服务或办理本人业务。",
+          "sources": [],
+          "missingFields": [],
+          "proposal": null,
+          "aiStatus": "LIVE",
+          "warnings": []
+        },
+        "request_id": "c0c26bf4-a5a8-4f40-a86c-5672628d002f"
+      }
+    },
+    {
+      "step": "student_administrative_page_route",
+      "result": {
+        "status": 200,
+        "code": "OK",
+        "message": "成功",
+        "data": {
+          "conversationId": "7561ec6e-edfa-44eb-a25a-d79c16844169",
+          "messageId": "269ac6d8-1ac0-420b-9b24-11aafa277c73",
+          "answer": "请到行政服务页面查看本人请假、考务或资料更正申请的处理结果。",
+          "sources": [],
+          "missingFields": [],
+          "proposal": null,
+          "aiStatus": "LIVE",
+          "warnings": []
+        },
+        "request_id": "1823cab7-c696-4ea9-83fe-21bef01670a3"
+      }
+    }
+  ]
+}

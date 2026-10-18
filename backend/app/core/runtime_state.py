@@ -15,3 +15,13 @@ def put(key,value,ttl=900,merge=False):
 
 def drop(key):
     with engine.begin() as conn:conn.execute(text('DELETE FROM runtime_state WHERE key=:k'),{'k':key})
+
+
+def compare_put(key, value, revision, ttl=900):
+    """Publish an assistant result only if its conversation revision is current."""
+    with engine.begin() as conn:
+        result = conn.execute(text(
+            "UPDATE runtime_state SET value=CAST(:v AS jsonb),expires_at=now()+:ttl*interval '1 second' "
+            "WHERE key=:k AND expires_at>now() AND value->>'revision'=:revision"
+        ), {"k": key, "v": json.dumps(value, ensure_ascii=False), "ttl": ttl, "revision": revision})
+        return result.rowcount == 1

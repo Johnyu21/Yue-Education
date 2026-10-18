@@ -1,0 +1,113 @@
+{
+  "tested_at": "2026-10-18T11:04:06.426Z",
+  "assistant_offline": 29,
+  "m5_offline": 16,
+  "frontend_tests": 29,
+  "frontend_types": "passed",
+  "frontend_build": "passed",
+  "live_smoke": [
+    {
+      "case": "visitor_faq",
+      "passed": true,
+      "run_id": "d669927d-7dd2-4a65-b617-ea5827e24f26"
+    },
+    {
+      "case": "visitor_lead",
+      "passed": true,
+      "run_id": "59c63c35-6846-4d2c-aa50-dd4be2fad357"
+    },
+    {
+      "case": "student_faq",
+      "passed": true,
+      "run_id": "81812a5c-b825-4c31-a0c7-768c86bbeaf2"
+    },
+    {
+      "case": "student_leave",
+      "passed": true,
+      "run_id": "75d6afdd-70a3-4bdf-9ff5-1d2ed42a9376"
+    },
+    {
+      "case": "student_staff_boundary",
+      "passed": true,
+      "run_id": "9e04806b-bc6b-4777-9b40-51288024a682"
+    },
+    {
+      "case": "student_admin_route",
+      "passed": true,
+      "run_id": "54ddb9c7-c680-47a1-8332-d24af774aa01"
+    },
+    {
+      "case": "enterprise_faq",
+      "passed": true,
+      "run_id": "458f6ee9-bd3a-44df-bb39-0e7d5fd8c3eb"
+    },
+    {
+      "case": "enterprise_todo",
+      "passed": true,
+      "run_id": "4a4c2c12-bad4-4aed-8411-956f31abbb6f"
+    },
+    {
+      "case": "assessment",
+      "passed": true,
+      "run_id": "4b201307-1ed3-4231-bf6c-0f4bf1c84d09"
+    },
+    {
+      "case": "daily",
+      "passed": true,
+      "run_id": "06ce75a8-4a25-4b18-a0ab-0f49918b92e4"
+    },
+    {
+      "case": "report",
+      "passed": true,
+      "run_id": "202f72e6-19ad-476c-a084-418c5f9546e8"
+    }
+  ],
+  "report_types": [
+    {
+      "type": "CUSTOMER_OPERATION",
+      "status": 200,
+      "ai_status": "LIVE"
+    },
+    {
+      "type": "DAILY_DAY",
+      "status": 200,
+      "ai_status": "LIVE"
+    },
+    {
+      "type": "DAILY_WEEK",
+      "status": 200,
+      "ai_status": "LIVE"
+    },
+    {
+      "type": "PSYCH_WEEK",
+      "status": 200,
+      "ai_status": "LIVE"
+    },
+    {
+      "type": "COMPLAINT_WEEK",
+      "status": 200,
+      "ai_status": "LIVE"
+    },
+    {
+      "type": "MANAGER_WEEK",
+      "status": 200,
+      "ai_status": "LIVE"
+    }
+  ],
+  "export_verification": {
+    "word_status": 200,
+    "pdf_status": 200,
+    "pdf_pages": 3,
+    "chinese_title": true,
+    "approved_next_plan": true
+  },
+  "credential_scan": true,
+  "diff_check": 0,
+  "student_staff_isolation": {
+    "student_dataset": "访客版知识库（对外）",
+    "enterprise_dataset": "内部版知识库（学生与员工）",
+    "normal_faq": true,
+    "staff_document_denied": true,
+    "admin_service_routing": true
+  }
+}

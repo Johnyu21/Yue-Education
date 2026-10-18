@@ -1,0 +1,168 @@
+{
+  "checked_at": "2026-10-18T18:20:34.695868+08:00",
+  "results": [
+    {
+      "case": "student_leave",
+      "audience": "student",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "91a55caa-81e7-40f4-809f-fcf33b42989a",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "SERVICE_DRAFT",
+        "answer": "请补充：start_at、end_at",
+        "draft": {
+          "service_type": "LEAVE",
+          "title": "个人事务请假",
+          "description": "个人事务"
+        },
+        "missing_fields": [
+          "start_at",
+          "end_at"
+        ],
+        "sources": [],
+        "warnings": []
+      },
+      "elapsed_seconds": 1.38,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"schema_version\":\"1.0\",\"intent\":\"SERVICE_DRAFT\",\"answer\":\"已记录您的请假意向。请补充请假的开始时间和结束时间，以便继续办理。\",\"draft\":{\"service_type\":\"LEAVE\",\"title\":\"个人事务请假\",\"description\":\"个人事务\"},\"missing_fields\":[\"start_at\",\"end_at\"],\"sources\":[],\"warnings\":[]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅知识问答进入检索",
+          "status": "succeeded"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "student_faq",
+      "audience": "student",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "ad938622-623d-45b5-8e94-73a1b9a19356",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "FAQ",
+        "answer": "资料不足：现有资料仅说明学生签证入境后应在2周内前往当地居民登记处（Bürgeramt）完成住址登记，未明确列出办理住址登记所需材料。记录中出现的“护照、签证、注册证明、成绩单、医疗保险、住宿证明、资金证明等”位于居留许可申请/转换部分，不能直接认定为住址登记材料。来源：record 1。",
+        "draft": null,
+        "missing_fields": [],
+        "sources": [
+          {
+            "document_id": "09228a9c-bc08-447a-8e03-06ae373d5e59",
+            "title": "06_德国留学政策指南.md",
+            "section": "b4ed5ea0-c152-4f62-84cb-a1dee0f39072"
+          }
+        ],
+        "warnings": [
+          "NEED_KNOWLEDGE_BASE"
+        ]
+      },
+      "elapsed_seconds": 6.3,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"schema_version\":\"1.0\",\"intent\":\"FAQ\",\"answer\":\"\",\"draft\":null,\"missing_fields\":[],\"sources\":[],\"warnings\":[\"NEED_KNOWLEDGE_BASE\"]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅知识问答进入检索",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge",
+          "type": "knowledge-retrieval",
+          "title": "在工作室选择对应知识库",
+          "status": "succeeded",
+          "retrieved_count": 3,
+          "source_titles": [
+            "06_德国留学政策指南.md",
+            "06_德国留学政策指南.md",
+            "06_德国留学政策指南.md"
+          ]
+        },
+        {
+          "id": "knowledge_context",
+          "type": "code",
+          "title": "核验实际检索来源",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_llm",
+          "type": "llm",
+          "title": "依据已核验资料回答",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"answer\":\"资料不足：现有资料仅说明学生签证入境后应在2周内前往当地居民登记处（Bürgeramt）完成住址登记，未明确列出办理住址登记所需材料。记录中出现的“护照、签证、注册证明、成绩单、医疗保险、住宿证明、资金证明等”位于居留许可申请/转换部分，不能直接认定为住址登记材料。来源：record 1。\",\"citation_ids\":[\"1\"]}"
+        },
+        {
+          "id": "knowledge_validate",
+          "type": "code",
+          "title": "引用白名单及无依据兜底",
+          "status": "succeeded"
+        },
+        {
+          "id": "end_knowledge",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    }
+  ]
+}

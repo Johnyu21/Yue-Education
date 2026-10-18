@@ -1,0 +1,7 @@
+{
+  "target_dify_version": "1.12.1",
+  "dsl_version": "0.5.0",
+  "model_provider": "langgenius/deepseek/deepseek",
+  "model_name": "deepseek-v4-flash",
+  "knowledge_binding": "studio"
+}

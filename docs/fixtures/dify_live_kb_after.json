@@ -1,0 +1,209 @@
+{
+  "checked_at": "2026-10-18T18:22:29.731718+08:00",
+  "results": [
+    {
+      "case": "enterprise_faq",
+      "audience": "enterprise",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "de70c74d-47b2-467c-99af-755ae5ee177d",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "KNOWLEDGE",
+        "answer": "根据新人指南，公司新人融入计划包括：1）入职首周参加公司文化培训，时间为09:00-18:00；2）入职首月与导师进行2次职业发展规划讨论；3）参加公司组织的季度活动，即海外学历提升经验分享会。来源为《02_公司新人指南.md》（整理日期：2026-10-18，内部版）。",
+        "draft": null,
+        "missing_fields": [],
+        "sources": [
+          {
+            "document_id": "ad82a849-adfe-45e2-8111-d1f84c9755ec",
+            "title": "02_公司新人指南.md",
+            "section": "ff5e2576-50b6-4ff3-94a9-a95cb5210700"
+          },
+          {
+            "document_id": "ad82a849-adfe-45e2-8111-d1f84c9755ec",
+            "title": "02_公司新人指南.md",
+            "section": "12fe579f-3c68-4609-9cfe-e5733c11dd0e"
+          }
+        ],
+        "warnings": [],
+        "params": {},
+        "action": null
+      },
+      "elapsed_seconds": 5.69,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"schema_version\":\"1.0\",\"intent\":\"KNOWLEDGE\",\"action\":null,\"params\":{},\"draft\":null,\"answer\":\"这是员工制度/流程类问题，将由员工知识库检索《新人指南》并注明来源后作答。\",\"missing_fields\":[],\"sources\":[],\"warnings\":[]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅知识问答进入检索",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge",
+          "type": "knowledge-retrieval",
+          "title": "在工作室选择对应知识库",
+          "status": "succeeded",
+          "retrieved_count": 2,
+          "source_titles": [
+            "02_公司新人指南.md",
+            "02_公司新人指南.md"
+          ]
+        },
+        {
+          "id": "knowledge_context",
+          "type": "code",
+          "title": "核验实际检索来源",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_llm",
+          "type": "llm",
+          "title": "依据已核验资料回答",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"answer\":\"根据新人指南，公司新人融入计划包括：1）入职首周参加公司文化培训，时间为09:00-18:00；2）入职首月与导师进行2次职业发展规划讨论；3）参加公司组织的季度活动，即海外学历提升经验分享会。来源为《02_公司新人指南.md》（整理日期：2026-10-18，内部版）。\",\"citation_ids\":[\"1\",\"2\"]}"
+        },
+        {
+          "id": "knowledge_validate",
+          "type": "code",
+          "title": "引用白名单及无依据兜底",
+          "status": "succeeded"
+        },
+        {
+          "id": "end_knowledge",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    },
+    {
+      "case": "visitor_faq",
+      "audience": "visitor",
+      "data_kind": "synthetic",
+      "passed": true,
+      "workflow_run_id": "7de1c1d7-15e6-44f8-bb1e-ecf240f1af0a",
+      "workflow_status": "succeeded",
+      "output": {
+        "schema_version": "1.0",
+        "intent": "FAQ",
+        "answer": "根据《德国留学政策指南》（访客版）资料，赴德国留学通常涉及以下申请手续：1. APS审核：准备并提交高考成绩认证、APS审核材料，审核周期约4—8周。2. 大学申请：通过uni-assist或直接向德国大学递交申请，资料注明多数截止日期为7月15日。3. 学生签证申请：先准备有效护照、APS审核证书/证明、德国大学录取通知书、语言成绩证明、冻结账户证明、旅行医疗保险、MMR疫苗接种证明、个人简历和动机信等材料；再通过德国驻华使领馆CSP平台注册并上传材料进行线上预审；预审通过后获得预约链接，并在3个月内预约面签；按户籍所属领区选择签证中心，携带原件及3份复印件参加面签、支付签证费并提供生物识别信息；最后等待签证结果，审理周期通常为4—8周，高峰期可能延长至10周。资料还给出时间线：前一年9—12月准备APS等材料，当年1—3月提交APS审核，3—7月递交大学申请，7—8月预约并完成签证申请，9—10月等待签证结果并安排入境。来源：《德国留学政策指南》（访客版，整理日期2026-10-18）；资料同时说明具体办理以APS、使领馆、外管局最新要求为准。",
+        "draft": null,
+        "missing_fields": [],
+        "sources": [
+          {
+            "document_id": "17051457-a38a-40b1-92b8-77671266a9ca",
+            "title": "06_德国留学政策指南.md",
+            "section": "1b048a3d-3c9d-4d9b-b9fb-e4ea6a56965a"
+          },
+          {
+            "document_id": "17051457-a38a-40b1-92b8-77671266a9ca",
+            "title": "06_德国留学政策指南.md",
+            "section": "163c2862-15b9-4e5e-bd5e-651f86cd73e6"
+          }
+        ],
+        "warnings": [],
+        "mode": "VISITOR_ANSWER"
+      },
+      "elapsed_seconds": 8.3,
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "title": "开始：payload_json",
+          "status": "succeeded"
+        },
+        {
+          "id": "prepare",
+          "type": "code",
+          "title": "核验入参及多轮上下文",
+          "status": "succeeded"
+        },
+        {
+          "id": "llm",
+          "type": "llm",
+          "title": "提取受控业务意图与草稿",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"schema_version\":\"1.0\",\"mode\":\"VISITOR_ANSWER\",\"intent\":\"FAQ\",\"answer\":\"关于赴德国留学通常需要办理的申请手续，我将依据公开资料为你说明，并在回答中注明来源。\",\"draft\":null,\"missing_fields\":[],\"sources\":[],\"warnings\":[]}"
+        },
+        {
+          "id": "sanitize",
+          "type": "code",
+          "title": "校验意图、字段、缺项及业务边界",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_gate",
+          "type": "if-else",
+          "title": "仅知识问答进入检索",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge",
+          "type": "knowledge-retrieval",
+          "title": "在工作室选择对应知识库",
+          "status": "succeeded",
+          "retrieved_count": 3,
+          "source_titles": [
+            "06_德国留学政策指南.md",
+            "06_德国留学政策指南.md",
+            "06_德国留学政策指南.md"
+          ]
+        },
+        {
+          "id": "knowledge_context",
+          "type": "code",
+          "title": "核验实际检索来源",
+          "status": "succeeded"
+        },
+        {
+          "id": "knowledge_llm",
+          "type": "llm",
+          "title": "依据已核验资料回答",
+          "status": "succeeded",
+          "has_reasoning_prefix": true,
+          "model_text": "{\"answer\":\"根据《德国留学政策指南》（访客版）资料，赴德国留学通常涉及以下申请手续：1. APS审核：准备并提交高考成绩认证、APS审核材料，审核周期约4—8周。2. 大学申请：通过uni-assist或直接向德国大学递交申请，资料注明多数截止日期为7月15日。3. 学生签证申请：先准备有效护照、APS审核证书/证明、德国大学录取通知书、语言成绩证明、冻结账户证明、旅行医疗保险、MMR疫苗接种证明、个人简历和动机信等材料；再通过德国驻华使领馆CSP平台注册并上传材料进行线上预审；预审通过后获得预约链接，并在3个月内预约面签；按户籍所属领区选择签证中心，携带原件及3份复印件参加面签、支付签证费并提供生物识别信息；最后等待签证结果，审理周期通常为4—8周，高峰期可能延长至10周。资料还给出时间线：前一年9—12月准备APS等材料，当年1—3月提交APS审核，3—7月递交大学申请，7—8月预约并完成签证申请，9—10月等待签证结果并安排入境。来源：《德国留学政策指南》（访客版，整理日期2026-10-18）；资料同时说明具体办理以APS、使领馆、外管局最新要求为准。\",\"citation_ids\":[\"1\",\"2\"]}"
+        },
+        {
+          "id": "knowledge_validate",
+          "type": "code",
+          "title": "引用白名单及无依据兜底",
+          "status": "succeeded"
+        },
+        {
+          "id": "end_knowledge",
+          "type": "end",
+          "title": "结束：output_json",
+          "status": "succeeded"
+        }
+      ]
+    }
+  ]
+}
