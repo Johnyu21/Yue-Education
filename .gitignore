@@ -43,4 +43,8 @@ pgdata/
 *.credentials.txt
 backups/
 
+# ---- 临时诊断/联调脚本（含测试凭证，不提交）----
+tools/_diag_*.py
+tools/_verify_*.py
+
 !backend/.env.test.example

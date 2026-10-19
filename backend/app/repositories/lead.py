@@ -4,7 +4,7 @@ crm_lead / crm_follow_up 查询（M2 获客与研判 + M3 客户经营）
 ⚠️ Repository 不自行 commit；按范围取客户一律通过 core.permissions 的 Scope
    （越权返回 404，不暴露数据是否存在）。
 """
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
 
@@ -53,14 +53,20 @@ def _apply_sort(stmt: Select, sort: str | None) -> Select:
 
 def list_leads(db: Session, *, owner_user_id: int | None = None,
                dept_id: int | None = None, pool_only: bool = False,
-               all_scope: bool = False, keyword: str | None = None,
+               all_scope: bool = False, or_unrouted: bool = False,
+               keyword: str | None = None,
                status: str | None = None, project_id: int | None = None,
                sort: str = "created_desc", page: int = 1, page_size: int = 20):
-    """线索列表。pool_only=部门公共池；all_scope=管理员全域。"""
+    """线索列表。pool_only=部门公共池；all_scope=管理员全域。
+
+    or_unrouted：待分配池同时包含“未路由（无部门）”客户，用于顾问抢单。
+    """
     stmt = select(CrmLead)
     if pool_only:
         stmt = stmt.where(CrmLead.owner_user_id.is_(None))
-        if dept_id is not None:
+        if or_unrouted:
+            stmt = stmt.where(or_(CrmLead.dept_id.is_(None), CrmLead.dept_id == dept_id))
+        elif dept_id is not None:
             stmt = stmt.where(CrmLead.dept_id == dept_id)
     elif not all_scope:
         if owner_user_id is not None:

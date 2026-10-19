@@ -80,12 +80,8 @@ def create_m5_router(config=None):
         db.rollback()  # Release read transaction before external AI call.
         if config.ai_mode=="DIFY":
             try:
-                payload={"task":"REPORT_GENERATE","type":body.type,"start_date":body.start_date.isoformat(),"end_date":body.end_date.isoformat(),
-                         "scope":scope,"metrics":metrics,"facts":facts,"warnings":warnings}
-                result=ai.workflow(config,config.report_key,payload,user["id"])
-                candidate=result.get("narrative")
-                if not isinstance(candidate,str) or not candidate.strip():raise ValueError("Empty narrative")
-                narrative=candidate;state="LIVE"
+                narrative=ai.generate_report(config,config.report_key,body.type,body.start_date.isoformat(),body.end_date.isoformat(),scope,metrics,facts,warnings,user["id"])
+                state="LIVE"
             except (httpx.HTTPError,ValueError,KeyError,TypeError) as exc:
                 logger.warning("M5_REPORT_AI_FALLBACK type=%s exception=%s", body.type, type(exc).__name__)
                 state="UNAVAILABLE";warnings.append("Dify不可用，已保留确定性指标和事实文本")
@@ -226,7 +222,7 @@ def create_m5_router(config=None):
             result={"answer":answer+" 查询范围："+("本部门" if user["is_dept_head"] else "本人")+"；来源：正式业务数据。","draft":state,"missing_fields":[],"ai_status":"DETERMINISTIC","warnings":[]}
             if config.ai_mode=="DIFY":
                 try:
-                    out=ai.workflow(config,config.assistant_key,{"task":"QUERY","message":text,"verified_answer":answer,"scope":user["dept_name"],"report_date":today().isoformat()},user["id"])
+                    ai.query(config,config.assistant_key,text,answer,today().isoformat(),user["id"])
                     result["answer"]=answer+" 来源：正式业务数据。";result["ai_status"]="LIVE"
                 except (httpx.HTTPError,ValueError,KeyError,TypeError):
                     result["warnings"]=["Dify不可用，显示后端核实结果"];result["ai_status"]="UNAVAILABLE"

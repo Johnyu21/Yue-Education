@@ -95,12 +95,17 @@ def _is_head_of(db: Session, actor: SysUser, dept_id: int | None) -> bool:
 
 
 def _can_view_lead(db: Session, actor: SysUser, lead: CrmLead) -> bool:
-    """客户详情可见性：本人 / 主管部门 / 管理员。"""
+    """客户详情可见性：本人 / 主管部门 / 管理员 / 待分配客户（未路由或本部门）。"""
     if actor.employee_role == "ADMIN":
         return True
     if lead.owner_user_id is not None and lead.owner_user_id == actor.id:
         return True
-    return _is_head_of(db, actor, lead.dept_id)
+    if _is_head_of(db, actor, lead.dept_id):
+        return True
+    # 待分配客户（未路由 ∪ 本部门）对顾问可见，便于抢单认领
+    if lead.owner_user_id is None:
+        return lead.dept_id is None or lead.dept_id == actor.dept_id
+    return False
 
 
 def _get_lead_in_scope(db: Session, actor: SysUser, lead_id: int) -> CrmLead:
@@ -112,12 +117,14 @@ def _get_lead_in_scope(db: Session, actor: SysUser, lead_id: int) -> CrmLead:
 
 
 def _can_claim_lead(db: Session, actor: SysUser, lead: CrmLead) -> bool:
-    """可认领：本部门公共池；管理员可认领任意池。"""
+    """可认领：本部门公共池 + 未路由池；管理员可认领任意池。"""
     if lead.owner_user_id is not None:
         return False
     if actor.employee_role == "ADMIN":
         return True
-    return lead.dept_id is not None and lead.dept_id == actor.dept_id
+    if lead.dept_id is None:
+        return True
+    return lead.dept_id == actor.dept_id
 
 
 # =============================================================
@@ -220,11 +227,17 @@ def list_leads(db: Session, actor: SysUser, *, view: str = "mine",
     is_head = bool(_head_dept_ids(db, actor))
 
     if view == "pool":
-        pool_dept = None if is_admin else actor.dept_id
-        items, total = lead_repo.list_leads(
-            db, pool_only=True, dept_id=pool_dept, keyword=keyword,
-            status=status, project_id=project_id, sort=sort,
-            page=page, page_size=page_size)
+        if is_admin:
+            items, total = lead_repo.list_leads(
+                db, pool_only=True, dept_id=None, keyword=keyword,
+                status=status, project_id=project_id, sort=sort,
+                page=page, page_size=page_size)
+        else:
+            # 顾问/主管：待分配池 = 未路由客户 ∪ 本部门客户（支持抢单认领）
+            items, total = lead_repo.list_leads(
+                db, pool_only=True, dept_id=actor.dept_id, or_unrouted=True,
+                keyword=keyword, status=status, project_id=project_id,
+                sort=sort, page=page, page_size=page_size)
         return [_to_summary(db, lead) for lead in items], total
 
     if is_admin:
@@ -355,6 +368,49 @@ def update_lead(db: Session, actor: SysUser, lead_id: int, data: LeadUpdateIn) -
 
 
 # =============================================================
+# 采纳研判提取事实：AI 提取 → 顾问核对确认 → 进主档参与判定
+# =============================================================
+def accept_extracted_facts(db: Session, actor: SysUser, lead_id: int) -> LeadStaffOut:
+    """把最近一次研判的 AI 提取事实写入客户主档。
+
+    - 表字段（name/gender/city/education/study_purpose）直接落到 crm_lead 对应列；
+    - 其余画像字段（age/education_status/grade/intent_country/family_economy/
+      english_level/policy_awareness/handson_ability/logic_thinking/german_potential/
+      criminal_record 等）合并进 profile_summary；
+    - 写入动作留一条 ASSESSMENT 跟进事件。
+    """
+    _require_lead_write(actor)
+    lead = _get_lead_in_scope(db, actor, lead_id)
+    report = lead.assessment_report if isinstance(lead.assessment_report, dict) else {}
+    extraction = report.get("extraction") if isinstance(report.get("extraction"), dict) else {}
+    facts = extraction.get("facts") if isinstance(extraction.get("facts"), dict) else {}
+    if not facts:
+        raise InvalidRequestError("当前没有可采纳的研判提取事实，请先发起研判")
+
+    table_fields = ("name", "gender", "city", "education", "study_purpose")
+    for field in table_fields:
+        value = facts.get(field)
+        if value not in (None, ""):
+            setattr(lead, field, value)
+
+    summary = dict(lead.profile_summary) if isinstance(lead.profile_summary, dict) else {}
+    for key, value in facts.items():
+        if key in table_fields or key == "mobile":
+            continue
+        if value not in (None, ""):
+            summary[key] = value
+    lead.profile_summary = summary or None
+
+    _recompute_completeness(lead)
+    lead.version += 1
+    from uuid import uuid4
+    _add_follow_up(db, lead, actor.id, follow_up_type="ASSESSMENT",
+                   content="采纳研判提取的画像事实", request_key=uuid4())
+    db.flush()
+    return _to_staff(db, lead)
+
+
+# =============================================================
 # API036 认领（条件更新，并发只有一人成功）
 # =============================================================
 @idempotent("crm_service.claim_lead")
@@ -364,8 +420,14 @@ def claim_lead(db: Session, actor: SysUser, lead_id: int, *,
     lead = db.get(CrmLead, lead_id)
     if lead is None:
         raise NotFoundError("资源不存在")
-    if actor.employee_role != "ADMIN" and lead.dept_id != actor.dept_id:
+    if (actor.employee_role != "ADMIN" and lead.dept_id is not None
+            and lead.dept_id != actor.dept_id):
         raise NotFoundError("资源不存在")
+
+    # 未路由客户认领时补上归属部门，保持与本人部门口径一致
+    assign_dept = lead.dept_id
+    if assign_dept is None and actor.dept_id is not None:
+        assign_dept = actor.dept_id
 
     # 幂等：同一 request_key 的认领重试返回既有结果
     existing = lead_repo.get_follow_up_by_request_key(db, request_key)
@@ -386,6 +448,7 @@ def claim_lead(db: Session, actor: SysUser, lead_id: int, *,
                CrmLead.owner_user_id.is_(None),
                CrmLead.version == expected_version)
         .values(owner_user_id=actor.id, status="FOLLOWING",
+                dept_id=assign_dept,
                 version=CrmLead.version + 1)
     )
     if result.rowcount == 0:

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import {ref} from 'vue'
 import {api,upload,errorText} from '../api/client'
+import {uuid} from '../api/uuid'
 import RecordView from './RecordView.vue'
 const emit=defineEmits(['changed'])
-const opened=ref(false),objectKey=ref(''),filename=ref(''),mapping=ref<any>({name:'姓名',mobile:'手机号'}),sheet=ref(''),preview=ref<any>(null),error=ref(''),busy=ref(false),confirmed=ref(false),key=ref(crypto.randomUUID()),receipt=ref<any>(null)
-async function select(e:Event){const f=(e.target as HTMLInputElement).files?.[0];if(!f)return;busy.value=true;error.value='';try{const result=await upload(f);objectKey.value=result.objectKey;filename.value=f.name;preview.value=null;receipt.value=null;key.value=crypto.randomUUID()}catch(e){error.value=errorText(e)}finally{busy.value=false}}
-function changed(){preview.value=null;confirmed.value=false;key.value=crypto.randomUUID()}
+const opened=ref(false),objectKey=ref(''),filename=ref(''),mapping=ref<any>({name:'姓名',mobile:'手机号'}),sheet=ref(''),preview=ref<any>(null),error=ref(''),busy=ref(false),confirmed=ref(false),key=ref(uuid()),receipt=ref<any>(null)
+async function select(e:Event){const f=(e.target as HTMLInputElement).files?.[0];if(!f)return;busy.value=true;error.value='';try{const result=await upload(f);objectKey.value=result.objectKey;filename.value=f.name;preview.value=null;receipt.value=null;key.value=uuid()}catch(e){error.value=errorText(e)}finally{busy.value=false}}
+function changed(){preview.value=null;confirmed.value=false;key.value=uuid()}
 function body(){return {object_key:objectKey.value,mapping:mapping.value,sheet_name:sheet.value||null,request_key:key.value}}
 async function inspect(){busy.value=true;error.value='';try{preview.value=await api.post('/employees/lead-imports/preview',body());confirmed.value=false}catch(e){error.value=errorText(e)}finally{busy.value=false}}
 async function apply(){if(!preview.value||!confirmed.value)return;busy.value=true;error.value='';try{receipt.value=await api.post('/employees/lead-imports/apply',{...body(),fingerprint:preview.value.fingerprint,confirmed:true});preview.value=null;emit('changed')}catch(e){error.value=errorText(e)}finally{busy.value=false}}

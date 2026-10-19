@@ -24,3 +24,8 @@
  .visitor-quick-links a:focus-visible{outline:2px solid #a3232e;outline-offset:4px}
 }
 @media(min-width:761px) and (max-width:1200px){.public-header.visitor-public-header{gap:16px;padding-left:4%;padding-right:4%}.public-header.visitor-public-header nav{gap:7px;margin-right:0}.public-header.visitor-public-header nav a{min-width:72px;padding:0 12px;font-size:16px}.public-header.visitor-public-header .brand strong{font-size:21px}.visitor-quick-links a,.visitor-quick-links a:first-of-type{min-width:170px}}
+
+
+/* Visitor detail modal (project / event) */
+.visitor-modal-body{display:flex;flex-direction:column;gap:12px;max-height:70vh;overflow:auto}
+.visitor-detail-modal{max-width:760px;width:min(760px,92vw)}

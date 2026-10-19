@@ -16,7 +16,7 @@
 """
 from dataclasses import dataclass
 
-from sqlalchemy import or_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
 
@@ -69,6 +69,14 @@ class Scope:
             if self.own_field and hasattr(model, self.own_field):
                 conds.append(getattr(model, self.own_field) == self.user.id)
 
+            # 待分配池（仅线索）：未分配客户（未路由∪本部门）对员工可见，
+            # 与 crm_service._can_view_lead 的"顾问可看未路由客户"保持同一口径。
+            if (self.purpose == "lead" and not self.user.is_student
+                    and hasattr(model, "owner_user_id")):
+                conds.append(and_(model.owner_user_id.is_(None),
+                                  or_(model.dept_id.is_(None),
+                                      model.dept_id == self.user.dept_id)))
+
             # 学生本人：只能看自己
             if self.user.is_student and hasattr(model, "student_profile_id"):
                 conds.append(model.student_profile_id == self._my_profile_id())
@@ -91,6 +99,11 @@ class Scope:
         """按 id 取详情时判断。不在范围 → False，调用方应抛 404。"""
         if self.is_admin:
             return True
+        # 待分配池（仅线索）：未分配客户（未路由∪本部门）对员工可见，
+        # 与 crm_service._can_view_lead 的"顾问可看未路由客户"保持同一口径。
+        if (self.purpose == "lead" and not self.user.is_student
+                and getattr(obj, "owner_user_id", None) is None):
+            return getattr(obj, "dept_id", None) is None or getattr(obj, "dept_id", None) == self.user.dept_id
         # 主管：同部门
         if self.dept_ids and getattr(obj, "dept_id", None) in self.dept_ids:
             return True

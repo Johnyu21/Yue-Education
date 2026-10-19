@@ -162,6 +162,16 @@ def get_lead_assessment(lead_id: int,
     return ok(assessment_service.get_assessment(db, user, lead_id))
 
 
+@router.post("/api/v1/employees/leads/{lead_id}/assessment/accept")
+def accept_extracted_facts(lead_id: int,
+                           user: SysUser = Depends(require_password_changed),
+                           db: Session = Depends(get_db)):
+    """采纳研判提取的画像事实到客户主档（AI 提取 → 顾问核对确认）"""
+    with with_business_transaction(db):
+        dto = crm_service.accept_extracted_facts(db, user, lead_id)
+    return ok(dto.model_dump(mode="json"))
+
+
 # =============================================================
 # M3：签约转学生
 # =============================================================

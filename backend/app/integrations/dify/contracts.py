@@ -341,7 +341,7 @@ def validate_visitor(value, payload=None):
         if missing:
             out["answer"] = "请补充：" + "、".join(_vlabels.get(k, k) for k in out["missing_fields"])
         else:
-            out["answer"] = "请核对咨询或活动意向，确认后由系统办理。活动资格及余位以系统核验为准。"
+            out["answer"] = "已为你整理好登记信息，请核对下方卡片，确认后顾问会尽快与你联系。"
     elif intent == "OUT_OF_SCOPE":
         out["answer"] = "仅支持公开咨询、留资和活动意向登记，无法访问内部业务资料。"
     elif intent in {"CASUAL", "PROJECT_RECOMMEND"}:

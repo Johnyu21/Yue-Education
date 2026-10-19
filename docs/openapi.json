@@ -2704,6 +2704,63 @@
         }
       }
     },
+    "/api/v1/employees/leads/{lead_id}/assessment/accept": {
+      "post": {
+        "tags": [
+          "线索 CRM 与研判"
+        ],
+        "summary": "Accept Extracted Facts",
+        "description": "采纳研判提取的画像事实到客户主档（AI 提取 → 顾问核对确认）",
+        "operationId": "accept_extracted_facts_api_v1_employees_leads__lead_id__assessment_accept_post",
+        "parameters": [
+          {
+            "name": "lead_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Lead Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/employees/leads/{lead_id}/conversion": {
       "post": {
         "tags": [

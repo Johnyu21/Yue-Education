@@ -116,8 +116,7 @@ def _build_proposal(intent: str, merged: dict, missing: list[str]) -> Proposal |
         return None
 
     expires = datetime.now(timezone.utc) + timedelta(minutes=_PROPOSAL_TTL_MINUTES)
-    preview = dict(merged)
-    preview["missing_fields"] = list(missing)
+    preview = {k: v for k, v in merged.items() if k != "missing_fields"}
     return Proposal(
         operation=operation,
         entityId=None,

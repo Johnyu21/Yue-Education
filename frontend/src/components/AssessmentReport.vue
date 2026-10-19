@@ -2,7 +2,9 @@
 import {computed} from 'vue'
 import {fieldLabel,displayValue} from '../api/contract'
 const props=defineProps<{value:any}>()
+const emit=defineEmits<{(e:'accept'):void}>()
 const report=computed(()=>props.value?.report||{})
+const extractionFacts=computed(()=>{const ex=(report.value as any).extraction||{};const f=ex.facts;return f&&typeof f==='object'&&Object.keys(f).length?f:null})
 const projects=computed(()=>report.value.projects||[])
 const facts=computed(()=>Object.entries(report.value.facts||{}).filter(([,v])=>v!=null&&v!==''))
 const evidence=computed(()=>(report.value.evidence||[]).filter((e:any)=>e&&e.field))
@@ -24,6 +26,7 @@ const decided=(d:string)=>({MATCH:'符合',NO_MATCH:'不符合',NEEDS_INFO:'待�
   <section v-if="facts.length" class="asm-block"><h4>已核对事实</h4><p>{{facts.map(([k,v])=>fieldLabel(String(k))+'：'+displayValue(v)).join('｜')}}</p></section>
   <section v-if="missing.length" class="asm-block"><h4>待补充字段</h4><p class="asm-note">{{missing.map((k:string)=>fieldLabel(String(k))).join('、')}}</p></section>
   <details v-if="evidence.length" class="asm-evidence"><summary>提取证据（{{evidence.length}} 条）</summary><ul><li v-for="(e,i) in evidence" :key="i"><b>{{fieldLabel(String(e.field))}}</b>：{{e.snippet}}<small>（{{e.source_ref}}）</small></li></ul></details>
+  <button v-if="extractionFacts" type="button" class="asm-accept" @click="emit('accept')">采纳提取事实到客户档案</button>
  </div>
 </template>
 <style scoped>
@@ -43,4 +46,6 @@ const decided=(d:string)=>({MATCH:'符合',NO_MATCH:'不符合',NEEDS_INFO:'待�
 .asm-evidence ul{margin:8px 0 0;padding-left:18px;font-size:13px}
 .asm-evidence li{margin-bottom:4px}
 .asm-evidence small{color:#98a1ac;margin-left:6px}
+.asm-accept{align-self:flex-start;margin-top:4px;border:1px solid #b6232d;background:#b6232d;color:#fff;border-radius:5px;padding:7px 14px;font-size:13px;cursor:pointer}
+.asm-accept:hover{background:#8b1d26}
 </style>

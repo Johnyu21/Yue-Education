@@ -57,7 +57,8 @@ def with_business_transaction(db: Session) -> Iterator[_Outcome]:
         # 把数据库异常翻译成对用户友好的业务异常
         friendly = _translate(exc)
         if friendly is not exc:
-            logger.warning("事务回滚（已翻译）: %s", exc.__class__.__name__)
+            detail = getattr(exc, "orig", None) or exc
+            logger.warning("事务回滚（已翻译 %s）: %s", exc.__class__.__name__, str(detail)[:300])
             raise friendly from exc
         logger.warning("事务回滚 type=%s",exc.__class__.__name__)
         raise

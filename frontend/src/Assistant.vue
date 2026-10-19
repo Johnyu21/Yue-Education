@@ -3,6 +3,7 @@ import {ref,onMounted,onUnmounted,nextTick,watch} from 'vue'
 import {MessageSquare, X, Send, Grip, ClipboardCheck, Sparkles, ArrowUpRight, LoaderCircle} from 'lucide-vue-next'
 import {dateLocal} from './api'
 import {employeeAssistantApi} from './assistants'
+import {uuid} from './api/uuid'
 const props=defineProps<{user:any}>()
 const emit=defineEmits(['draft','proposal','error'])
 const open=ref(false),loading=ref(false),sending=ref(false),message=ref(''),chat=ref<any>({messages:[],draft:{},version:1}),students=ref<any[]>([]),student=ref(''),day=ref(dateLocal()),aiMode=ref('UNKNOWN'),pending=ref<any>(null)
@@ -23,7 +24,7 @@ async function toggle(){if(moved){moved=false;return}open.value=!open.value;if(o
 async function send(value?:string){
  const text=(value||message.value).trim();if(!text||sending.value||loading.value)return;sending.value=true
  try{
-  if(!pending.value||pending.value.message!==text||pending.value.student_id!==(student.value||null)||pending.value.report_date!==day.value)pending.value={message:text,request_key:crypto.randomUUID(),expected_version:chat.value.version,student_id:student.value||null,report_date:day.value}
+  if(!pending.value||pending.value.message!==text||pending.value.student_id!==(student.value||null)||pending.value.report_date!==day.value)pending.value={message:text,request_key:uuid(),expected_version:chat.value.version,student_id:student.value||null,report_date:day.value}
   const result=await employeeAssistantApi.send(pending.value);pending.value=null
   chat.value=await employeeAssistantApi.load();message.value='';await scrollBottom()
   if(result.ai_status==='UNAVAILABLE')emit('error','Dify暂不可用，原内容已保留，可手动填写')

@@ -1,6 +1,5 @@
 """Dify is the only live model channel. DEMO is explicitly labelled deterministic code."""
 import json
-import logging
 import re
 import httpx
 from app.schemas.m5_report_schemas import DailyContent
@@ -8,52 +7,42 @@ from app.repositories.m5_report_repository import today
 
 CATEGORIES={"交付":"DELIVERY","入学":"ENROLLMENT","心理":"PSYCH","投诉":"COMPLAINT","请假":"LEAVE","客户":"CUSTOMER","接待":"CUSTOMER","跟进":"CUSTOMER"}
 
-def parse_json_output(text):
-    raw=str(text).strip()
-    # DeepSeek may prefix the answer with a complete reasoning block.
-    raw=re.sub(r"^<think>[\s\S]*?</think>\s*", "", raw, count=1).strip()
-    if raw.startswith("~~~") or raw.startswith("~~~json"):
-        raw=re.sub(r"^~~~(?:json)?\s*|\s*~~~$","",raw)
-    if raw.startswith(chr(96)*3):
-        raw=re.sub(r"^"+chr(96)*3+r"(?:json)?\s*|\s*"+chr(96)*3+"$","",raw)
-    value=json.loads(raw)
-    if not isinstance(value,dict):
-        raise ValueError("Expected object")
-    return value
-
-def workflow(settings,key,payload,uid):
+def chat(settings,key,inputs,query,uid):
+    """调用 Chat 版应用（advanced-chat），返回 answer 文本。"""
     if not key:
         raise ValueError("未配置Dify应用密钥")
-    final=None
-    model_text=None
-    failures=[]
-    with httpx.Client(timeout=settings.ai_timeout) as client:
-        with client.stream("POST",settings.dify_base+"/workflows/run",
-            headers={"Authorization":"Bearer "+key},
-            json={"inputs":{"payload_json":json.dumps(payload,ensure_ascii=False)},
-                  "response_mode":"streaming","user":"m5-report-"+str(uid)}) as response:
-            response.raise_for_status()
-            for line in response.iter_lines():
-                if not line.startswith("data:"):
-                    continue
-                event=json.loads(line[5:].strip())
-                kind=event.get("event")
-                data=event.get("data",{})
-                if kind=="error":
-                    raise ValueError("Dify运行失败")
-                if kind=="node_finished":
-                    if data.get("status")=="succeeded" and data.get("node_id")=="llm":
-                        model_text=data.get("outputs",{}).get("text")
-                    if data.get("status") in {"failed","exception"}:
-                        failures.append(data)
-                if kind=="workflow_finished":
-                    final=data
-                    break
-    if final and final.get("status")=="succeeded" and not failures:
-        return parse_json_output(final["outputs"]["output_json"])
-    failed_nodes=",".join(str(n.get("node_id", "unknown")) for n in failures) or "none"
-    run_id=str((final or {}).get("id", "unknown"))
-    raise ValueError("Dify工作流未成功(status="+str((final or {}).get("status"))+", nodes="+failed_nodes+", run="+run_id+")")
+    r=httpx.post(settings.dify_base+"/chat-messages",
+        headers={"Authorization":"Bearer "+key},
+        json={"inputs":inputs,"query":query,"response_mode":"blocking",
+              "conversation_id":"","user":"m5-report-"+str(uid)},
+        timeout=settings.ai_timeout)
+    r.raise_for_status()
+    data=r.json()
+    answer=data.get("answer")
+    if not isinstance(answer,str):
+        raise ValueError("Chat 应用未返回 answer")
+    return answer
+
+
+def extract_json(answer):
+    """从 Chat 版 answer 提取结构化 JSON（[[JSON:{...}]] 或纯 JSON）。"""
+    raw=str(answer or "").strip()
+    raw=re.sub(r"^<think>[\s\S]*?</think>\s*","",raw,count=1).strip()
+    idx=raw.find("[[JSON:")
+    if idx!=-1:
+        start=raw.find("{",idx)
+        if start!=-1:
+            try:
+                value,_=json.JSONDecoder().raw_decode(raw[start:])
+                if isinstance(value,dict):
+                    return value
+            except json.JSONDecodeError:
+                pass
+    if raw.startswith("{"):
+        value=json.loads(raw)
+        if isinstance(value,dict):
+            return value
+    raise ValueError("无法从 answer 提取 JSON 对象")
 
 
 def number(text):
@@ -91,9 +80,12 @@ def collect(settings,message,state,uid,history,student_id=None):
     if settings.ai_mode=="DISABLED":
         return {"answer":"AI未启用，请在日报表单填写。","draft":state,"missing_fields":[],"ai_status":"UNAVAILABLE","warnings":["AI_DISABLED"]}
     try:
-        result=workflow(settings,settings.assistant_key,{"task":"DAILY_COLLECT","content_policy":"日报仅普通工作，禁止心理原文、投诉明细和专项事件引用","message":message,
-            "draft":state.get("content",{}),"history":history[-10:],"selected_student_ids":[student_id] if student_id else [],
-            "report_date":state.get("report_date",today().isoformat())},uid)
+        inputs={"task":"DAILY_COLLECT",
+            "draft_json":json.dumps(state.get("content",{}),ensure_ascii=False),
+            "history_json":json.dumps(history[-10:],ensure_ascii=False),
+            "selected_student_ids_json":json.dumps([student_id] if student_id else [],ensure_ascii=False),
+            "report_date":state.get("report_date",today().isoformat())}
+        result=extract_json(chat(settings,settings.assistant_key,inputs,message,uid))
         content=DailyContent.model_validate(result["content"]).model_dump()
         missing=[]
         if not content["work_summary"].strip():missing.append("work_summary")
@@ -103,3 +95,26 @@ def collect(settings,message,state,uid,history,student_id=None):
     except (httpx.HTTPError,ValueError,KeyError,TypeError):
         return {"answer":"Dify暂不可用，请在日报页面手动填写，或稍后重试。","draft":state,
                 "missing_fields":[],"ai_status":"UNAVAILABLE","warnings":["本次未生成AI草稿，原有内容已保留"]}
+
+
+def generate_report(settings,key,report_type,start_date,end_date,scope,metrics,facts,warnings,uid):
+    """调用 Chat 版报告生成应用，返回 narrative 正文。"""
+    if not key:
+        raise ValueError("未配置Dify应用密钥")
+    inputs={"report_type":report_type,"start_date":start_date,"end_date":end_date,"scope":scope,
+        "metrics_json":json.dumps(metrics,ensure_ascii=False),
+        "facts_json":json.dumps(facts,ensure_ascii=False),
+        "warnings_json":json.dumps(warnings,ensure_ascii=False)}
+    result=extract_json(chat(settings,key,inputs,"请生成报告正文。",uid))
+    narrative=result.get("narrative")
+    if not isinstance(narrative,str) or not narrative.strip():
+        raise ValueError("Empty narrative")
+    return narrative
+
+
+def query(settings,key,message,verified_answer,report_date,uid):
+    """调用 Chat 版日报助手 QUERY，仅用于确认 live 状态，不消费返回。"""
+    if not key:
+        raise ValueError("未配置Dify应用密钥")
+    inputs={"task":"QUERY","verified_answer":verified_answer,"report_date":report_date}
+    chat(settings,key,inputs,message,uid)

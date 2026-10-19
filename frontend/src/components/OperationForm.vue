@@ -3,6 +3,7 @@ import {computed,ref} from 'vue'
 import SchemaField from './SchemaField.vue'
 import RecordView from './RecordView.vue'
 import {bodySchema,operation,invoke,resolveSchema,systemFields,camel,fieldLabel} from '../api/contract'
+import {uuid} from '../api/uuid'
 import {errorText} from '../api/client'
 const props=defineProps<{path:string;method:string;title:string;params?:Record<string,any>;record?:any;choices?:Record<string,any[]>;preset?:any;hideLoginAccount?:boolean;omitFields?:string[]}>()
 const emit=defineEmits(['close','saved'])
@@ -19,7 +20,7 @@ for(const [k,s0] of Object.entries(schema.value.properties||{})){
  if(k==='expected_version')v=props.record?.version??props.preset?.expected_version
  if(k==='expected_student_version')v=props.preset?.expected_student_version??props.record?.version
  if(k==='expected_sequence')v=props.record?.latestSequence??props.record?.sequenceNo??props.preset?.expected_sequence
- if(k==='request_key')v=crypto.randomUUID()
+ if(k==='request_key')v=uuid()
  if(v!==undefined)values.value[k]=v
 }
 initial.value=JSON.parse(JSON.stringify(values.value))
